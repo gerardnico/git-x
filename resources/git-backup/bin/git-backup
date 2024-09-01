@@ -1,0 +1,204 @@
+#!/bin/bash
+
+CLI_NAME=$(basename "$0") # Name of the cli
+
+
+# Echo a message
+function echo_log() {
+
+  echo -e "$CLI_NAME: ${1:-}"
+
+}
+
+# Print the error message $1
+function echo_err() {
+  RED='\033[0;31m'
+  NC='\033[0m' # No Color
+  #(>&2 echo -e "${RED}$1${NC}")
+  echo_log "${RED}$1${NC}"
+}
+
+function finish() {
+  echo_log "\n$CLI_NAME Script terminated\n"
+}
+trap finish EXIT
+
+######################################
+# Env
+#####################################
+GIT_REPOS_PATH=/tmp/git-repos
+mkdir -p $GIT_REPOS_PATH
+
+######################################
+# Usage
+#####################################
+function print_usage() {
+
+  echo ""
+  echo "Usage of the cli ${CLI_NAME}"
+  echo ""
+  echo "   ${CLI_NAME} command [argument ...] [--option[=value] ...]"
+  echo ""
+  echo "where command is one of:"
+  echo "     * help                   - this help"
+  echo "     * list-repo  instance    - list the repository of the Git instance"
+  echo ""
+
+}
+
+function git_mirror() {
+
+  git clone --mirror https://$GIT_USER:$GIT_PASSWORD@gogs.bytle.net/nickeau/algo $GIT_REPOS_PATH/algo2
+
+}
+
+function git_mirror_fetch() {
+
+  git -C $GIT_REPOS_PATH/algo2 fetch --all
+
+}
+
+######################################
+# Unmount the drive
+#####################################
+function unmount(){
+  fusermount -u $GIT_REPOS_PATH
+}
+
+######################################
+# Mount the drive
+#####################################
+function unmount(){
+  rclone mount git-backup:git-backup $GIT_REPOS_PATH --daemon
+}
+
+function set-env(){
+
+    # The instance is an unique name
+    # that identifies a Git Server instance
+    GIT_INSTANCE="${1^^}" # ^^ for uppercase
+
+    echo_log "Setting env for Git Instance: $GIT_INSTANCE"
+
+    # Target
+    GIT_PLATFORM_ENV_NAME="GIT_${GIT_INSTANCE}_PLATFORM"
+    if [ -z "${!GIT_PLATFORM_ENV_NAME+x}" ]; then
+      echo_err "Environment variable '$GIT_PLATFORM_ENV_NAME' does not exist."
+      exit 1
+    else
+      GIT_PLATFORM=${!GIT_PLATFORM_ENV_NAME}
+      echo_log "  * Platform: $GIT_PLATFORM"
+    fi
+
+    # Domain
+    GIT_DOMAIN_ENV_NAME="GIT_${GIT_INSTANCE}_DOMAIN"
+    if [ -z "${!GIT_DOMAIN_ENV_NAME+x}" ]; then
+      case ${GIT_PLATFORM} in
+        github)
+          GIT_DOMAIN="github.com"
+          ;;
+        *)
+          echo_err "Environment variable '$GIT_DOMAIN_ENV_NAME' does not exist."
+          exit 1
+          ;;
+        esac
+    else
+      GIT_DOMAIN=${!GIT_DOMAIN_ENV_NAME}
+    fi
+    echo_log "  * Domain: $GIT_DOMAIN"
+
+    # API Access Token
+    GIT_TOKEN_ENV_NAME="GIT_${GIT_INSTANCE}_TOKEN"
+    if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
+        unset GIT_TOKEN;
+        echo_log "  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
+      else
+        GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
+        echo_log "  * Api Token: Found"
+    fi;
+
+}
+
+######################################
+# List repo for a git provider
+#####################################
+function list-repo(){
+
+  set-env "$1"
+  case ${GIT_PLATFORM} in
+  gogs)
+    if [ -z "${GIT_TOKEN+x}" ]; then
+      echo_err "Git Token is mandatory to list repo for $GIT_PLATFORM"
+      exit 1
+    fi
+    URL_API="https://$GIT_DOMAIN/api/v1/user/repos"
+    echo_log "Requesting $URL_API"
+    curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq '[.[] | .html_url]'
+    ;;
+  *)
+    echo_err "The git platform $GIT_PLATFORM is not yet implemented"
+    exit 1
+    ;;
+  esac
+
+}
+
+COMMAND=""
+declare -a OPTIONS
+# Parsing
+for arg in "$@"; do
+  case "$arg" in
+  --*)
+    OPTIONS+=("$arg")
+    shift
+    ;;
+  *)
+    # Command or arg
+    if [ "$COMMAND" == "" ]; then
+        COMMAND=$1
+        echo_log "Command ($COMMAND) found"
+      else
+        echo_log "Argument ($arg) found"
+        ARGUMENTS+=("$arg")
+    fi
+    shift
+    ;;
+  esac
+done
+
+if [ -z "$COMMAND" ]; then
+  echo_log 'No command was given, help chosen.'
+  COMMAND='help'
+fi
+
+echo_log
+echo_log "${CLI_NAME^} ${COMMAND^}"
+echo_log "-------------------------------------------"
+echo_log ""
+case ${COMMAND} in
+help)
+  print_usage
+  ;;
+list-repo)
+  case "${#ARGUMENTS[@]}" in
+    "0")
+      echo_err "The git instance name is mandatory"
+      exit 1;
+      ;;
+    "1")
+       # Good
+       ;;
+    *)
+      echo_err "Too much argument. Only the git instance name should be given"
+      exit 1
+      ;;
+  esac
+
+  list-repo "${ARGUMENTS[@]}"
+  ;;
+*)
+  echo_err "The command $COMMAND is unknown"
+  print_usage
+  exit 1
+  ;;
+esac
