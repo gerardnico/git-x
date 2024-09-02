@@ -162,7 +162,11 @@ function unmount(){
 # Mount the drive
 #####################################
 function mount(){
-  rclone mount git-backup:git-backup $GIT_REPOS_PATH --daemon
+  # https://rclone.org/docs/#environment-variables
+  # export RCLONE_CONFIG_GIT_BACKUP_TYPE=s3
+  # export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=XXX
+  # export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=XXX
+  rclone mount git_backup:git-backup $GIT_REPOS_PATH --daemon
 }
 
 function set_env(){
