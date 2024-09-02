@@ -17,9 +17,10 @@ docker run \
   /bin/bash
 ```
 
-## Github
+## Github to s3 via Rclone
 
 ```bash
+cd ~/code/git-backup
 docker run \
   --name git-backup \
   --rm \
@@ -27,6 +28,11 @@ docker run \
   -v ./resources/git-backup:/opt/git-backup \
   -e GIT_GITHUB_PLATFORM=github \
   -e GIT_GITHUB_TOKEN=$GITHUB_TOKEN \
+  -e GIT_S3_PLATFORM=rclone \
+  -e GIT_S3_RCLONE_TYPE=s3 \
+  -e GIT_S3_RCLONE_SECRET_KEY=$GIT_BACKUP_SECRET_KEY \
+  -e GIT_S3_RCLONE_ACCESS_KEY=$GIT_BACKUP_ACCESS_KEY \
+  -e GIT_S3_RCLONE_BUCKET_NAME=git-backup \
   ghcr.io/gerardnico/git-backup:latest \
   /bin/bash
 ```

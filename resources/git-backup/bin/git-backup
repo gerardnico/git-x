@@ -1,4 +1,10 @@
 #!/bin/bash
+# flag
+# e - Exit if any error
+# u - Treat unset variables as an error when substituting
+# o pipefail - the return value of a pipeline is the status of the last command to exit with a non-zero status or zero if no command exited with a non-zero status
+# E - the ERR trap is inherited by shell functions
+set -Eeuo pipefail
 
 CLI_NAME=$(basename "$0") # Name of the cli
 
@@ -37,10 +43,10 @@ function getOptionValue() {
 }
 
 ######################################
-# Env
+# Global Env
 #####################################
-GIT_REPOS_PATH=/tmp/git-repos
-mkdir -p $GIT_REPOS_PATH
+GIT_RCLONE_MOUNTED_PATH=/tmp/git-repos
+mkdir -p $GIT_RCLONE_MOUNTED_PATH
 
 ######################################
 # Usage
@@ -103,7 +109,7 @@ function help_mirror() {
 
 function git_mirror_fetch() {
 
-  git -C $GIT_REPOS_PATH/algo fetch --all
+  git -C $GIT_RCLONE_MOUNTED_PATH/algo fetch --all
 
 }
 
@@ -111,27 +117,74 @@ function git_mirror_fetch() {
 # Unmount the drive
 #####################################
 function unmount(){
-  sudo fusermount -u $GIT_REPOS_PATH
+  sudo fusermount -u $GIT_RCLONE_MOUNTED_PATH
 }
 
 ######################################
 # Mount the drive
 #####################################
 function mount(){
+
+  local FUNCTION_NAME=mount
+  # Rclone S3
+  if [ "$GIT_PLATFORM" != "rclone" ]; then
+      echo_err "$FUNCTION_NAME: The git instance '$GIT_INSTANCE' is not a rclone platform but $GIT_PLATFORM"
+      exit 1
+  fi;
+
+  # Conf via env variables
   # https://rclone.org/docs/#environment-variables
-  # export RCLONE_CONFIG_GIT_BACKUP_TYPE=s3
-  # export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=XXX
-  # export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=XXX
-  rclone mount git_backup:git-backup $GIT_REPOS_PATH --daemon
+
+  RCLONE_TYPE_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_TYPE"
+  if [ -z "${!RCLONE_TYPE_ENV_NAME+x}" ]; then
+    echo_err "$FUNCTION_NAME: Environment variable '$RCLONE_TYPE_ENV_NAME' is mandatory for the platform $GIT_PLATFORM."
+    exit 1
+  else
+    # export RCLONE_CONFIG_GIT_BACKUP_TYPE=s3
+    export RCLONE_CONFIG_GIT_BACKUP_TYPE=${!RCLONE_TYPE_ENV_NAME}
+  fi;
+
+  if [ "$RCLONE_CONFIG_GIT_BACKUP_TYPE" != "s3" ]; then
+    echo_err "With the platform $GIT_PLATFORM, we support only s3 as type, not $RCLONE_CONFIG_GIT_BACKUP_TYPE"
+    exit 1
+  fi;
+
+  RCLONE_ACCESS_KEY_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_ACCESS_KEY"
+  if [ -z "${!RCLONE_ACCESS_KEY_ENV_NAME+x}" ]; then
+    echo_err "Environment variable '$RCLONE_ACCESS_KEY_ENV_NAME' is mandatory for rclone s3."
+    exit 1
+  else
+    # export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=XXX
+    export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=${!RCLONE_ACCESS_KEY_ENV_NAME}
+  fi;
+
+  RCLONE_SECRET_KEY_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_SECRET_KEY"
+  if [ -z "${!RCLONE_SECRET_KEY_ENV_NAME+x}" ]; then
+    echo_err "Environment variable '$RCLONE_SECRET_KEY_ENV_NAME' is mandatory for rclone s3."
+    exit 1
+  else
+    # export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=XXX
+    export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=${!RCLONE_SECRET_KEY_ENV_NAME}
+  fi;
+
+  RCLONE_BUCKET_NAME_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_BUCKET_NAME"
+  if [ -z "${!RCLONE_BUCKET_NAME_ENV_NAME+x}" ]; then
+      echo_err "Environment variable '$RCLONE_BUCKET_NAME_ENV_NAME' is mandatory for rclone s3."
+      exit 1
+  else
+    S3_BUCKET_NAME=${!RCLONE_BUCKET_NAME_ENV_NAME}
+  fi;
+
+  # git_backup is used in all RCONF variable ie `GIT_BACKUP` in `RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY`
+  # don't change it
+  rclone mount git_backup:"$S3_BUCKET_NAME" $GIT_RCLONE_MOUNTED_PATH --daemon
+
 }
 
 function set_env(){
 
     local FUNCTION_NAME="set-env"
 
-    # The instance is an unique name
-    # that identifies a Git Server instance
-    local GIT_INSTANCE
     local SILENT_OPTION=""
 
     # This for loop should have no echo
@@ -158,6 +211,12 @@ function set_env(){
         esac
     done
 
+    # The instance is an unique name
+    # that identifies a Git Server instance
+    if [ "$GIT_INSTANCE" == "" ]; then
+      echo_err "$FUNCTION_NAME: The first argument should be not empty with the git instance name"
+      exit 1;
+    fi
 
     [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Setting env for Git Instance: $GIT_INSTANCE"
 
@@ -178,9 +237,12 @@ function set_env(){
         github)
           GIT_DOMAIN="github.com"
           ;;
-        *)
-          echo_err "Environment variable '$GIT_DOMAIN_ENV_NAME' does not exist."
+        gogs)
+          echo_err "Environment variable '$GIT_DOMAIN_ENV_NAME' is mandatory for gogs"
           exit 1
+          ;;
+        *)
+          # Local registry does not have any domain
           ;;
         esac
     else
@@ -198,7 +260,9 @@ function set_env(){
         [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME:  * Api Token: Found"
     fi;
 
+
 }
+
 
 ######################################
 # List repo for a git provider
@@ -410,10 +474,17 @@ function mirror() {
   fi
 
   # Target
-#  if [ "$GIT_TARGET" == "" ]; then
-#    echo_err "$FUNCTION_NAME: A git target is excepted as second argument"
-#    exit 1;
-#  fi
+  if [ "$GIT_TARGET" == "" ]; then
+    echo_err "$FUNCTION_NAME: A git target is excepted as second argument"
+    exit 1;
+  fi
+
+  set_env "$GIT_TARGET"
+  GIT_PLATFORM_TARGET=$GIT_PLATFORM
+  if [ "$GIT_PLATFORM_TARGET" == "rclone" ]; then
+    echo_log "$FUNCTION_NAME: Mount rclone"
+    mount
+  fi
 
   # Get the Json as CSV and loop over it
   result=$(list_repo "$GIT_SOURCE" "--jq-expression=(.[] | [.full_name, .fork, .clone_url, .ssh_url]) | @csv" '--jq-raw-output' '--silent')
@@ -422,9 +493,14 @@ function mirror() {
     echo "FullName: $REPO_NAME, Fork: $REPO_FORK"
     echo "Clone URL: $REPO_CLONE_URL"
     echo "Ssh URL: $REPO_SSH_URL"
-    # git clone --mirror https://$GIT_USER:$GIT_PASSWORD@gogs.bytle.net/nickeau/algo $GIT_REPOS_PATH/algo2
-    # exit
+    # git clone --mirror https://$GIT_USER:$GIT_PASSWORD@gogs.bytle.net/nickeau/algo $GIT_RCLONE_MOUNTED_PATH/algo2
+    exit
   done
+
+  if [ "$GIT_PLATFORM_TARGET" == "rclone" ]; then
+    echo_log "$FUNCTION_NAME: Unmount rclone"
+    unmount
+  fi
 
 
 }
