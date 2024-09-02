@@ -23,6 +23,19 @@ function finish() {
 }
 trap finish EXIT
 
+# Retrieve the value of an option
+# ie with `--name=value`, this function will return `value`
+# usage: `maximumMemory=$(getOptionValue "$arg")`
+function getOptionValue() {
+  # Options
+  # shellcheck disable=SC2034
+  IFS='=' read -r key value <<<"${1:2}"
+  if [ "$value" == "" ]; then
+    value=true
+  fi
+  echo "$value"
+}
+
 ######################################
 # Env
 #####################################
@@ -32,7 +45,7 @@ mkdir -p $GIT_REPOS_PATH
 ######################################
 # Usage
 #####################################
-function print_usage() {
+function help() {
 
   echo ""
   echo "Usage of the cli ${CLI_NAME}"
@@ -42,6 +55,26 @@ function print_usage() {
   echo "where command is one of:"
   echo "     * help                   - this help"
   echo "     * list-repo  instance    - list the repository of the Git instance"
+  echo ""
+
+}
+
+function help_list_repo() {
+
+  echo ""
+  echo "Usage of the cli ${CLI_NAME}"
+  echo ""
+  echo "   ${CLI_NAME} list-repo git_instance [--silent] [--jq-raw-output] [--jq-expression] [--report=xxx]"
+  echo ""
+  echo "where:"
+  echo "     * git_instance     - the instance to read from"
+  echo "     * --silent         - will output only the result"
+  echo "     * --jq-raw-output  - will not output the output as json"
+  echo "     * --jq-expression  - the jq expression to parse the JSON API response"
+  echo "     * --report=value   - the name of a preconfigured report where the value may be:"
+  echo "                           * ls       - the repo fullname separated by the IFS character"
+  echo "                           * asis     - the full json"
+  echo "     * --help           - this help"
   echo ""
 
 }
@@ -74,11 +107,39 @@ function unmount(){
 
 function set-env(){
 
+    local FUNCTION_NAME="set-env"
+
     # The instance is an unique name
     # that identifies a Git Server instance
-    GIT_INSTANCE="${1^^}" # ^^ for uppercase
+    local GIT_INSTANCE
+    local SILENT_OPTION=""
 
-    echo_log "Setting env for Git Instance: $GIT_INSTANCE"
+    # This for loop should have no echo
+    # Why? We use this function to get the list of repo to handle
+    # We therefore need the raw output without any echo
+    for arg in "$@"; do
+        case "$arg" in
+        "")
+          # empty arg
+          ;;
+        "--silent")
+          SILENT_OPTION="--silent"
+          ;;
+        *)
+          # Command or arg
+          if [ "$GIT_INSTANCE" == "" ]; then
+              GIT_INSTANCE="${arg^^}" # ^^ for uppercase
+            else
+              echo_err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only one argument, the instance. ($arg) is the second argument"
+              exit 1;
+          fi
+          shift
+          ;;
+        esac
+    done
+
+
+    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Setting env for Git Instance: $GIT_INSTANCE"
 
     # Target
     GIT_PLATFORM_ENV_NAME="GIT_${GIT_INSTANCE}_PLATFORM"
@@ -87,7 +148,7 @@ function set-env(){
       exit 1
     else
       GIT_PLATFORM=${!GIT_PLATFORM_ENV_NAME}
-      echo_log "  * Platform: $GIT_PLATFORM"
+      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME:  * Platform: $GIT_PLATFORM"
     fi
 
     # Domain
@@ -105,16 +166,16 @@ function set-env(){
     else
       GIT_DOMAIN=${!GIT_DOMAIN_ENV_NAME}
     fi
-    echo_log "  * Domain: $GIT_DOMAIN"
+    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME:  * Domain: $GIT_DOMAIN"
 
     # API Access Token
     GIT_TOKEN_ENV_NAME="GIT_${GIT_INSTANCE}_TOKEN"
     if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
         unset GIT_TOKEN;
-        echo_log "  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
+        [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME:  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
       else
         GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
-        echo_log "  * Api Token: Found"
+        [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME:  * Api Token: Found"
     fi;
 
 }
@@ -124,16 +185,113 @@ function set-env(){
 #####################################
 function list-repo(){
 
-  set-env "$1"
+  local FUNCTION_NAME="List Repo"
+  local GIT_INSTANCE
+  # Report are default value for JQ expression
+  local REPORT
+  # The default Jq args are platform dependent
+  local JQ_EXPRESSION
+  local JQ_RAW_OUTPUT_OPTION
+  # By default, echo are added to the output
+  local SILENT_OPTION=""
+
+  # This for loop should have no echo
+  # Why? We use this function to get the list of repo to handle
+  # We therefore need the raw output without any echo
+  for arg in "$@"; do
+    case "$arg" in
+    "--silent")
+      SILENT_OPTION="--silent"
+      ;;
+    --jq=*)
+      JQ_EXPRESSION=$(getOptionValue "$arg")
+      shift
+      ;;
+    "--jq-raw-output"|"--jq-raw")
+      JQ_RAW_OUTPUT_OPTION="--raw-output"
+      shift
+      ;;
+    --report=*)
+      REPORT=$(getOptionValue "$arg")
+      shift
+      ;;
+    "--help"|"-h")
+      help_list_repo
+      exit
+      ;;
+    *)
+      # Command or arg
+      if [ "$GIT_INSTANCE" == "" ]; then
+          GIT_INSTANCE=$arg
+        else
+          echo_err "$FUNCTION_NAME: Too much argument found: list-repo except only one argument, the instance. ($arg) is the second argument"
+          exit 1;
+      fi
+      shift
+      ;;
+    esac
+  done
+
+
+  set-env "$GIT_INSTANCE" "$SILENT_OPTION"
+
   case ${GIT_PLATFORM} in
   gogs)
+
+    # Gogs
     if [ -z "${GIT_TOKEN+x}" ]; then
       echo_err "Git Token is mandatory to list repo for $GIT_PLATFORM"
       exit 1
     fi
+
+    # Report
+    # Report are default values
+    if [ "${REPORT}" == "" ]; then
+      REPORT="default"
+      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: No Report found, set to: $REPORT"
+    else
+      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Report: $REPORT"
+    fi
+
+    case ${REPORT} in
+      "ls")
+        JQ_EXPRESSION_REPORT="map(.full_name) | join(\"$IFS\")"
+        JQ_RAW_OUTPUT_OPTION="--raw-output"
+        ;;
+      "asis")
+        JQ_EXPRESSION_REPORT='.'
+        JQ_RAW_OUTPUT_REPORT_OPTION=""
+        ;;
+      "default")
+        JQ_EXPRESSION_REPORT='[.[] | .full_name]'
+        JQ_RAW_OUTPUT_REPORT_OPTION=""
+        ;;
+      *)
+        echo_err "$FUNCTION_NAME: The report ($REPORT) is unknown"
+        exit 1;
+      ;;
+    esac
+
+    # Jq arguments
+    if [ "${JQ_EXPRESSION}" == "" ]; then
+        JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
+    fi
+    [ "$SILENT" != true ] && echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
+    if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
+        JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
+    fi
+    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
+
+    # URL AI
     URL_API="https://$GIT_DOMAIN/api/v1/user/repos"
-    echo_log "Requesting $URL_API"
-    curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq '[.[] | .html_url]'
+    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Requesting $URL_API"
+
+    # Execute
+    [ "$SILENT_OPTION" == "" ] && echo ""
+    # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
+    # shellcheck disable=SC2086
+    curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
+    [ "$SILENT_OPTION" == "" ] && echo ""
     ;;
   *)
     echo_err "The git platform $GIT_PLATFORM is not yet implemented"
@@ -144,21 +302,25 @@ function list-repo(){
 }
 
 COMMAND=""
-declare -a OPTIONS
-# Parsing
+
+# Parsing only the command
+# Options are command related and are parsed
+# in each function
 for arg in "$@"; do
   case "$arg" in
   --*)
-    OPTIONS+=("$arg")
+    ARGUMENTS+=("$arg")
+    shift
+    ;;
+  -*)
+    ARGUMENTS+=("$arg")
     shift
     ;;
   *)
     # Command or arg
     if [ "$COMMAND" == "" ]; then
         COMMAND=$1
-        echo_log "Command ($COMMAND) found"
       else
-        echo_log "Argument ($arg) found"
         ARGUMENTS+=("$arg")
     fi
     shift
@@ -177,28 +339,14 @@ echo_log "-------------------------------------------"
 echo_log ""
 case ${COMMAND} in
 help)
-  print_usage
+  help
   ;;
 list-repo)
-  case "${#ARGUMENTS[@]}" in
-    "0")
-      echo_err "The git instance name is mandatory"
-      exit 1;
-      ;;
-    "1")
-       # Good
-       ;;
-    *)
-      echo_err "Too much argument. Only the git instance name should be given"
-      exit 1
-      ;;
-  esac
-
   list-repo "${ARGUMENTS[@]}"
   ;;
 *)
   echo_err "The command $COMMAND is unknown"
-  print_usage
+  help
   exit 1
   ;;
 esac
