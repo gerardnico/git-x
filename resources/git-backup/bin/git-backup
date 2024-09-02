@@ -53,21 +53,27 @@ function help() {
   echo "   ${CLI_NAME} command [argument ...] [--option[=value] ...]"
   echo ""
   echo "where command is one of:"
-  echo "     * help                   - this help"
-  echo "     * list-repo  instance    - list the repository of the Git instance"
+  echo "     * help       - this help"
+  echo "     * list-repo  - list the repositories of a Git instance"
+  echo ""
+  echo ""
+  echo "To get the help on one command"
+  echo ""
+  echo "   ${CLI_NAME} command --help"
   echo ""
 
 }
 
 function help_list_repo() {
 
+  FUNCTION_NAME="list-repo"
   echo ""
-  echo "Usage of the cli ${CLI_NAME}"
+  echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
   echo ""
-  echo "   ${CLI_NAME} list-repo git_instance [--silent] [--jq-raw-output] [--jq-expression] [--report=xxx]"
+  echo "   ${CLI_NAME} $FUNCTION_NAME git_registry [--silent] [--jq-raw-output] [--jq-expression] [--report=xxx]"
   echo ""
   echo "where:"
-  echo "     * git_instance     - the instance to read from"
+  echo "     * git_registry     - the registry name to read from"
   echo "     * --silent         - will output only the result"
   echo "     * --jq-raw-output  - will not output the output as json"
   echo "     * --jq-expression  - the jq expression to parse the JSON API response"
@@ -78,8 +84,62 @@ function help_list_repo() {
   echo ""
 
 }
+function help_mirror() {
 
-function git_mirror() {
+  FUNCTION_NAME="mirror"
+    echo ""
+    echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
+    echo ""
+    echo "   ${CLI_NAME} $FUNCTION_NAME source target [--silent]"
+    echo ""
+    echo "where:"
+    echo "     * source     - a git registry name to read from"
+    echo "     * target     - a git registry name to write to"
+
+}
+
+function mirror() {
+
+  local FUNCTION_NAME="mirror"
+  local GIT_SOURCE
+  local GIT_TARGET
+  for arg in "$@"; do
+      case "$arg" in
+        "--help"|"-h")
+          help_mirror
+          exit;
+         ;;
+        *)
+          if [ "$GIT_SOURCE" == "" ]; then
+              GIT_SOURCE="${arg^^}" # ^^ for uppercase
+          elif [ "$GIT_TARGET" == "" ]; then
+              GIT_TARGET="${arg^^}" # ^^ for uppercase
+          else
+              echo_err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only 2 arguments, the source and the target. ($arg) is the third argument"
+              exit 1;
+          fi
+          shift
+          ;;
+      esac
+  done
+
+  # Source
+  if [ "$GIT_SOURCE" == "" ]; then
+    echo_err "$FUNCTION_NAME: A git source is excepted as first argument"
+    exit 1;
+  fi
+
+  # Target
+  if [ "$GIT_TARGET" == "" ]; then
+    echo_err "$FUNCTION_NAME: A git target is excepted as second argument"
+    exit 1;
+  fi
+
+  set_env "$GIT_TARGET"
+
+
+
+
 
   git clone --mirror https://$GIT_USER:$GIT_PASSWORD@gogs.bytle.net/nickeau/algo $GIT_REPOS_PATH/algo2
 
@@ -87,7 +147,7 @@ function git_mirror() {
 
 function git_mirror_fetch() {
 
-  git -C $GIT_REPOS_PATH/algo2 fetch --all
+  git -C $GIT_REPOS_PATH/algo fetch --all
 
 }
 
@@ -95,17 +155,17 @@ function git_mirror_fetch() {
 # Unmount the drive
 #####################################
 function unmount(){
-  fusermount -u $GIT_REPOS_PATH
+  sudo fusermount -u $GIT_REPOS_PATH
 }
 
 ######################################
 # Mount the drive
 #####################################
-function unmount(){
+function mount(){
   rclone mount git-backup:git-backup $GIT_REPOS_PATH --daemon
 }
 
-function set-env(){
+function set_env(){
 
     local FUNCTION_NAME="set-env"
 
@@ -183,7 +243,7 @@ function set-env(){
 ######################################
 # List repo for a git provider
 #####################################
-function list-repo(){
+function list_repo(){
 
   local FUNCTION_NAME="List Repo"
   local GIT_INSTANCE
@@ -233,7 +293,7 @@ function list-repo(){
   done
 
 
-  set-env "$GIT_INSTANCE" "$SILENT_OPTION"
+  set_env "$GIT_INSTANCE" "$SILENT_OPTION"
 
   case ${GIT_PLATFORM} in
   gogs)
@@ -306,13 +366,13 @@ COMMAND=""
 # Parsing only the command
 # Options are command related and are parsed
 # in each function
+SILENT_OPTION=""
 for arg in "$@"; do
   case "$arg" in
-  --*)
-    ARGUMENTS+=("$arg")
-    shift
+  --silent|s)
+    SILENT_OPTION="--silent"
     ;;
-  -*)
+  --*|-*)
     ARGUMENTS+=("$arg")
     shift
     ;;
@@ -329,20 +389,23 @@ for arg in "$@"; do
 done
 
 if [ -z "$COMMAND" ]; then
-  echo_log 'No command was given, help chosen.'
+  [ "$SILENT_OPTION" == "" ] && echo_log 'No command was given, help chosen.'
   COMMAND='help'
 fi
 
-echo_log
-echo_log "${CLI_NAME^} ${COMMAND^}"
-echo_log "-------------------------------------------"
-echo_log ""
+[ "$SILENT_OPTION" == "" ] && echo_log
+[ "$SILENT_OPTION" == "" ] && echo_log "${CLI_NAME^} ${COMMAND^}"
+[ "$SILENT_OPTION" == "" ] && echo_log "-------------------------------------------"
+[ "$SILENT_OPTION" == "" ] && echo_log ""
 case ${COMMAND} in
 help)
   help
   ;;
 list-repo)
-  list-repo "${ARGUMENTS[@]}"
+  list_repo "${ARGUMENTS[@]}"
+  ;;
+mirror)
+  mirror "${ARGUMENTS[@]}"
   ;;
 *)
   echo_err "The command $COMMAND is unknown"
