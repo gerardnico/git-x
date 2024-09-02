@@ -137,10 +137,6 @@ function mirror() {
 
   set_env "$GIT_TARGET"
 
-
-
-
-
   git clone --mirror https://$GIT_USER:$GIT_PASSWORD@gogs.bytle.net/nickeau/algo $GIT_REPOS_PATH/algo2
 
 }
