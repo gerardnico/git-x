@@ -73,13 +73,14 @@ function help_list_repo() {
   echo "   ${CLI_NAME} $FUNCTION_NAME git_registry [--silent] [--jq-raw-output] [--jq-expression] [--report=xxx]"
   echo ""
   echo "where:"
-  echo "     * git_registry     - the registry name to read from"
-  echo "     * --silent         - will output only the result"
-  echo "     * --jq-raw-output  - will not output the output as json"
-  echo "     * --jq-expression  - the jq expression to parse the JSON API response"
-  echo "     * --report=value   - the name of a preconfigured report where the value may be:"
-  echo "                           * ls       - the repo fullname separated by the IFS character"
-  echo "                           * asis     - the full json"
+  echo "     * git_registry            - the git registry name to read from"
+  echo "     * --silent                - a boolean option that will output only the result"
+  echo "     * --jq-raw-output         - a boolean option that will not output the output as json"
+  echo "     * --jq-expression='xxxx'  - the jq expression to parse the JSON API response"
+  echo "     * --report=value          - the name of a preconfigured report where the value may be:"
+  echo "                                     * ls       - the repo fullname separated by the IFS character"
+  echo "                                     * asis     - the full json"
+  echo "                                     * csv      - a csv"
   echo "     * --help           - this help"
   echo ""
 
@@ -98,48 +99,7 @@ function help_mirror() {
 
 }
 
-function mirror() {
 
-  local FUNCTION_NAME="mirror"
-  local GIT_SOURCE
-  local GIT_TARGET
-  for arg in "$@"; do
-      case "$arg" in
-        "--help"|"-h")
-          help_mirror
-          exit;
-         ;;
-        *)
-          if [ "$GIT_SOURCE" == "" ]; then
-              GIT_SOURCE="${arg^^}" # ^^ for uppercase
-          elif [ "$GIT_TARGET" == "" ]; then
-              GIT_TARGET="${arg^^}" # ^^ for uppercase
-          else
-              echo_err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only 2 arguments, the source and the target. ($arg) is the third argument"
-              exit 1;
-          fi
-          shift
-          ;;
-      esac
-  done
-
-  # Source
-  if [ "$GIT_SOURCE" == "" ]; then
-    echo_err "$FUNCTION_NAME: A git source is excepted as first argument"
-    exit 1;
-  fi
-
-  # Target
-  if [ "$GIT_TARGET" == "" ]; then
-    echo_err "$FUNCTION_NAME: A git target is excepted as second argument"
-    exit 1;
-  fi
-
-  set_env "$GIT_TARGET"
-
-  git clone --mirror https://$GIT_USER:$GIT_PASSWORD@gogs.bytle.net/nickeau/algo $GIT_REPOS_PATH/algo2
-
-}
 
 function git_mirror_fetch() {
 
@@ -263,7 +223,7 @@ function list_repo(){
     "--silent")
       SILENT_OPTION="--silent"
       ;;
-    --jq=*)
+    --jq-expression=*)
       JQ_EXPRESSION=$(getOptionValue "$arg")
       shift
       ;;
@@ -295,22 +255,23 @@ function list_repo(){
 
   set_env "$GIT_INSTANCE" "$SILENT_OPTION"
 
+
+  # Report
+  # Report are default values
+  if [ "${REPORT}" == "" ]; then
+    REPORT="default"
+    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: No Report found, set to: $REPORT"
+  else
+    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Report: $REPORT"
+  fi
+
   case ${GIT_PLATFORM} in
   gogs)
 
-    # Gogs
+    # Auth Token
     if [ -z "${GIT_TOKEN+x}" ]; then
       echo_err "Git Token is mandatory to list repo for $GIT_PLATFORM"
       exit 1
-    fi
-
-    # Report
-    # Report are default values
-    if [ "${REPORT}" == "" ]; then
-      REPORT="default"
-      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: No Report found, set to: $REPORT"
-    else
-      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Report: $REPORT"
     fi
 
     case ${REPORT} in
@@ -326,6 +287,10 @@ function list_repo(){
         JQ_EXPRESSION_REPORT='[.[] | .full_name]'
         JQ_RAW_OUTPUT_REPORT_OPTION=""
         ;;
+      "csv")
+        JQ_EXPRESSION_REPORT='["full_name", "fork"], (.[] | [.full_name, .fork]) | @csv'
+        JQ_RAW_OUTPUT_OPTION="--raw-output"
+        ;;
       *)
         echo_err "$FUNCTION_NAME: The report ($REPORT) is unknown"
         exit 1;
@@ -336,7 +301,7 @@ function list_repo(){
     if [ "${JQ_EXPRESSION}" == "" ]; then
         JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
     fi
-    [ "$SILENT" != true ] && echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
+    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
     if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
         JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
     fi
@@ -353,6 +318,58 @@ function list_repo(){
     curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
     [ "$SILENT_OPTION" == "" ] && echo ""
     ;;
+  github)
+
+      # Auth Token
+      if [ -z "${GIT_TOKEN+x}" ]; then
+        echo_err "Git Token is mandatory to list repo for $GIT_PLATFORM"
+        exit 1
+      fi
+
+      case ${REPORT} in
+        "ls")
+          JQ_EXPRESSION_REPORT="map(.full_name) | join(\"$IFS\")"
+          JQ_RAW_OUTPUT_OPTION="--raw-output"
+          ;;
+        "asis")
+          JQ_EXPRESSION_REPORT='.'
+          JQ_RAW_OUTPUT_REPORT_OPTION=""
+          ;;
+        "default")
+          JQ_EXPRESSION_REPORT='[.[] | .full_name]'
+          JQ_RAW_OUTPUT_REPORT_OPTION=""
+          ;;
+        "csv")
+          JQ_EXPRESSION_REPORT='["full_name", "fork", "clone_url"], (.[] | [.full_name, .fork, .clone_url]) | @csv'
+          JQ_RAW_OUTPUT_OPTION="--raw-output"
+          ;;
+        *)
+          echo_err "$FUNCTION_NAME: The report ($REPORT) is unknown"
+          exit 1;
+        ;;
+      esac
+
+      # Jq arguments
+      if [ "${JQ_EXPRESSION}" == "" ]; then
+          JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
+      fi
+      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
+      if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
+          JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
+      fi
+      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
+
+      # URL AI
+      URL_API="https://api.github.com/user/repos"
+      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Requesting $URL_API"
+
+      # Execute
+      [ "$SILENT_OPTION" == "" ] && echo ""
+      # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
+      # shellcheck disable=SC2086
+      curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
+      [ "$SILENT_OPTION" == "" ] && echo ""
+      ;;
   *)
     echo_err "The git platform $GIT_PLATFORM is not yet implemented"
     exit 1
@@ -360,6 +377,58 @@ function list_repo(){
   esac
 
 }
+
+function mirror() {
+
+  local FUNCTION_NAME="mirror"
+  local GIT_SOURCE
+  local GIT_TARGET
+  for arg in "$@"; do
+      case "$arg" in
+        "--help"|"-h")
+          help_mirror
+          exit;
+         ;;
+        *)
+          if [ "$GIT_SOURCE" == "" ]; then
+              GIT_SOURCE="${arg^^}" # ^^ for uppercase
+          elif [ "$GIT_TARGET" == "" ]; then
+              GIT_TARGET="${arg^^}" # ^^ for uppercase
+          else
+              echo_err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only 2 arguments, the source and the target. ($arg) is the third argument"
+              exit 1;
+          fi
+          shift
+          ;;
+      esac
+  done
+
+  # Source
+  if [ "$GIT_SOURCE" == "" ]; then
+    echo_err "$FUNCTION_NAME: A git source is excepted as first argument"
+    exit 1;
+  fi
+
+  # Target
+#  if [ "$GIT_TARGET" == "" ]; then
+#    echo_err "$FUNCTION_NAME: A git target is excepted as second argument"
+#    exit 1;
+#  fi
+
+  # Get the Json as CSV and loop over it
+  result=$(list_repo "$GIT_SOURCE" "--jq-expression=(.[] | [.full_name, .fork, .clone_url, .ssh_url]) | @csv" '--jq-raw-output' '--silent')
+  echo "$result" | while IFS=',' read -r REPO_NAME REPO_FORK REPO_CLONE_URL REPO_SSH_URL; do
+    REPO_NAME=$(echo "$REPO_NAME" | tr -d '"')
+    echo "FullName: $REPO_NAME, Fork: $REPO_FORK"
+    echo "Clone URL: $REPO_CLONE_URL"
+    echo "Ssh URL: $REPO_SSH_URL"
+    # git clone --mirror https://$GIT_USER:$GIT_PASSWORD@gogs.bytle.net/nickeau/algo $GIT_REPOS_PATH/algo2
+    # exit
+  done
+
+
+}
+
 
 COMMAND=""
 
