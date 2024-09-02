@@ -117,7 +117,13 @@ function git_mirror_fetch() {
 # Unmount the drive
 #####################################
 function unmount(){
-  sudo fusermount -u $GIT_RCLONE_MOUNTED_PATH
+
+  umount $GIT_RCLONE_MOUNTED_PATH
+
+  # Fusermount does not exist on alpine
+  # Otherwise it would have been:
+  # fusermount -u $GIT_RCLONE_MOUNTED_PATH
+
 }
 
 ######################################
@@ -134,7 +140,7 @@ function mount(){
 
   # Conf via env variables
   # https://rclone.org/docs/#environment-variables
-
+  echo_log "$FUNCTION_NAME: Set Rclone Conf"
   RCLONE_TYPE_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_TYPE"
   if [ -z "${!RCLONE_TYPE_ENV_NAME+x}" ]; then
     echo_err "$FUNCTION_NAME: Environment variable '$RCLONE_TYPE_ENV_NAME' is mandatory for the platform $GIT_PLATFORM."
@@ -142,6 +148,7 @@ function mount(){
   else
     # export RCLONE_CONFIG_GIT_BACKUP_TYPE=s3
     export RCLONE_CONFIG_GIT_BACKUP_TYPE=${!RCLONE_TYPE_ENV_NAME}
+    echo_log "$FUNCTION_NAME:   * Rclone Type: $RCLONE_CONFIG_GIT_BACKUP_TYPE"
   fi;
 
   if [ "$RCLONE_CONFIG_GIT_BACKUP_TYPE" != "s3" ]; then
@@ -149,6 +156,27 @@ function mount(){
     exit 1
   fi;
 
+  # Provider Property
+  RCLONE_PROVIDER_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_PROVIDER"
+  if [ -z "${!RCLONE_PROVIDER_ENV_NAME+x}" ]; then
+    echo_log "$FUNCTION_NAME:   * Rclone Provider: not set"
+    exit 1
+  else
+    export RCLONE_CONFIG_GIT_BACKUP_PROVIDER=${!RCLONE_PROVIDER_ENV_NAME}
+    echo_log "$FUNCTION_NAME:   * Rclone Provider: $RCLONE_CONFIG_GIT_BACKUP_PROVIDER"
+  fi;
+
+  # Endpoint Property
+  RCLONE_ENDPOINT_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_ENDPOINT"
+  if [ -z "${!RCLONE_ENDPOINT_ENV_NAME+x}" ]; then
+    echo_log "$FUNCTION_NAME:   * Rclone EndPoint: not set"
+    exit 1
+  else
+    export RCLONE_CONFIG_GIT_BACKUP_ENDPOINT=${!RCLONE_ENDPOINT_ENV_NAME}
+    echo_log "$FUNCTION_NAME:   * Rclone EndPoint: $RCLONE_CONFIG_GIT_BACKUP_ENDPOINT"
+  fi;
+
+  # Access Key Property
   RCLONE_ACCESS_KEY_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_ACCESS_KEY"
   if [ -z "${!RCLONE_ACCESS_KEY_ENV_NAME+x}" ]; then
     echo_err "Environment variable '$RCLONE_ACCESS_KEY_ENV_NAME' is mandatory for rclone s3."
@@ -156,8 +184,10 @@ function mount(){
   else
     # export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=XXX
     export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=${!RCLONE_ACCESS_KEY_ENV_NAME}
+    echo_log "$FUNCTION_NAME:   * Rclone AccessKey: xxxx"
   fi;
 
+  # Secret Key Property
   RCLONE_SECRET_KEY_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_SECRET_KEY"
   if [ -z "${!RCLONE_SECRET_KEY_ENV_NAME+x}" ]; then
     echo_err "Environment variable '$RCLONE_SECRET_KEY_ENV_NAME' is mandatory for rclone s3."
@@ -165,19 +195,28 @@ function mount(){
   else
     # export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=XXX
     export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=${!RCLONE_SECRET_KEY_ENV_NAME}
+    echo_log "$FUNCTION_NAME:   * Rclone SecretKey: xxxx"
   fi;
 
+  # Bucket Name
   RCLONE_BUCKET_NAME_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_BUCKET_NAME"
   if [ -z "${!RCLONE_BUCKET_NAME_ENV_NAME+x}" ]; then
       echo_err "Environment variable '$RCLONE_BUCKET_NAME_ENV_NAME' is mandatory for rclone s3."
       exit 1
   else
     S3_BUCKET_NAME=${!RCLONE_BUCKET_NAME_ENV_NAME}
+    echo_log "$FUNCTION_NAME:   * Rclone Bucket Name: $S3_BUCKET_NAME"
   fi;
 
   # git_backup is used in all RCONF variable ie `GIT_BACKUP` in `RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY`
   # don't change it
-  rclone mount git_backup:"$S3_BUCKET_NAME" $GIT_RCLONE_MOUNTED_PATH --daemon
+  echo_log "$FUNCTION_NAME: Trying to mount Rclone $GIT_INSTANCE (add --debug as arg if it fail)"
+  if [ "$DEBUG" != "" ]; then
+    rclone mount git_backup:"$S3_BUCKET_NAME" $GIT_RCLONE_MOUNTED_PATH
+  else
+    rclone mount git_backup:"$S3_BUCKET_NAME" $GIT_RCLONE_MOUNTED_PATH --daemon
+  fi
+  echo_log "$FUNCTION_NAME: Rclone $GIT_INSTANCE mounted at $GIT_RCLONE_MOUNTED_PATH"
 
 }
 
@@ -186,6 +225,10 @@ function set_env(){
     local FUNCTION_NAME="set-env"
 
     local SILENT_OPTION=""
+
+    # The instance is an unique name
+    # that identifies a Git Server instance
+    GIT_INSTANCE=""
 
     # This for loop should have no echo
     # Why? We use this function to get the list of repo to handle
@@ -211,14 +254,12 @@ function set_env(){
         esac
     done
 
-    # The instance is an unique name
-    # that identifies a Git Server instance
     if [ "$GIT_INSTANCE" == "" ]; then
       echo_err "$FUNCTION_NAME: The first argument should be not empty with the git instance name"
       exit 1;
     fi
 
-    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Setting env for Git Instance: $GIT_INSTANCE"
+    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Setting env for Git Instance: $GIT_INSTANCE"; fi;
 
     # Target
     GIT_PLATFORM_ENV_NAME="GIT_${GIT_INSTANCE}_PLATFORM"
@@ -227,10 +268,11 @@ function set_env(){
       exit 1
     else
       GIT_PLATFORM=${!GIT_PLATFORM_ENV_NAME}
-      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME:  * Platform: $GIT_PLATFORM"
+      if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME:  * Platform: $GIT_PLATFORM"; fi;
     fi
 
     # Domain
+    GIT_DOMAIN=""
     GIT_DOMAIN_ENV_NAME="GIT_${GIT_INSTANCE}_DOMAIN"
     if [ -z "${!GIT_DOMAIN_ENV_NAME+x}" ]; then
       case ${GIT_PLATFORM} in
@@ -248,18 +290,17 @@ function set_env(){
     else
       GIT_DOMAIN=${!GIT_DOMAIN_ENV_NAME}
     fi
-    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME:  * Domain: $GIT_DOMAIN"
+    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME:  * Domain: $GIT_DOMAIN"; fi;
 
     # API Access Token
     GIT_TOKEN_ENV_NAME="GIT_${GIT_INSTANCE}_TOKEN"
     if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
         unset GIT_TOKEN;
-        [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME:  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
+        if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME:  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"; fi;
       else
         GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
-        [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME:  * Api Token: Found"
+        if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME:  * Api Token: Found"; fi;
     fi;
-
 
 }
 
@@ -270,12 +311,12 @@ function set_env(){
 function list_repo(){
 
   local FUNCTION_NAME="List Repo"
-  local GIT_INSTANCE
+  local GIT_INSTANCE=""
   # Report are default value for JQ expression
-  local REPORT
+  local REPORT=""
   # The default Jq args are platform dependent
-  local JQ_EXPRESSION
-  local JQ_RAW_OUTPUT_OPTION
+  local JQ_EXPRESSION=""
+  local JQ_RAW_OUTPUT_OPTION=""
   # By default, echo are added to the output
   local SILENT_OPTION=""
 
@@ -316,17 +357,15 @@ function list_repo(){
     esac
   done
 
-
   set_env "$GIT_INSTANCE" "$SILENT_OPTION"
-
 
   # Report
   # Report are default values
   if [ "${REPORT}" == "" ]; then
     REPORT="default"
-    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: No Report found, set to: $REPORT"
+    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: No Report found, set to: $REPORT"; fi;
   else
-    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Report: $REPORT"
+    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Report: $REPORT"; fi;
   fi
 
   case ${GIT_PLATFORM} in
@@ -365,22 +404,22 @@ function list_repo(){
     if [ "${JQ_EXPRESSION}" == "" ]; then
         JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
     fi
-    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
+    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"; fi;
     if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
         JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
     fi
-    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
+    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"; fi;
 
     # URL AI
     URL_API="https://$GIT_DOMAIN/api/v1/user/repos"
-    [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Requesting $URL_API"
+    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Requesting $URL_API"; fi;
 
     # Execute
-    [ "$SILENT_OPTION" == "" ] && echo ""
+    if [ "$SILENT_OPTION" == "" ]; then echo ""; fi;
     # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
     # shellcheck disable=SC2086
     curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
-    [ "$SILENT_OPTION" == "" ] && echo ""
+    if [ "$SILENT_OPTION" == "" ]; then echo ""; fi;
     ;;
   github)
 
@@ -417,22 +456,22 @@ function list_repo(){
       if [ "${JQ_EXPRESSION}" == "" ]; then
           JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
       fi
-      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
+      if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"; fi;
       if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
           JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
       fi
-      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
+      if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"; fi;
 
       # URL AI
       URL_API="https://api.github.com/user/repos"
-      [ "$SILENT_OPTION" == "" ] && echo_log "$FUNCTION_NAME: Requesting $URL_API"
+      if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Requesting $URL_API"; fi;
 
       # Execute
-      [ "$SILENT_OPTION" == "" ] && echo ""
+      if [ "$SILENT_OPTION" == "" ]; then echo ""; fi;
       # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
       # shellcheck disable=SC2086
       curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
-      [ "$SILENT_OPTION" == "" ] && echo ""
+      if [ "$SILENT_OPTION" == "" ]; then echo ""; fi;
       ;;
   *)
     echo_err "The git platform $GIT_PLATFORM is not yet implemented"
@@ -445,8 +484,8 @@ function list_repo(){
 function mirror() {
 
   local FUNCTION_NAME="mirror"
-  local GIT_SOURCE
-  local GIT_TARGET
+  local GIT_SOURCE=""
+  local GIT_TARGET=""
   for arg in "$@"; do
       case "$arg" in
         "--help"|"-h")
@@ -487,6 +526,7 @@ function mirror() {
   fi
 
   # Get the Json as CSV and loop over it
+  echo_log "$FUNCTION_NAME: Looping over the repo of the registry $GIT_SOURCE"
   result=$(list_repo "$GIT_SOURCE" "--jq-expression=(.[] | [.full_name, .fork, .clone_url, .ssh_url]) | @csv" '--jq-raw-output' '--silent')
   echo "$result" | while IFS=',' read -r REPO_NAME REPO_FORK REPO_CLONE_URL REPO_SSH_URL; do
     REPO_NAME=$(echo "$REPO_NAME" | tr -d '"')
@@ -494,7 +534,7 @@ function mirror() {
     echo "Clone URL: $REPO_CLONE_URL"
     echo "Ssh URL: $REPO_SSH_URL"
     # git clone --mirror https://$GIT_USER:$GIT_PASSWORD@gogs.bytle.net/nickeau/algo $GIT_RCLONE_MOUNTED_PATH/algo2
-    exit
+    break
   done
 
   if [ "$GIT_PLATFORM_TARGET" == "rclone" ]; then
@@ -512,8 +552,12 @@ COMMAND=""
 # Options are command related and are parsed
 # in each function
 SILENT_OPTION=""
+DEBUG=""
 for arg in "$@"; do
   case "$arg" in
+  --debug)
+    DEBUG=true
+    ;;
   --silent|s)
     SILENT_OPTION="--silent"
     ;;
@@ -534,14 +578,14 @@ for arg in "$@"; do
 done
 
 if [ -z "$COMMAND" ]; then
-  [ "$SILENT_OPTION" == "" ] && echo_log 'No command was given, help chosen.'
+  if [ "$SILENT_OPTION" == "" ]; then echo_log 'No command was given, help chosen.'; fi;
   COMMAND='help'
 fi
 
-[ "$SILENT_OPTION" == "" ] && echo_log
-[ "$SILENT_OPTION" == "" ] && echo_log "${CLI_NAME^} ${COMMAND^}"
-[ "$SILENT_OPTION" == "" ] && echo_log "-------------------------------------------"
-[ "$SILENT_OPTION" == "" ] && echo_log ""
+if [ "$SILENT_OPTION" == "" ]; then echo_log; fi;
+if [ "$SILENT_OPTION" == "" ]; then echo_log "${CLI_NAME^} ${COMMAND^}"; fi;
+if [ "$SILENT_OPTION" == "" ]; then echo_log "-------------------------------------------"; fi;
+if [ "$SILENT_OPTION" == "" ]; then echo_log ""; fi;
 case ${COMMAND} in
 help)
   help
