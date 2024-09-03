@@ -56,11 +56,6 @@ function getOptionValue() {
   echo "$value"
 }
 
-######################################
-# Global Env
-#####################################
-RCLONE_MOUNTED_PATH=/tmp/rclone
-mkdir -p $RCLONE_MOUNTED_PATH
 
 ######################################
 # Usage
@@ -74,12 +69,32 @@ function help() {
   echo ""
   echo "where command is one of:"
   echo "     * help       - this help"
-  echo "     * list-repo  - list the repositories of a Git instance"
+  echo "     * list-repo  - list the repositories of a Git registry"
+  echo "     * backup     - backup the repositories of a Git registry"
+  echo "     * mount      - mount a rclone Git registry "
   echo ""
   echo ""
   echo "To get the help on one command"
   echo ""
   echo "   ${CLI_NAME} command --help"
+  echo ""
+
+}
+
+function help_mount() {
+
+  FUNCTION_NAME="mount"
+  echo ""
+  echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
+  echo ""
+  echo "   ${CLI_NAME} $FUNCTION_NAME git_registry [--silent] [--unmount] [--daemon]"
+  echo ""
+  echo "where:"
+  echo "     * git_registry            - the git registry name to read from"
+  echo "     * --silent                - a boolean option that will output only the result"
+  echo "     * --unmount               - unmount"
+  echo "     * --daemon                - put rclone process in the background"
+  echo "     * --help                  - this help"
   echo ""
 
 }
@@ -106,9 +121,10 @@ function help_list_repo() {
   echo ""
 
 }
-function help_mirror() {
 
-  FUNCTION_NAME="mirror"
+function help_backup() {
+
+  FUNCTION_NAME="backup"
     echo ""
     echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
     echo ""
@@ -124,34 +140,77 @@ function help_mirror() {
 
 
 ######################################
-# Unmount the drive
-#####################################
-function unmount(){
-
-  umount $RCLONE_MOUNTED_PATH
-
-  # Fusermount does not exist on alpine
-  # Otherwise it would have been:
-  # fusermount -u $RCLONE_MOUNTED_PATH
-
-}
-
-######################################
-# Mount the drive
+# Mount/unmount a rclone destination
 #####################################
 function mount(){
 
+  local RCLONE_MOUNTED_PATH=/tmp/rclone
+  mkdir -p $RCLONE_MOUNTED_PATH
+
   local FUNCTION_NAME=mount
+  local SILENT_OPTION=""
+  local GIT_REGISTRY=""
+  local FUSE_ACTION="mount"
+  local RCLONE_PROCESS_MODE="inline"
+  for arg in "$@"; do
+          case "$arg" in
+          "--silent"|"-s")
+            SILENT_OPTION="silent"
+            ;;
+          "--unmount")
+            FUSE_ACTION="unmount"
+            ;;
+          "--daemon")
+            RCLONE_PROCESS_MODE="daemon"
+            ;;
+          "")
+            # empty arg
+          ;;
+          "--help"|"-h")
+            help_mount
+            exit
+          ;;
+          *)
+            if [ "$GIT_REGISTRY" == "" ]; then
+                GIT_REGISTRY="$arg"
+              else
+                echo_err "$FUNCTION_NAME: Only one argument is supported. ($arg) is the second argument"
+                exit 1
+            fi
+            ;;
+          esac
+  done
+
+  # Unmount
+  if [ "$FUSE_ACTION" == "unmount" ]; then
+
+    echo_log "$FUNCTION_NAME: Unmounting $RCLONE_MOUNTED_PATH"
+    # Force
+    umount --force $RCLONE_MOUNTED_PATH
+
+    # Fusermount does not exist on alpine
+    # Otherwise it would have been:
+    # fusermount -u $RCLONE_MOUNTED_PATH
+    return;
+
+  fi
+
+  if [ "$GIT_REGISTRY" == "" ]; then
+      echo_err "$FUNCTION_NAME: A Git registry name is needed as first argument "
+      exit 1
+  fi
+  set_env "$SILENT_OPTION" $GIT_REGISTRY
+
   # Rclone S3
   if [ "$GIT_PLATFORM" != "rclone" ]; then
-      echo_err "$FUNCTION_NAME: The git instance '$GIT_INSTANCE' is not a rclone platform but $GIT_PLATFORM"
+      echo_err "$FUNCTION_NAME: The git registry '$GIT_REGISTRY' is not a rclone platform but $GIT_PLATFORM"
       exit 1
   fi;
 
   # Conf via env variables
   # https://rclone.org/docs/#environment-variables
   echo_log "$FUNCTION_NAME: Set Rclone Conf"
-  RCLONE_TYPE_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_TYPE"
+  RCLONE_TYPE_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_TYPE"
   if [ -z "${!RCLONE_TYPE_ENV_NAME+x}" ]; then
     echo_err "$FUNCTION_NAME: Environment variable '$RCLONE_TYPE_ENV_NAME' is mandatory for the platform $GIT_PLATFORM."
     exit 1
@@ -167,7 +226,7 @@ function mount(){
   fi;
 
   # Provider Property
-  RCLONE_PROVIDER_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_PROVIDER"
+  RCLONE_PROVIDER_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_PROVIDER"
   if [ -z "${!RCLONE_PROVIDER_ENV_NAME+x}" ]; then
     echo_log "$FUNCTION_NAME:   * Rclone Provider: not set"
     exit 1
@@ -177,7 +236,7 @@ function mount(){
   fi;
 
   # Endpoint Property
-  RCLONE_ENDPOINT_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_ENDPOINT"
+  RCLONE_ENDPOINT_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_ENDPOINT"
   if [ -z "${!RCLONE_ENDPOINT_ENV_NAME+x}" ]; then
     echo_log "$FUNCTION_NAME:   * Rclone EndPoint: not set"
     exit 1
@@ -187,7 +246,7 @@ function mount(){
   fi;
 
   # Access Key Property
-  RCLONE_ACCESS_KEY_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_ACCESS_KEY"
+  RCLONE_ACCESS_KEY_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_ACCESS_KEY"
   if [ -z "${!RCLONE_ACCESS_KEY_ENV_NAME+x}" ]; then
     echo_err "Environment variable '$RCLONE_ACCESS_KEY_ENV_NAME' is mandatory for rclone s3."
     exit 1
@@ -198,7 +257,7 @@ function mount(){
   fi;
 
   # Secret Key Property
-  RCLONE_SECRET_KEY_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_SECRET_KEY"
+  RCLONE_SECRET_KEY_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_SECRET_KEY"
   if [ -z "${!RCLONE_SECRET_KEY_ENV_NAME+x}" ]; then
     echo_err "Environment variable '$RCLONE_SECRET_KEY_ENV_NAME' is mandatory for rclone s3."
     exit 1
@@ -213,7 +272,7 @@ function mount(){
   export RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms
 
   # Bucket Name
-  RCLONE_BUCKET_NAME_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_BUCKET_NAME"
+  RCLONE_BUCKET_NAME_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_BUCKET_NAME"
   if [ -z "${!RCLONE_BUCKET_NAME_ENV_NAME+x}" ]; then
       echo_err "Environment variable '$RCLONE_BUCKET_NAME_ENV_NAME' is mandatory for rclone s3."
       exit 1
@@ -222,15 +281,20 @@ function mount(){
     echo_log "$FUNCTION_NAME:   * Rclone Bucket Name: $S3_BUCKET_NAME"
   fi;
 
-  # git_backup is used in all RCONF variable ie `GIT_BACKUP` in `RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY`
+
+  echo_log "$FUNCTION_NAME: Mount Rclone $GIT_REGISTRY at $RCLONE_MOUNTED_PATH"
+  # git_backup in the command below
+  # is used in all RCONF variable
+  # ie it's `GIT_BACKUP` in `RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY`
   # don't change it
-  echo_log "$FUNCTION_NAME: Trying to mount Rclone $GIT_INSTANCE (add --debug as arg if it fail)"
-  if [ "$DEV_MODE" != "" ]; then
-    rclone mount git_backup:"$S3_BUCKET_NAME" $RCLONE_MOUNTED_PATH
-  else
-    rclone mount git_backup:"$S3_BUCKET_NAME" $RCLONE_MOUNTED_PATH --daemon
-  fi
-  echo_log "$FUNCTION_NAME: Rclone $GIT_INSTANCE mounted at $RCLONE_MOUNTED_PATH"
+  RCLONE_COMMAND="rclone mount git_backup:$S3_BUCKET_NAME $RCLONE_MOUNTED_PATH"
+  if [ $RCLONE_PROCESS_MODE == "daemon" ]; then
+    RCLONE_COMMAND="$RCLONE_COMMAND --daemon"
+  fi;
+  echo_log "$FUNCTION_NAME: Executing the command: $RCLONE_COMMAND"
+  eval "$RCLONE_COMMAND"
+
+  echo_log "$FUNCTION_NAME: Rclone $GIT_REGISTRY mounted at $RCLONE_MOUNTED_PATH"
 
 }
 
@@ -240,9 +304,9 @@ function set_env(){
 
     local SILENT_OPTION=""
 
-    # The instance is an unique name
+    # The registry is an unique name
     # that identifies a Git Server instance
-    GIT_INSTANCE=""
+    GIT_REGISTRY=""
 
     # This for loop should have no echo
     # Why? We use this function to get the list of repo to handle
@@ -257,8 +321,8 @@ function set_env(){
           ;;
         *)
           # Command or arg
-          if [ "$GIT_INSTANCE" == "" ]; then
-              GIT_INSTANCE="${arg^^}" # ^^ for uppercase
+          if [ "$GIT_REGISTRY" == "" ]; then
+              GIT_REGISTRY="${arg^^}" # ^^ for uppercase
             else
               echo_err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only one argument, the instance. ($arg) is the second argument"
               exit 1;
@@ -268,15 +332,15 @@ function set_env(){
         esac
     done
 
-    if [ "$GIT_INSTANCE" == "" ]; then
+    if [ "$GIT_REGISTRY" == "" ]; then
       echo_err "$FUNCTION_NAME: The first argument should be not empty with the git instance name"
       exit 1;
     fi
 
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Setting env for Git Instance: $GIT_INSTANCE"
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Setting env for Git Instance: $GIT_REGISTRY"
 
     # Target
-    GIT_PLATFORM_ENV_NAME="GIT_${GIT_INSTANCE}_PLATFORM"
+    GIT_PLATFORM_ENV_NAME="GIT_${GIT_REGISTRY}_PLATFORM"
     if [ -z "${!GIT_PLATFORM_ENV_NAME+x}" ]; then
       echo_err "Environment variable '$GIT_PLATFORM_ENV_NAME' does not exist."
       exit 1
@@ -287,7 +351,7 @@ function set_env(){
 
     # Domain
     GIT_DOMAIN=""
-    GIT_DOMAIN_ENV_NAME="GIT_${GIT_INSTANCE}_DOMAIN"
+    GIT_DOMAIN_ENV_NAME="GIT_${GIT_REGISTRY}_DOMAIN"
     if [ -z "${!GIT_DOMAIN_ENV_NAME+x}" ]; then
       case ${GIT_PLATFORM} in
         github)
@@ -307,7 +371,7 @@ function set_env(){
     echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Domain: $GIT_DOMAIN"
 
     # API Access Token
-    GIT_TOKEN_ENV_NAME="GIT_${GIT_INSTANCE}_TOKEN"
+    GIT_TOKEN_ENV_NAME="GIT_${GIT_REGISTRY}_TOKEN"
     if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
         unset GIT_TOKEN;
         echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
@@ -325,7 +389,7 @@ function set_env(){
 function list_repo(){
 
   local FUNCTION_NAME="List Repo"
-  local GIT_INSTANCE=""
+  local GIT_REGISTRY=""
   # Report are default value for JQ expression
   local REPORT=""
   # The default Jq args are platform dependent
@@ -366,8 +430,8 @@ function list_repo(){
       ;;
     *)
       # Command or arg
-      if [ "$GIT_INSTANCE" == "" ]; then
-          GIT_INSTANCE=$arg
+      if [ "$GIT_REGISTRY" == "" ]; then
+          GIT_REGISTRY=$arg
         else
           echo_err "$FUNCTION_NAME: Too much argument found: list-repo except only one argument, the instance. ($arg) is the second argument"
           exit 1;
@@ -377,7 +441,7 @@ function list_repo(){
     esac
   done
 
-  set_env "$GIT_INSTANCE" "$SILENT_OPTION"
+  set_env "$GIT_REGISTRY" "$SILENT_OPTION"
 
   # Report
   # Report are default values
@@ -532,15 +596,15 @@ function list_repo(){
 
 }
 
-function mirror() {
+function backup() {
 
-  local FUNCTION_NAME="mirror"
+  local FUNCTION_NAME="backup"
   local GIT_SOURCE=""
   local GIT_TARGET=""
   for arg in "$@"; do
       case "$arg" in
         "--help"|"-h")
-          help_mirror
+          help_backup
           exit;
          ;;
         *)
@@ -616,7 +680,7 @@ function mirror() {
 
   if [ "$GIT_PLATFORM_TARGET" == "rclone" ]; then
     echo_log "$FUNCTION_NAME: Unmount rclone"
-    unmount
+    mount --unmount
   fi
 
 
@@ -671,7 +735,10 @@ list-repo)
   list_repo "$SILENT_OPTION" "${ARGUMENTS[@]}"
   ;;
 mirror)
-  mirror "$SILENT_OPTION" "${ARGUMENTS[@]}"
+  backup "$SILENT_OPTION" "${ARGUMENTS[@]}"
+  ;;
+mount)
+  mount "$SILENT_OPTION" "${ARGUMENTS[@]}"
   ;;
 *)
   echo_err "The command $COMMAND is unknown"

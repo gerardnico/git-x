@@ -45,3 +45,28 @@ docker run \
   ghcr.io/gerardnico/git-backup:latest \
   /bin/bash
 ```
+
+
+
+
+## Algo: Backup via Rclone Sync
+
+Algo:
+* Start a backup script
+* Is there a start time file, if yes, error.
+* Write the start time into a file at the remote location
+* Get the last backup time from the last backup time file
+* Get the repos via API
+* Loop over the repos, if the last pushed time of the repo is bigger than the last backup, run the below commands
+```bash
+export RCLONE_LOG_LEVEL=INFO
+cd ~
+mkdir -p ~/gerardnico/shell
+git clone --mirror git@github.com:gerardnico/shell.git ~/gerardnico/shell
+# --no-update-time because the clone messed them up
+rclone sync --no-update-modtime ~/gerardnico/shell git-backup:git-backup/gerardnico/shell
+# rclone move ~/gerardnico/shell git-backup:git-backup/gerardnico/shell
+rm -rf ~/gerardnico/shell
+```
+* At completion, overwrite the last backup time with the start backup time 
+

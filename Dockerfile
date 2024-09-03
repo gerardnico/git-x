@@ -9,6 +9,7 @@ FROM rclone/rclone:1.67.0
 # Packages
 ###################################
 RUN apk update \
+    # Last git (2.45.2)
     && apk add --no-cache git \
     # Bash is not installed with the alpine rclone base image
     && apk add --no-cache bash curl jq openssh
