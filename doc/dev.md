@@ -40,8 +40,6 @@ docker run \
   -e GIT_S3_RCLONE_SECRET_KEY=$GIT_BACKUP_SECRET_KEY \
   -e GIT_S3_RCLONE_ACCESS_KEY=$GIT_BACKUP_ACCESS_KEY \
   -e GIT_S3_RCLONE_BUCKET_NAME=git-backup \
-  --cap-add SYS_ADMIN \
-  --device /dev/fuse \
   ghcr.io/gerardnico/git-backup:latest \
   /bin/bash
 ```
@@ -49,7 +47,11 @@ docker run \
 
 
 
-## Algo: Backup via Rclone Sync
+
+
+## Algo
+
+### Backup via Rclone Sync
 
 Algo:
 * Start a backup script
@@ -87,16 +89,25 @@ rm -rf ~/gerardnico/shell
 ```
 * At completion, overwrite the last backup time with the start backup time 
 
-## Restore
+
+### Restore
 
 ```bash
 git clone ~/gerardnico/gerardnico.shell.bundle ~/gerardnico/bundle
 ```
-## Change detection
 
-Git does not record timestamp for the files, since it is a Distributed VCS 
+
+## Note
+### Mount
+
+For mount with fuse, you need to add the following options
+```bash
+docker run \
+  --cap-add SYS_ADMIN \
+  --device /dev/fuse
+```
+
+### Git Timestamp
+
+Git does not record timestamp for the files, since it is a Distributed VCS
 (meaning the time on your computer can be different from mine: there is no "central" notion of time and date)
-
-## Git remote helpers
-
-https://git-scm.com/docs/gitremote-helpers

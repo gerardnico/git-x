@@ -1,4 +1,11 @@
 #!/bin/bash
+# Dependencies
+# Date from coreutils mandatory
+# git
+# openssh
+# curl
+
+
 # flag
 # e - Exit if any error
 # u - Treat unset variables as an error when substituting
@@ -41,6 +48,7 @@ function echo_err() {
 function finish() {
   echo_log "\n$CLI_NAME Script terminated\n"
 }
+
 trap finish EXIT
 
 # Retrieve the value of an option
@@ -91,7 +99,7 @@ function help_mount() {
   echo ""
   echo "where:"
   echo "     * git_registry            - the git registry name to read from"
-  echo "     * --silent                - a boolean option that will output only the result"
+  echo "     * --silent                - a boolean option that will output only the API_REPOS"
   echo "     * --unmount               - unmount"
   echo "     * --daemon                - put rclone process in the background"
   echo "     * --help                  - this help"
@@ -109,7 +117,7 @@ function help_list_repo() {
   echo ""
   echo "where:"
   echo "     * git_registry            - the git registry name to read from"
-  echo "     * --silent                - a boolean option that will output only the result"
+  echo "     * --silent                - a boolean option that will output only the API_REPOS"
   echo "     * --jq-raw-output         - a boolean option that will not output the output as json"
   echo "     * --jq-expression='xxxx'  - the jq expression to parse the JSON API response"
   echo "     * --report=value          - the name of a preconfigured report where the value may be:"
@@ -138,9 +146,9 @@ function help_backup() {
 
 
 
-
 ######################################
-# Mount/unmount a rclone destination
+# Mount/unmount a rclone git registry
+# We don't use it anymore
 #####################################
 function mount(){
 
@@ -199,95 +207,12 @@ function mount(){
       echo_err "$FUNCTION_NAME: A Git registry name is needed as first argument "
       exit 1
   fi
-  set_env "$SILENT_OPTION" $GIT_REGISTRY
 
-  # Rclone S3
-  if [ "$GIT_PLATFORM" != "rclone" ]; then
-      echo_err "$FUNCTION_NAME: The git registry '$GIT_REGISTRY' is not a rclone platform but $GIT_PLATFORM"
-      exit 1
-  fi;
-
-  # Conf via env variables
-  # https://rclone.org/docs/#environment-variables
-  echo_log "$FUNCTION_NAME: Set Rclone Conf"
-  RCLONE_TYPE_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_TYPE"
-  if [ -z "${!RCLONE_TYPE_ENV_NAME+x}" ]; then
-    echo_err "$FUNCTION_NAME: Environment variable '$RCLONE_TYPE_ENV_NAME' is mandatory for the platform $GIT_PLATFORM."
-    exit 1
-  else
-    # export RCLONE_CONFIG_GIT_BACKUP_TYPE=s3
-    export RCLONE_CONFIG_GIT_BACKUP_TYPE=${!RCLONE_TYPE_ENV_NAME}
-    echo_log "$FUNCTION_NAME:   * Rclone Type: $RCLONE_CONFIG_GIT_BACKUP_TYPE"
-  fi;
-
-  if [ "$RCLONE_CONFIG_GIT_BACKUP_TYPE" != "s3" ]; then
-    echo_err "With the platform $GIT_PLATFORM, we support only s3 as type, not $RCLONE_CONFIG_GIT_BACKUP_TYPE"
-    exit 1
-  fi;
-
-  # Provider Property
-  RCLONE_PROVIDER_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_PROVIDER"
-  if [ -z "${!RCLONE_PROVIDER_ENV_NAME+x}" ]; then
-    echo_log "$FUNCTION_NAME:   * Rclone Provider: not set"
-    exit 1
-  else
-    export RCLONE_CONFIG_GIT_BACKUP_PROVIDER=${!RCLONE_PROVIDER_ENV_NAME}
-    echo_log "$FUNCTION_NAME:   * Rclone Provider: $RCLONE_CONFIG_GIT_BACKUP_PROVIDER"
-  fi;
-
-  # Endpoint Property
-  RCLONE_ENDPOINT_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_ENDPOINT"
-  if [ -z "${!RCLONE_ENDPOINT_ENV_NAME+x}" ]; then
-    echo_log "$FUNCTION_NAME:   * Rclone EndPoint: not set"
-    exit 1
-  else
-    export RCLONE_CONFIG_GIT_BACKUP_ENDPOINT=${!RCLONE_ENDPOINT_ENV_NAME}
-    echo_log "$FUNCTION_NAME:   * Rclone EndPoint: $RCLONE_CONFIG_GIT_BACKUP_ENDPOINT"
-  fi;
-
-  # Access Key Property
-  RCLONE_ACCESS_KEY_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_ACCESS_KEY"
-  if [ -z "${!RCLONE_ACCESS_KEY_ENV_NAME+x}" ]; then
-    echo_err "Environment variable '$RCLONE_ACCESS_KEY_ENV_NAME' is mandatory for rclone s3."
-    exit 1
-  else
-    # export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=XXX
-    export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=${!RCLONE_ACCESS_KEY_ENV_NAME}
-    echo_log "$FUNCTION_NAME:   * Rclone AccessKey: xxxx"
-  fi;
-
-  # Secret Key Property
-  RCLONE_SECRET_KEY_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_SECRET_KEY"
-  if [ -z "${!RCLONE_SECRET_KEY_ENV_NAME+x}" ]; then
-    echo_err "Environment variable '$RCLONE_SECRET_KEY_ENV_NAME' is mandatory for rclone s3."
-    exit 1
-  else
-    # export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=XXX
-    export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=${!RCLONE_SECRET_KEY_ENV_NAME}
-    echo_log "$FUNCTION_NAME:   * Rclone SecretKey: xxxx"
-  fi;
-
-  # Not sure but with IDrive
-  export RCLONE_CONFIG_GIT_BACKUP_NO_CHECK_BUCKET=true
-  export RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms
-
-  # Bucket Name
-  RCLONE_BUCKET_NAME_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_BUCKET_NAME"
-  if [ -z "${!RCLONE_BUCKET_NAME_ENV_NAME+x}" ]; then
-      echo_err "Environment variable '$RCLONE_BUCKET_NAME_ENV_NAME' is mandatory for rclone s3."
-      exit 1
-  else
-    S3_BUCKET_NAME=${!RCLONE_BUCKET_NAME_ENV_NAME}
-    echo_log "$FUNCTION_NAME:   * Rclone Bucket Name: $S3_BUCKET_NAME"
-  fi;
-
+  set_rclone_env "$SILENT_OPTION" $GIT_REGISTRY
 
   echo_log "$FUNCTION_NAME: Mount Rclone $GIT_REGISTRY at $RCLONE_MOUNTED_PATH"
-  # git_backup in the command below
-  # is used in all RCONF variable
-  # ie it's `GIT_BACKUP` in `RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY`
-  # don't change it
-  RCLONE_COMMAND="rclone mount git_backup:$S3_BUCKET_NAME $RCLONE_MOUNTED_PATH"
+
+  RCLONE_COMMAND="rclone mount $RCLONE_DRIVE_NAME:$S3_BUCKET_NAME $RCLONE_MOUNTED_PATH"
   if [ $RCLONE_PROCESS_MODE == "daemon" ]; then
     RCLONE_COMMAND="$RCLONE_COMMAND --daemon"
   fi;
@@ -378,6 +303,138 @@ function set_env(){
       else
         GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
         echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Api Token: Found"
+    fi;
+
+}
+
+# Set the configuration via env
+# Conf via env variables
+# https://rclone.org/docs/#environment-variables
+function set_rclone_env(){
+
+    local FUNCTION_NAME="set_rclone_env"
+
+    # to avoid: NOTICE: Config file "/home/me/.rclone.conf" not found - using defaults
+    touch "$HOME"/.rclone.conf
+
+    # The registry is an unique name
+    # that identifies a Git Server instance
+    GIT_REGISTRY=""
+
+    local SILENT_OPTION=""
+
+    # This for loop should have no echo
+    # Why? We use this function to get the list of repo to handle
+    # We therefore need the raw output without any echo
+    for arg in "$@"; do
+        case "$arg" in
+        "")
+          # empty arg
+          ;;
+        "--silent")
+          SILENT_OPTION="--silent"
+          ;;
+        *)
+          # Command or arg
+          if [ "$GIT_REGISTRY" == "" ]; then
+              GIT_REGISTRY="${arg^^}" # ^^ for uppercase
+            else
+              echo_err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only one argument, a git registry. ($arg) is the second argument"
+              exit 1;
+          fi
+          shift
+          ;;
+        esac
+    done
+
+    if [ "$GIT_REGISTRY" == "" ]; then
+      echo_err "$FUNCTION_NAME: The first argument should be not empty with the git instance name"
+      exit 1;
+    fi
+
+    set_env "$SILENT_OPTION" "$GIT_REGISTRY"
+
+    # The `git_backup` value below is used in all RCONF variable
+    # ie it's `GIT_BACKUP` in `RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY`
+    # don't change it
+    RCLONE_DRIVE_NAME="git_backup"
+
+    # Rclone S3
+    if [ "$GIT_PLATFORM" != "rclone" ]; then
+        echo_err "$FUNCTION_NAME: The git registry '$GIT_REGISTRY' is not a rclone platform but $GIT_PLATFORM"
+        exit 1
+    fi;
+
+    echo_log "$FUNCTION_NAME: Set Rclone Conf"
+    RCLONE_TYPE_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_TYPE"
+    if [ -z "${!RCLONE_TYPE_ENV_NAME+x}" ]; then
+      echo_err "$FUNCTION_NAME: Environment variable '$RCLONE_TYPE_ENV_NAME' is mandatory for the platform $GIT_PLATFORM."
+      exit 1
+    else
+      # export RCLONE_CONFIG_GIT_BACKUP_TYPE=s3
+      export RCLONE_CONFIG_GIT_BACKUP_TYPE=${!RCLONE_TYPE_ENV_NAME}
+      echo_log "$FUNCTION_NAME:   * Rclone Type: $RCLONE_CONFIG_GIT_BACKUP_TYPE"
+    fi;
+
+    if [ "$RCLONE_CONFIG_GIT_BACKUP_TYPE" != "s3" ]; then
+      echo_err "With the platform $GIT_PLATFORM, we support only s3 as type, not $RCLONE_CONFIG_GIT_BACKUP_TYPE"
+      exit 1
+    fi;
+
+    # Provider Property
+    RCLONE_PROVIDER_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_PROVIDER"
+    if [ -z "${!RCLONE_PROVIDER_ENV_NAME+x}" ]; then
+      echo_log "$FUNCTION_NAME:   * Rclone Provider: not set"
+      exit 1
+    else
+      export RCLONE_CONFIG_GIT_BACKUP_PROVIDER=${!RCLONE_PROVIDER_ENV_NAME}
+      echo_log "$FUNCTION_NAME:   * Rclone Provider: $RCLONE_CONFIG_GIT_BACKUP_PROVIDER"
+    fi;
+
+    # Endpoint Property
+    RCLONE_ENDPOINT_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_ENDPOINT"
+    if [ -z "${!RCLONE_ENDPOINT_ENV_NAME+x}" ]; then
+      echo_log "$FUNCTION_NAME:   * Rclone EndPoint: not set"
+      exit 1
+    else
+      export RCLONE_CONFIG_GIT_BACKUP_ENDPOINT=${!RCLONE_ENDPOINT_ENV_NAME}
+      echo_log "$FUNCTION_NAME:   * Rclone EndPoint: $RCLONE_CONFIG_GIT_BACKUP_ENDPOINT"
+    fi;
+
+    # Access Key Property
+    RCLONE_ACCESS_KEY_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_ACCESS_KEY"
+    if [ -z "${!RCLONE_ACCESS_KEY_ENV_NAME+x}" ]; then
+      echo_err "Environment variable '$RCLONE_ACCESS_KEY_ENV_NAME' is mandatory for rclone s3."
+      exit 1
+    else
+      # export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=XXX
+      export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=${!RCLONE_ACCESS_KEY_ENV_NAME}
+      echo_log "$FUNCTION_NAME:   * Rclone AccessKey: xxxx"
+    fi;
+
+    # Secret Key Property
+    RCLONE_SECRET_KEY_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_SECRET_KEY"
+    if [ -z "${!RCLONE_SECRET_KEY_ENV_NAME+x}" ]; then
+      echo_err "Environment variable '$RCLONE_SECRET_KEY_ENV_NAME' is mandatory for rclone s3."
+      exit 1
+    else
+      # export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=XXX
+      export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=${!RCLONE_SECRET_KEY_ENV_NAME}
+      echo_log "$FUNCTION_NAME:   * Rclone SecretKey: xxxx"
+    fi;
+
+    # Not sure but with IDrive
+    export RCLONE_CONFIG_GIT_BACKUP_NO_CHECK_BUCKET=true
+    export RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms
+
+    # Bucket Name
+    RCLONE_BUCKET_NAME_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_BUCKET_NAME"
+    if [ -z "${!RCLONE_BUCKET_NAME_ENV_NAME+x}" ]; then
+        echo_err "Environment variable '$RCLONE_BUCKET_NAME_ENV_NAME' is mandatory for rclone s3."
+        exit 1
+    else
+      S3_BUCKET_NAME=${!RCLONE_BUCKET_NAME_ENV_NAME}
+      echo_log "$FUNCTION_NAME:   * Rclone Bucket Name: $S3_BUCKET_NAME"
     fi;
 
 }
@@ -601,12 +658,16 @@ function backup() {
   local FUNCTION_NAME="backup"
   local GIT_SOURCE=""
   local GIT_TARGET=""
+  local FORCE=""
   for arg in "$@"; do
       case "$arg" in
         "--help"|"-h")
           help_backup
           exit;
          ;;
+       "--force"|"-f")
+          FORCE="true"
+          ;;
         *)
           if [ "$GIT_SOURCE" == "" ]; then
               GIT_SOURCE="${arg^^}" # ^^ for uppercase
@@ -626,6 +687,9 @@ function backup() {
     echo_err "$FUNCTION_NAME: A git source is excepted as first argument"
     exit 1;
   fi
+  set_env "$GIT_SOURCE"
+  GIT_PLATFORM_SOURCE=$GIT_PLATFORM
+
 
   # Target
   if [ "$GIT_TARGET" == "" ]; then
@@ -635,53 +699,115 @@ function backup() {
 
   set_env "$GIT_TARGET"
   GIT_PLATFORM_TARGET=$GIT_PLATFORM
-  if [ "$GIT_PLATFORM_TARGET" == "rclone" ]; then
-    echo_log "$FUNCTION_NAME: Mount rclone"
-    mount
+  if [ "$GIT_PLATFORM_TARGET" != "rclone" ]; then
+    echo_err "$FUNCTION_NAME: Only a rclone git registry is supported as target"
+    exit 1
   fi
+  set_rclone_env "$GIT_TARGET"
 
   # Get the Json as CSV and loop over it
   echo_log "$FUNCTION_NAME: Looping over the repo of the registry $GIT_SOURCE"
-  result=$(list_repo "$GIT_SOURCE" "--jq-expression=(.[] | [.full_name, .fork, .ssh_url]) | @csv" '--jq-raw-output' '--silent')
-  ACTUAL_COUNT=0
-  #GIT_SSH_ENV="GIT_SSH_COMMAND='ssh -i private_key_file -o IdentitiesOnly=yes'"
-  GIT_SSH_ENV=""
-  echo "$result" | while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL; do
+
+  if [ $GIT_PLATFORM_SOURCE != "github" ]; then
+    echo_err "$FUNCTION_NAME: Only GitHub as registry source is supported, not $GIT_PLATFORM_SOURCE"
+    exit 1;
+  fi
+
+  # Backup Start
+  # Get the last backup date
+  LAST_BACKUP_TIME=$(rclone cat "$RCLONE_DRIVE_NAME:$S3_BUCKET_NAME/last-backup-time.dat")
+  LAST_BACKUP_TIME_EPOCH=""
+  if [ "$LAST_BACKUP_TIME" == "" ]; then
+    echo_log "$FUNCTION_NAME: No last backup time"
+  else
+    echo_log "$FUNCTION_NAME: Last backup time: $LAST_BACKUP_TIME"
+    LAST_BACKUP_TIME_EPOCH=$(TZ=UTC date -d "$LAST_BACKUP_TIME" +%s)
+  fi
+
+  # Store the current date and time
+  RCLONE_START_BACKUP_TIME_FILE_PATH="$RCLONE_DRIVE_NAME:$S3_BUCKET_NAME/start-backup-time.dat"
+  echo_log "$FUNCTION_NAME: Listing start backup time"
+  START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" | wc -l)
+  if [ "$START_BACKUP_TIME_FILE_COUNT" != "0" ]; then
+    if [ "$FORCE" == "" ]; then
+      echo_err "$FUNCTION_NAME: Start backup time found, a backup may be running, add the --force option to pass this check"
+      exit 1
+    else
+      echo_log "$FUNCTION_NAME: Force used, overwriting the start backup file. "
+    fi
+  fi;
+
+  START_BACKUP_TIME=$(TZ=UTC date +"%Y-%m-%dT%H:%M:%SZ")
+  START_BACKUP_TIME_EPOCH=$(TZ=UTC date -d "$START_BACKUP_TIME" +%s)
+  echo_log "$FUNCTION_NAME: Start backup time: $START_BACKUP_TIME"
+  echo_log "$FUNCTION_NAME: Writing Start backup time to $RCLONE_START_BACKUP_TIME_FILE_PATH"
+  echo "$START_BACKUP_TIME" | rclone rcat "$RCLONE_START_BACKUP_TIME_FILE_PATH"
+
+  # Github Api Call
+  # Note: pushed_at represents the date and time of the last commit
+  echo_log "$FUNCTION_NAME: Retrieving repos"
+  API_REPOS=$(list_repo "$GIT_SOURCE" "--jq-expression=(.[] | [.full_name, .fork, .ssh_url, .pushed_at]) | @csv" '--jq-raw-output' '--silent')
+
+
+  local ACTUAL_COUNT=0
+  while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
     REPO_FULL_NAME=$(echo "$REPO_FULL_NAME" | tr -d '"')
+    echo_log " "
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Backup Repo: $REPO_FULL_NAME"
 
     if [ "$REPO_FORK" == true ]; then
       echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Skipped forked repo: $REPO_FULL_NAME";
       continue
-    else
-      echo_log "$SILENT_OPTION" "Cloning Repo: $REPO_FULL_NAME"
     fi
 
-    TARGET_DIR=$RCLONE_MOUNTED_PATH/$REPO_FULL_NAME
+    BUNDLE_NAME="${REPO_FULL_NAME//\//.}.bundle"
+    BUNDLE_TARGET_PATH="$RCLONE_DRIVE_NAME:$S3_BUCKET_NAME/$BUNDLE_NAME"
+    TARGET_BUNDLE_PATH_COUNT=$(rclone lsf "$BUNDLE_TARGET_PATH" | wc -l)
+    if [ "$TARGET_BUNDLE_PATH_COUNT" != "0" ]; then
+      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Backup bundle already exist at $BUNDLE_TARGET_PATH";
+      # 2024-08-29T13:20:27Z
+      PUSHED_AT_TRIMMED=$(echo "$PUSHED_AT" | tr -d '"')
+      PUSHED_AT_EPOCH=$(TZ=UTC date -d"$PUSHED_AT_TRIMMED" +%s)
+      if [ "$LAST_BACKUP_TIME" != "" ] && [ "$PUSHED_AT_EPOCH" -lt "$LAST_BACKUP_TIME_EPOCH" ]; then
+        echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Skipped backup repo: No push since last backup. Last Pushed Date ($PUSHED_AT) is less than the last backup time ($LAST_BACKUP_TIME)";
+        continue
+      fi
+    fi
 
-    if [ -d "$TARGET_DIR" ]; then
-      echo_log "$SILENT_OPTION" "Repo $REPO_FULL_NAME already exist. Fetching"
-      mkdir -p "$TARGET_DIR"
-      GIT_COMMAND="$GIT_SSH_ENV git -C $TARGET_DIR fetch --all"
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Cloning Repo: $REPO_FULL_NAME"
+    CLONE_TARGET_DIR=/tmp/clone/$REPO_FULL_NAME
+    if [ ! -d "$CLONE_TARGET_DIR" ]; then
+      mkdir -p "$CLONE_TARGET_DIR"
+      CLONE_COMMAND="git clone --mirror $REPO_SSH_URL $CLONE_TARGET_DIR 2> /dev/null "
+      echo_log "$FUNCTION_NAME: Executing : $CLONE_COMMAND"
+      eval "$CLONE_COMMAND"
     else
-      echo_log "$SILENT_OPTION" "Repo $REPO_FULL_NAME absent. Cloning as mirror"
-      GIT_COMMAND="$GIT_SSH_ENV git clone --mirror $REPO_SSH_URL $TARGET_DIR"
-    fi;
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Executing: $GIT_COMMAND";
-    eval "$GIT_COMMAND"
+      echo_log "$FUNCTION_NAME: Clone already done"
+    fi
+
+
+    BUNDLE_SOURCE_PATH="/tmp/$BUNDLE_NAME"
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Creating bundle: $BUNDLE_SOURCE_PATH"
+    BUNDLE_COMMAND="git -C $CLONE_TARGET_DIR -c 'pack.threads=1' bundle create $BUNDLE_SOURCE_PATH --all 2> /dev/null"
+    echo_log "$FUNCTION_NAME: Executing : $BUNDLE_COMMAND"
+    eval "$BUNDLE_COMMAND"
+
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Uploading bundle: $BUNDLE_NAME"
+    MOVE_COMMAND="rclone move $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH"
+    echo_log "$FUNCTION_NAME: Executing : $MOVE_COMMAND"
+    eval "$MOVE_COMMAND"
 
     # Break
-    if [ "$ACTUAL_COUNT" -gt 5 ]; then
-        echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Cloned $ACTUAL_COUNT repositories";
+    ACTUAL_COUNT=$((ACTUAL_COUNT + 1))
+    if [ "$ACTUAL_COUNT" -gt 2 ]; then
         break
     fi
 
-    ACTUAL_COUNT=$((ACTUAL_COUNT + 1))
-  done
+  done <<< "$API_REPOS" # needed to not run as pipeline and get ACTUAL_COUNT
 
-  if [ "$GIT_PLATFORM_TARGET" == "rclone" ]; then
-    echo_log "$FUNCTION_NAME: Unmount rclone"
-    mount --unmount
-  fi
+  echo_log " "
+  echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Cloned $ACTUAL_COUNT repositories";
+
 
 
 }
@@ -693,12 +819,8 @@ COMMAND=""
 # Options are command related and are parsed
 # in each function
 SILENT_OPTION=""
-DEV_MODE=""
 for arg in "$@"; do
   case "$arg" in
-  --dev)
-    DEV_MODE=true
-    ;;
   --silent|s)
     SILENT_OPTION="--silent"
     ;;
@@ -734,7 +856,7 @@ help)
 list-repo)
   list_repo "$SILENT_OPTION" "${ARGUMENTS[@]}"
   ;;
-mirror)
+backup)
   backup "$SILENT_OPTION" "${ARGUMENTS[@]}"
   ;;
 mount)
