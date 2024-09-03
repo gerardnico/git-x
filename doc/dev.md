@@ -63,7 +63,8 @@ export RCLONE_LOG_LEVEL=INFO
 cd ~
 mkdir -p ~/gerardnico/shell
 git clone --mirror git@github.com:gerardnico/shell.git ~/gerardnico/shell
-# then bundle results in only one file
+# then bundle results in only one file (no need to archive)
+# The bundle command package up everything that would normally be pushed over the wire with a git push
 git -C ~/gerardnico/shell bundle create ~/gerardnico/gerardnico.shell.bundle --all
 # The md5 sum stays the same
 md5sum ~/gerardnico/gerardnico.shell.bundle # ie 44e9133160acee494bc7bdccd30441dd
