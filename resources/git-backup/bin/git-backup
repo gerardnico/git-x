@@ -10,9 +10,23 @@ CLI_NAME=$(basename "$0") # Name of the cli
 
 
 # Echo a message
+# Accept as first argument a flag --silent or -s to no echo anything
 function echo_log() {
 
-  echo -e "$CLI_NAME: ${1:-}"
+  for arg in "$@"; do
+        case "$arg" in
+        "--silent"|"-s")
+          return
+          ;;
+        "")
+          # empty arg
+        ;;
+        *)
+          echo -e "$CLI_NAME: ${arg:-}"
+          ;;
+        esac
+  done
+
 
 }
 
@@ -259,7 +273,7 @@ function set_env(){
       exit 1;
     fi
 
-    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Setting env for Git Instance: $GIT_INSTANCE"; fi;
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Setting env for Git Instance: $GIT_INSTANCE"
 
     # Target
     GIT_PLATFORM_ENV_NAME="GIT_${GIT_INSTANCE}_PLATFORM"
@@ -268,7 +282,7 @@ function set_env(){
       exit 1
     else
       GIT_PLATFORM=${!GIT_PLATFORM_ENV_NAME}
-      if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME:  * Platform: $GIT_PLATFORM"; fi;
+      echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Platform: $GIT_PLATFORM"
     fi
 
     # Domain
@@ -290,16 +304,16 @@ function set_env(){
     else
       GIT_DOMAIN=${!GIT_DOMAIN_ENV_NAME}
     fi
-    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME:  * Domain: $GIT_DOMAIN"; fi;
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Domain: $GIT_DOMAIN"
 
     # API Access Token
     GIT_TOKEN_ENV_NAME="GIT_${GIT_INSTANCE}_TOKEN"
     if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
         unset GIT_TOKEN;
-        if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME:  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"; fi;
+        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
       else
         GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
-        if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME:  * Api Token: Found"; fi;
+        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Api Token: Found"
     fi;
 
 }
@@ -363,9 +377,9 @@ function list_repo(){
   # Report are default values
   if [ "${REPORT}" == "" ]; then
     REPORT="default"
-    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: No Report found, set to: $REPORT"; fi;
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: No Report found, set to: $REPORT"
   else
-    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Report: $REPORT"; fi;
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Report: $REPORT"
   fi
 
   case ${GIT_PLATFORM} in
@@ -404,22 +418,22 @@ function list_repo(){
     if [ "${JQ_EXPRESSION}" == "" ]; then
         JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
     fi
-    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"; fi;
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
     if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
         JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
     fi
-    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"; fi;
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
 
     # URL AI
     URL_API="https://$GIT_DOMAIN/api/v1/user/repos"
-    if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Requesting $URL_API"; fi;
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Requesting $URL_API"
 
     # Execute
-    if [ "$SILENT_OPTION" == "" ]; then echo ""; fi;
+    echo "$SILENT_OPTION" ""
     # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
     # shellcheck disable=SC2086
     curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
-    if [ "$SILENT_OPTION" == "" ]; then echo ""; fi;
+    echo "$SILENT_OPTION" ""
     ;;
   github)
 
@@ -456,23 +470,47 @@ function list_repo(){
       if [ "${JQ_EXPRESSION}" == "" ]; then
           JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
       fi
-      if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"; fi;
+      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
       if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
           JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
       fi
-      if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"; fi;
+      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
 
       # URL API: repo for the authenticated user
       # Doc: https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user
-      URL_API="https://api.github.com/user/repos?per_page=100&page=3"
-      if [ "$SILENT_OPTION" == "" ]; then echo_log "$FUNCTION_NAME: Requesting $URL_API"; fi;
+      URL_API="https://api.github.com/user/repos"
+      REPO_BY_PAGE=100
+      ACTUAL_PAGE=1
+      TOTAL_COUNT=0
+      TOTAL_REPOS='[]'
+      while true; do
 
-      # Execute
-      if [ "$SILENT_OPTION" == "" ]; then echo ""; fi;
+          REQUEST_URL="$URL_API?per_page=$REPO_BY_PAGE&page=$ACTUAL_PAGE"
+          echo_log "$SILENT_OPTION" "$FUNCTION_NAME: $ACTUAL_PAGE - Requesting $REPO_BY_PAGE repo ($REQUEST_URL)";
+
+          ACTUAL_REPOS=$(curl -sS -H "Authorization: token $GIT_TOKEN" "$REQUEST_URL")
+          TOTAL_REPOS=$(jq -s '.[0] + .[1]' <(echo "$TOTAL_REPOS") <(echo "$ACTUAL_REPOS"))
+
+          # Count the number of objects
+          COUNT=$(echo "$ACTUAL_REPOS" | jq ". | length")
+          # Add the COUNT to the total COUNT
+          TOTAL_COUNT=$((TOTAL_COUNT + COUNT))
+
+          # Break
+          if [ "$COUNT" -lt $REPO_BY_PAGE ]; then
+              echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Retrieved $TOTAL_COUNT repositories";
+              break
+          fi
+
+          ACTUAL_PAGE=$((ACTUAL_PAGE + 1))
+
+      done
+
+      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: "
       # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
       # shellcheck disable=SC2086
-      curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
-      if [ "$SILENT_OPTION" == "" ]; then echo ""; fi;
+      echo "$TOTAL_REPOS" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
+
       ;;
   *)
     echo_err "The git platform $GIT_PLATFORM is not yet implemented"
@@ -579,23 +617,23 @@ for arg in "$@"; do
 done
 
 if [ -z "$COMMAND" ]; then
-  if [ "$SILENT_OPTION" == "" ]; then echo_log 'No command was given, help chosen.'; fi;
+  echo_log "$SILENT_OPTION" 'No command was given, help chosen.'
   COMMAND='help'
 fi
 
-if [ "$SILENT_OPTION" == "" ]; then echo_log; fi;
-if [ "$SILENT_OPTION" == "" ]; then echo_log "${CLI_NAME^} ${COMMAND^}"; fi;
-if [ "$SILENT_OPTION" == "" ]; then echo_log "-------------------------------------------"; fi;
-if [ "$SILENT_OPTION" == "" ]; then echo_log ""; fi;
+ echo_log "$SILENT_OPTION" ""
+ echo_log "$SILENT_OPTION" "${CLI_NAME^} ${COMMAND^}"
+ echo_log "$SILENT_OPTION" "-------------------------------------------"
+ echo_log "$SILENT_OPTION" ""
 case ${COMMAND} in
 help)
   help
   ;;
 list-repo)
-  list_repo "${ARGUMENTS[@]}"
+  list_repo "$SILENT_OPTION" "${ARGUMENTS[@]}"
   ;;
 mirror)
-  mirror "${ARGUMENTS[@]}"
+  mirror "$SILENT_OPTION" "${ARGUMENTS[@]}"
   ;;
 *)
   echo_err "The command $COMMAND is unknown"
