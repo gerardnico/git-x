@@ -59,8 +59,8 @@ function getOptionValue() {
 ######################################
 # Global Env
 #####################################
-GIT_RCLONE_MOUNTED_PATH=/tmp/git-repos
-mkdir -p $GIT_RCLONE_MOUNTED_PATH
+RCLONE_MOUNTED_PATH=/tmp/rclone
+mkdir -p $RCLONE_MOUNTED_PATH
 
 ######################################
 # Usage
@@ -101,6 +101,7 @@ function help_list_repo() {
   echo "                                     * ls       - the repo fullname separated by the IFS character"
   echo "                                     * asis     - the full json"
   echo "                                     * csv      - a csv"
+  echo "     * --max-repo-count='x'    - the maximum number of repositories to retrieve"
   echo "     * --help           - this help"
   echo ""
 
@@ -121,22 +122,17 @@ function help_mirror() {
 
 
 
-function git_mirror_fetch() {
-
-  git -C $GIT_RCLONE_MOUNTED_PATH/algo fetch --all
-
-}
 
 ######################################
 # Unmount the drive
 #####################################
 function unmount(){
 
-  umount $GIT_RCLONE_MOUNTED_PATH
+  umount $RCLONE_MOUNTED_PATH
 
   # Fusermount does not exist on alpine
   # Otherwise it would have been:
-  # fusermount -u $GIT_RCLONE_MOUNTED_PATH
+  # fusermount -u $RCLONE_MOUNTED_PATH
 
 }
 
@@ -212,6 +208,10 @@ function mount(){
     echo_log "$FUNCTION_NAME:   * Rclone SecretKey: xxxx"
   fi;
 
+  # Not sure but with IDrive
+  export RCLONE_CONFIG_GIT_BACKUP_NO_CHECK_BUCKET=true
+  export RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms
+
   # Bucket Name
   RCLONE_BUCKET_NAME_ENV_NAME="GIT_${GIT_INSTANCE}_RCLONE_BUCKET_NAME"
   if [ -z "${!RCLONE_BUCKET_NAME_ENV_NAME+x}" ]; then
@@ -225,12 +225,12 @@ function mount(){
   # git_backup is used in all RCONF variable ie `GIT_BACKUP` in `RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY`
   # don't change it
   echo_log "$FUNCTION_NAME: Trying to mount Rclone $GIT_INSTANCE (add --debug as arg if it fail)"
-  if [ "$DEBUG" != "" ]; then
-    rclone mount git_backup:"$S3_BUCKET_NAME" $GIT_RCLONE_MOUNTED_PATH
+  if [ "$DEV_MODE" != "" ]; then
+    rclone mount git_backup:"$S3_BUCKET_NAME" $RCLONE_MOUNTED_PATH
   else
-    rclone mount git_backup:"$S3_BUCKET_NAME" $GIT_RCLONE_MOUNTED_PATH --daemon
+    rclone mount git_backup:"$S3_BUCKET_NAME" $RCLONE_MOUNTED_PATH --daemon
   fi
-  echo_log "$FUNCTION_NAME: Rclone $GIT_INSTANCE mounted at $GIT_RCLONE_MOUNTED_PATH"
+  echo_log "$FUNCTION_NAME: Rclone $GIT_INSTANCE mounted at $RCLONE_MOUNTED_PATH"
 
 }
 
@@ -334,6 +334,8 @@ function list_repo(){
   # By default, echo are added to the output
   local SILENT_OPTION=""
 
+  # The maximum of repo to retrieved
+  local MAX_REPO_COUNT=""
   # This for loop should have no echo
   # Why? We use this function to get the list of repo to handle
   # We therefore need the raw output without any echo
@@ -344,6 +346,10 @@ function list_repo(){
       ;;
     --jq-expression=*)
       JQ_EXPRESSION=$(getOptionValue "$arg")
+      shift
+      ;;
+    --max-repo-count=*)
+      MAX_REPO_COUNT=$(getOptionValue "$arg")
       shift
       ;;
     "--jq-raw-output"|"--jq-raw")
@@ -496,9 +502,15 @@ function list_repo(){
           # Add the COUNT to the total COUNT
           TOTAL_COUNT=$((TOTAL_COUNT + COUNT))
 
-          # Break
+          # Break on last page
           if [ "$COUNT" -lt $REPO_BY_PAGE ]; then
               echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Retrieved $TOTAL_COUNT repositories";
+              break
+          fi
+
+          # Break on max count
+          if [ "$MAX_REPO_COUNT" != "" ] && [ "$TOTAL_COUNT" -ge "$MAX_REPO_COUNT" ]; then
+              echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Max total count repositories ($TOTAL_COUNT) reached";
               break
           fi
 
@@ -566,14 +578,40 @@ function mirror() {
 
   # Get the Json as CSV and loop over it
   echo_log "$FUNCTION_NAME: Looping over the repo of the registry $GIT_SOURCE"
-  result=$(list_repo "$GIT_SOURCE" "--jq-expression=(.[] | [.full_name, .fork, .clone_url, .ssh_url]) | @csv" '--jq-raw-output' '--silent')
-  echo "$result" | while IFS=',' read -r REPO_NAME REPO_FORK REPO_CLONE_URL REPO_SSH_URL; do
-    REPO_NAME=$(echo "$REPO_NAME" | tr -d '"')
-    echo "FullName: $REPO_NAME, Fork: $REPO_FORK"
-    echo "Clone URL: $REPO_CLONE_URL"
-    echo "Ssh URL: $REPO_SSH_URL"
-    # git clone --mirror https://$GIT_USER:$GIT_PASSWORD@gogs.bytle.net/nickeau/algo $GIT_RCLONE_MOUNTED_PATH/algo2
-    break
+  result=$(list_repo "$GIT_SOURCE" "--jq-expression=(.[] | [.full_name, .fork, .ssh_url]) | @csv" '--jq-raw-output' '--silent')
+  ACTUAL_COUNT=0
+  #GIT_SSH_ENV="GIT_SSH_COMMAND='ssh -i private_key_file -o IdentitiesOnly=yes'"
+  GIT_SSH_ENV=""
+  echo "$result" | while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL; do
+    REPO_FULL_NAME=$(echo "$REPO_FULL_NAME" | tr -d '"')
+
+    if [ "$REPO_FORK" == true ]; then
+      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Skipped forked repo: $REPO_FULL_NAME";
+      continue
+    else
+      echo_log "$SILENT_OPTION" "Cloning Repo: $REPO_FULL_NAME"
+    fi
+
+    TARGET_DIR=$RCLONE_MOUNTED_PATH/$REPO_FULL_NAME
+
+    if [ -d "$TARGET_DIR" ]; then
+      echo_log "$SILENT_OPTION" "Repo $REPO_FULL_NAME already exist. Fetching"
+      mkdir -p "$TARGET_DIR"
+      GIT_COMMAND="$GIT_SSH_ENV git -C $TARGET_DIR fetch --all"
+    else
+      echo_log "$SILENT_OPTION" "Repo $REPO_FULL_NAME absent. Cloning as mirror"
+      GIT_COMMAND="$GIT_SSH_ENV git clone --mirror $REPO_SSH_URL $TARGET_DIR"
+    fi;
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Executing: $GIT_COMMAND";
+    eval "$GIT_COMMAND"
+
+    # Break
+    if [ "$ACTUAL_COUNT" -gt 5 ]; then
+        echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Cloned $ACTUAL_COUNT repositories";
+        break
+    fi
+
+    ACTUAL_COUNT=$((ACTUAL_COUNT + 1))
   done
 
   if [ "$GIT_PLATFORM_TARGET" == "rclone" ]; then
@@ -591,11 +629,11 @@ COMMAND=""
 # Options are command related and are parsed
 # in each function
 SILENT_OPTION=""
-DEBUG=""
+DEV_MODE=""
 for arg in "$@"; do
   case "$arg" in
-  --debug)
-    DEBUG=true
+  --dev)
+    DEV_MODE=true
     ;;
   --silent|s)
     SILENT_OPTION="--silent"

@@ -19,13 +19,18 @@ docker run \
 
 ## Github to s3 via Rclone
 
+* The token is needed for the API
+* The ssh key is needed for Git
+
 ```bash
 cd ~/code/git-backup
 docker run \
   --name git-backup \
   --rm \
   -it \
+  --user 1000:1000 \
   -v ./resources/git-backup:/opt/git-backup \
+  -v ~/.ssh:/home/me/.ssh \
   -e GIT_GITHUB_PLATFORM=github \
   -e GIT_GITHUB_TOKEN=$GITHUB_TOKEN \
   -e GIT_S3_PLATFORM=rclone \
