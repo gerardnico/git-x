@@ -63,9 +63,13 @@ export RCLONE_LOG_LEVEL=INFO
 cd ~
 mkdir -p ~/gerardnico/shell
 git clone --mirror git@github.com:gerardnico/shell.git ~/gerardnico/shell
+# https://git-scm.com/docs/gitformat-bundle
+# A bundle is an archive file that a user can use with the git clone command to create a local repository.
+# The bundle contains your source code, as well as the change history for the commits and branches that you reference during the bundle creation step 
 # then bundle results in only one file (no need to archive)
 # The bundle command package up everything that would normally be pushed over the wire with a git push
-git -C ~/gerardnico/shell bundle create ~/gerardnico/gerardnico.shell.bundle --all
+# -c 'pack.threads=1' - forcing git to be single threaded makes the output deterministic.
+git -C ~/gerardnico/shell -c 'pack.threads=1' bundle create ~/gerardnico/gerardnico.shell.bundle --all
 # The md5 sum stays the same
 md5sum ~/gerardnico/gerardnico.shell.bundle # ie 44e9133160acee494bc7bdccd30441dd
 # rclone syncs in one direction only, from source to dest
