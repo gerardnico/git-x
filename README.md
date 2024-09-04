@@ -2,10 +2,11 @@
 
 ## About
 
-This application permits to back up Git repositories:
+This [application](resources/git-backup/bin/git-backup) back up Git repositories:
 * from GitHub
 * to a [Rclone destination](https://rclone.org/overview/)
 * as a [Git bundle](https://git-scm.com/book/en/v2/Git-Tools-Bundling)
+
 
 
 ## Example
