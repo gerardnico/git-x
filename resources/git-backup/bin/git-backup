@@ -109,7 +109,7 @@ function help_mount() {
 
 function help_list_repo() {
 
-  FUNCTION_NAME="list-repo"
+  FUNCTION_NAME="list_repo"
   echo ""
   echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
   echo ""
@@ -467,19 +467,15 @@ function list_repo(){
       ;;
     --jq-expression=*)
       JQ_EXPRESSION=$(getOptionValue "$arg")
-      shift
       ;;
     --max-repo-count=*)
       MAX_REPO_COUNT=$(getOptionValue "$arg")
-      shift
       ;;
     "--jq-raw-output"|"--jq-raw")
       JQ_RAW_OUTPUT_OPTION="--raw-output"
-      shift
       ;;
     --report=*)
       REPORT=$(getOptionValue "$arg")
-      shift
       ;;
     "--help"|"-h")
       help_list_repo
@@ -493,7 +489,6 @@ function list_repo(){
           echo_err "$FUNCTION_NAME: Too much argument found: list-repo except only one argument, the instance. ($arg) is the second argument"
           exit 1;
       fi
-      shift
       ;;
     esac
   done
@@ -607,6 +602,9 @@ function list_repo(){
       # Doc: https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user
       URL_API="https://api.github.com/user/repos"
       REPO_BY_PAGE=100
+      if [ "$MAX_REPO_COUNT" -lt $REPO_BY_PAGE ]; then
+        REPO_BY_PAGE=$MAX_REPO_COUNT
+      fi
       ACTUAL_PAGE=1
       TOTAL_COUNT=0
       TOTAL_REPOS='[]'
@@ -659,6 +657,7 @@ function backup() {
   local GIT_SOURCE=""
   local GIT_TARGET=""
   local FORCE=""
+  local MAX_REPO_COUNT=""
   for arg in "$@"; do
       case "$arg" in
         "--help"|"-h")
@@ -668,6 +667,11 @@ function backup() {
        "--force"|"-f")
           FORCE="true"
           ;;
+        --max-repo-count=*)
+         MAX_REPO_COUNT="$arg"
+          ;;
+        "")
+        ;;
         *)
           if [ "$GIT_SOURCE" == "" ]; then
               GIT_SOURCE="${arg^^}" # ^^ for uppercase
@@ -715,7 +719,8 @@ function backup() {
 
   # Backup Start
   # Get the last backup date
-  LAST_BACKUP_TIME=$(rclone cat "$RCLONE_DRIVE_NAME:$S3_BUCKET_NAME/last-backup-time.dat")
+  LAST_BACKUP_TIME_FILE_PATH="$RCLONE_DRIVE_NAME:$S3_BUCKET_NAME/last-backup-time.dat"
+  LAST_BACKUP_TIME=$(rclone cat $LAST_BACKUP_TIME_FILE_PATH)
   LAST_BACKUP_TIME_EPOCH=""
   if [ "$LAST_BACKUP_TIME" == "" ]; then
     echo_log "$FUNCTION_NAME: No last backup time"
@@ -730,27 +735,35 @@ function backup() {
   START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" | wc -l)
   if [ "$START_BACKUP_TIME_FILE_COUNT" != "0" ]; then
     if [ "$FORCE" == "" ]; then
-      echo_err "$FUNCTION_NAME: Start backup time found, a backup may be running, add the --force option to pass this check"
+      echo_err "$FUNCTION_NAME: Start backup time found, a backup may be running or was killed, add the --force option to pass this check"
       exit 1
     else
-      echo_log "$FUNCTION_NAME: Force used, overwriting the start backup file. "
+      echo_log "$FUNCTION_NAME: Force used, using the stored start backup time. "
+      START_BACKUP_TIME=$(rclone cat $RCLONE_START_BACKUP_TIME_FILE_PATH)
+      echo_log "$FUNCTION_NAME: Retrieved Start backup time: $START_BACKUP_TIME"
     fi
+  else
+    START_BACKUP_TIME=$(TZ=UTC date +"%Y-%m-%dT%H:%M:%SZ")
+    echo_log "$FUNCTION_NAME: Start backup time: $START_BACKUP_TIME"
+    echo_log "$FUNCTION_NAME: Writing Start backup time to $RCLONE_START_BACKUP_TIME_FILE_PATH"
+    echo "$START_BACKUP_TIME" | rclone rcat "$RCLONE_START_BACKUP_TIME_FILE_PATH"
   fi;
 
-  START_BACKUP_TIME=$(TZ=UTC date +"%Y-%m-%dT%H:%M:%SZ")
-  START_BACKUP_TIME_EPOCH=$(TZ=UTC date -d "$START_BACKUP_TIME" +%s)
-  echo_log "$FUNCTION_NAME: Start backup time: $START_BACKUP_TIME"
-  echo_log "$FUNCTION_NAME: Writing Start backup time to $RCLONE_START_BACKUP_TIME_FILE_PATH"
-  echo "$START_BACKUP_TIME" | rclone rcat "$RCLONE_START_BACKUP_TIME_FILE_PATH"
+
 
   # Github Api Call
   # Note: pushed_at represents the date and time of the last commit
   echo_log "$FUNCTION_NAME: Retrieving repos"
-  API_REPOS=$(list_repo "$GIT_SOURCE" "--jq-expression=(.[] | [.full_name, .fork, .ssh_url, .pushed_at]) | @csv" '--jq-raw-output' '--silent')
-
+  REPOS_COMMAND="$CLI_NAME list_repo $GIT_SOURCE $MAX_REPO_COUNT --jq-expression='(.[] | [.full_name, .fork, .ssh_url, .pushed_at]) | @csv' '--jq-raw-output' '--silent'"
+  echo_log "$FUNCTION_NAME: executing command: $REPOS_COMMAND"
+  API_REPOS=$(eval "$REPOS_COMMAND")
 
   local ACTUAL_COUNT=0
   while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
+
+    # Analytics
+    ACTUAL_COUNT=$((ACTUAL_COUNT + 1))
+
     REPO_FULL_NAME=$(echo "$REPO_FULL_NAME" | tr -d '"')
     echo_log " "
     echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Backup Repo: $REPO_FULL_NAME"
@@ -760,7 +773,7 @@ function backup() {
       continue
     fi
 
-    BUNDLE_NAME="${REPO_FULL_NAME//\//.}.bundle"
+    BUNDLE_NAME="${REPO_FULL_NAME}.bundle"
     BUNDLE_TARGET_PATH="$RCLONE_DRIVE_NAME:$S3_BUCKET_NAME/$BUNDLE_NAME"
     TARGET_BUNDLE_PATH_COUNT=$(rclone lsf "$BUNDLE_TARGET_PATH" | wc -l)
     if [ "$TARGET_BUNDLE_PATH_COUNT" != "0" ]; then
@@ -793,22 +806,18 @@ function backup() {
     eval "$BUNDLE_COMMAND"
 
     echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Uploading bundle: $BUNDLE_NAME"
-    MOVE_COMMAND="rclone move $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH"
+    MOVE_COMMAND="rclone moveto $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH --progress"
     echo_log "$FUNCTION_NAME: Executing : $MOVE_COMMAND"
     eval "$MOVE_COMMAND"
 
-    # Break
-    ACTUAL_COUNT=$((ACTUAL_COUNT + 1))
-    if [ "$ACTUAL_COUNT" -gt 2 ]; then
-        break
-    fi
 
   done <<< "$API_REPOS" # needed to not run as pipeline and get ACTUAL_COUNT
 
+
+  echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH"
+  rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH"
   echo_log " "
-  echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Cloned $ACTUAL_COUNT repositories";
-
-
+  echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Processed $ACTUAL_COUNT repositories";
 
 }
 
@@ -853,7 +862,7 @@ case ${COMMAND} in
 help)
   help
   ;;
-list-repo)
+list_repo)
   list_repo "$SILENT_OPTION" "${ARGUMENTS[@]}"
   ;;
 backup)
