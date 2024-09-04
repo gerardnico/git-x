@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# flag
+  # e - Exit if any error
+  # u - Treat unset variables as an error when substituting
+  # o pipefail - the return value of a pipeline is the status of the last command to exit with a non-zero status or zero if no command exited with a non-zero status
+  # E - the ERR trap is inherited by shell functions
+set -Eeuo pipefail
+
+## Known Host
+# to avoid Host key verification failed
+if [ ! -f ~/.ssh/known_hosts ]; then
+
+  mkdir -p ~/.ssh
+  curl --silent https://api.github.com/meta \
+    | jq --raw-output '"github.com "+.ssh_keys[]' >> ~/.ssh/known_hosts
+
+fi;
+
+
+exec "$@"

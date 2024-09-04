@@ -2,20 +2,6 @@
 
 
 
-## Gogs
-
-```bash
-docker run \
-  --name git-backup \
-  --rm \
-  -it \
-  -v ./resources/git-backup:/opt/git-backup \
-  -e GIT_GOGS_PLATFORM=gogs \
-  -e GIT_GOGS_DOMAIN=gogs.bytle.net \
-  -e GIT_GOGS_TOKEN=$GOGS_TOKEN \
-  ghcr.io/gerardnico/git-backup:latest \
-  /bin/bash
-```
 
 ## Github to s3 via Rclone
 
@@ -45,6 +31,11 @@ docker run \
   -e RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms \
   ghcr.io/gerardnico/git-backup:latest \
   /bin/bash
+```
+* Modify the script
+* Run it
+```bash
+git-backup ....
 ```
 
 
@@ -90,17 +81,31 @@ rm -rf ~/gerardnico/shell
 * At completion, overwrite the last backup time with the start backup time 
 
 
-### Restore
+
+## Gogs
+
+For now only repo listing.
 
 ```bash
-git clone ~/gerardnico/gerardnico.shell.bundle ~/gerardnico/bundle
+docker run \
+  --name git-backup \
+  --rm \
+  -it \
+  -v ./resources/git-backup:/opt/git-backup \
+  -e GIT_GOGS_PLATFORM=gogs \
+  -e GIT_GOGS_DOMAIN=gogs.bytle.net \
+  -e GIT_GOGS_TOKEN=$GOGS_TOKEN \
+  ghcr.io/gerardnico/git-backup:latest \
+  /bin/bash
 ```
-
 
 ## Note
 ### Mount
 
-For mount with fuse, you need to add the following options
+We tried to mount, but it was not really a success when using with git directly.
+
+If you want to test it again, for a rclone mount with fuse, you need to add the following options
+to the docker run.
 ```bash
 docker run \
   --cap-add SYS_ADMIN \

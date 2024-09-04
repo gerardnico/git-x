@@ -41,10 +41,12 @@ RUN addgroup -g 1000 megroup && \
 # App Install
 ####################################
 RUN mkdir "/opt/git-backup"
-COPY resources/git-backup /opt/git-backup
-RUN chmod 0755 /opt/git-backup/bin/*
+COPY --chmod=0755 resources/git-backup /opt/git-backup/
 ENV PATH="/opt/git-backup/bin:${PATH}"
+CMD [ "git-backup" ]
 
-
-ENTRYPOINT []
-CMD ["git-backup"]
+####################################
+# Docker entrypoint
+####################################
+COPY --chmod=0755 resources/docker/git-backup-docker-entrypoint /usr/local/bin/
+ENTRYPOINT [ "git-backup-docker-entrypoint" ]

@@ -84,7 +84,7 @@ RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms \
   * An SSH private key in your `~/.ssh` directory. ie [Generate a key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
   * With [the corresponding public key added to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
 * [A GitHub API Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) known as Personal Access Token or PAT 
-  * with the scope: `repo:status`
+  * with the scope `repo` for public and private repo 
 * A [Rclone destination](https://rclone.org/overview/)
 
 ## How to restore
@@ -126,8 +126,8 @@ The [Gickup application](https://cooperspencer.github.io/gickup-documentation/) 
 
 See [dev](doc/dev.md)
 
-## Why?
-### Why do you choose SSH over Personal Access Token for Github
+
+## Why do you choose SSH over Personal Access Token for Github
 
 That's the easiest way to login.
 
@@ -141,3 +141,13 @@ https://user:$TOKEN/github.com/parent/repo
 ```
 
 
+## Kubernetes
+
+In the `command` property of a container, you should use the [entrypoint](resources/docker/git-backup-docker-entrypoint)
+to create the `host_known` file with GitHub SSH keys and avoid the error: `Host key verification failed`
+
+Example:
+```yaml
+command: [ "git-backup-docker-entrypoint" ]
+args: [ "git-backup", "backup", "github", "s3", "--filter-exclude-pattern=site-com-datacadamia", "--restart" ]
+```
