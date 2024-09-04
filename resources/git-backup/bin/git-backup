@@ -64,6 +64,10 @@ function getOptionValue() {
   echo "$value"
 }
 
+######################################
+# Env
+#####################################
+ENV_PREFIX="GITBKP"
 
 ######################################
 # Usage
@@ -215,7 +219,7 @@ function mount(){
 
   echo_log "$FUNCTION_NAME: Mount Rclone $GIT_REGISTRY at $RCLONE_MOUNTED_PATH"
 
-  RCLONE_COMMAND="rclone mount $RCLONE_DRIVE_NAME:$S3_BUCKET_NAME $RCLONE_MOUNTED_PATH"
+  RCLONE_COMMAND="rclone mount $RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH $RCLONE_MOUNTED_PATH"
   if [ $RCLONE_PROCESS_MODE == "daemon" ]; then
     RCLONE_COMMAND="$RCLONE_COMMAND --daemon"
   fi;
@@ -231,6 +235,9 @@ function set_env(){
     local FUNCTION_NAME="set-env"
 
     local SILENT_OPTION=""
+
+    # The prefix for our env
+    local ENV_PREFIX="GITBKP"
 
     # The registry is an unique name
     # that identifies a Git Server instance
@@ -268,7 +275,7 @@ function set_env(){
     echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Setting env for Git Instance: $GIT_REGISTRY"
 
     # Target
-    GIT_PLATFORM_ENV_NAME="GIT_${GIT_REGISTRY}_PLATFORM"
+    GIT_PLATFORM_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_PLATFORM"
     if [ -z "${!GIT_PLATFORM_ENV_NAME+x}" ]; then
       echo_err "Environment variable '$GIT_PLATFORM_ENV_NAME' does not exist."
       exit 1
@@ -279,7 +286,7 @@ function set_env(){
 
     # Domain
     GIT_DOMAIN=""
-    GIT_DOMAIN_ENV_NAME="GIT_${GIT_REGISTRY}_DOMAIN"
+    GIT_DOMAIN_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_DOMAIN"
     if [ -z "${!GIT_DOMAIN_ENV_NAME+x}" ]; then
       case ${GIT_PLATFORM} in
         github)
@@ -299,7 +306,7 @@ function set_env(){
     echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Domain: $GIT_DOMAIN"
 
     # API Access Token
-    GIT_TOKEN_ENV_NAME="GIT_${GIT_REGISTRY}_TOKEN"
+    GIT_TOKEN_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_TOKEN"
     if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
         unset GIT_TOKEN;
         echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
@@ -357,87 +364,22 @@ function set_rclone_env(){
 
     set_env "$SILENT_OPTION" "$GIT_REGISTRY"
 
-    # The `git_backup` value below is used in all RCONF variable
-    # ie it's `GIT_BACKUP` in `RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY`
-    # don't change it
-    RCLONE_DRIVE_NAME="git_backup"
-
-    # Rclone S3
-    if [ "$GIT_PLATFORM" != "rclone" ]; then
-        echo_err "$FUNCTION_NAME: The git registry '$GIT_REGISTRY' is not a rclone platform but $GIT_PLATFORM"
-        exit 1
+    # Rclone specific
+    RCLONE_REMOTE_NAME_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_RCLONE_REMOTE_NAME"
+    if [ -z "${!RCLONE_REMOTE_NAME_ENV_NAME+x}" ]; then
+        echo_err "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_REMOTE_NAME_ENV_NAME) is mandatory and was not found"
+      else
+        RCLONE_REMOTE_NAME=${!RCLONE_REMOTE_NAME_ENV_NAME}
+        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Rclone remote Name: $RCLONE_REMOTE_NAME"
     fi;
 
-    echo_log "$FUNCTION_NAME: Set Rclone Conf"
-    RCLONE_TYPE_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_TYPE"
-    if [ -z "${!RCLONE_TYPE_ENV_NAME+x}" ]; then
-      echo_err "$FUNCTION_NAME: Environment variable '$RCLONE_TYPE_ENV_NAME' is mandatory for the platform $GIT_PLATFORM."
-      exit 1
-    else
-      # export RCLONE_CONFIG_GIT_BACKUP_TYPE=s3
-      export RCLONE_CONFIG_GIT_BACKUP_TYPE=${!RCLONE_TYPE_ENV_NAME}
-      echo_log "$FUNCTION_NAME:   * Rclone Type: $RCLONE_CONFIG_GIT_BACKUP_TYPE"
-    fi;
-
-    if [ "$RCLONE_CONFIG_GIT_BACKUP_TYPE" != "s3" ]; then
-      echo_err "With the platform $GIT_PLATFORM, we support only s3 as type, not $RCLONE_CONFIG_GIT_BACKUP_TYPE"
-      exit 1
-    fi;
-
-    # Provider Property
-    RCLONE_PROVIDER_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_PROVIDER"
-    if [ -z "${!RCLONE_PROVIDER_ENV_NAME+x}" ]; then
-      echo_log "$FUNCTION_NAME:   * Rclone Provider: not set"
-      exit 1
-    else
-      export RCLONE_CONFIG_GIT_BACKUP_PROVIDER=${!RCLONE_PROVIDER_ENV_NAME}
-      echo_log "$FUNCTION_NAME:   * Rclone Provider: $RCLONE_CONFIG_GIT_BACKUP_PROVIDER"
-    fi;
-
-    # Endpoint Property
-    RCLONE_ENDPOINT_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_ENDPOINT"
-    if [ -z "${!RCLONE_ENDPOINT_ENV_NAME+x}" ]; then
-      echo_log "$FUNCTION_NAME:   * Rclone EndPoint: not set"
-      exit 1
-    else
-      export RCLONE_CONFIG_GIT_BACKUP_ENDPOINT=${!RCLONE_ENDPOINT_ENV_NAME}
-      echo_log "$FUNCTION_NAME:   * Rclone EndPoint: $RCLONE_CONFIG_GIT_BACKUP_ENDPOINT"
-    fi;
-
-    # Access Key Property
-    RCLONE_ACCESS_KEY_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_ACCESS_KEY"
-    if [ -z "${!RCLONE_ACCESS_KEY_ENV_NAME+x}" ]; then
-      echo_err "Environment variable '$RCLONE_ACCESS_KEY_ENV_NAME' is mandatory for rclone s3."
-      exit 1
-    else
-      # export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=XXX
-      export RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=${!RCLONE_ACCESS_KEY_ENV_NAME}
-      echo_log "$FUNCTION_NAME:   * Rclone AccessKey: xxxx"
-    fi;
-
-    # Secret Key Property
-    RCLONE_SECRET_KEY_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_SECRET_KEY"
-    if [ -z "${!RCLONE_SECRET_KEY_ENV_NAME+x}" ]; then
-      echo_err "Environment variable '$RCLONE_SECRET_KEY_ENV_NAME' is mandatory for rclone s3."
-      exit 1
-    else
-      # export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=XXX
-      export RCLONE_CONFIG_GIT_BACKUP_SECRET_ACCESS_KEY=${!RCLONE_SECRET_KEY_ENV_NAME}
-      echo_log "$FUNCTION_NAME:   * Rclone SecretKey: xxxx"
-    fi;
-
-    # Not sure but with IDrive
-    export RCLONE_CONFIG_GIT_BACKUP_NO_CHECK_BUCKET=true
-    export RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms
-
-    # Bucket Name
-    RCLONE_BUCKET_NAME_ENV_NAME="GIT_${GIT_REGISTRY}_RCLONE_BUCKET_NAME"
-    if [ -z "${!RCLONE_BUCKET_NAME_ENV_NAME+x}" ]; then
-        echo_err "Environment variable '$RCLONE_BUCKET_NAME_ENV_NAME' is mandatory for rclone s3."
-        exit 1
-    else
-      S3_BUCKET_NAME=${!RCLONE_BUCKET_NAME_ENV_NAME}
-      echo_log "$FUNCTION_NAME:   * Rclone Bucket Name: $S3_BUCKET_NAME"
+    RCLONE_BASE_PATH_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_RCLONE_BASE_PATH"
+    if [ -z "${!RCLONE_BASE_PATH_ENV_NAME+x}" ]; then
+        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_BASE_PATH_ENV_NAME) is mandatory and was not found"
+        RCLONE_BASE_PATH=""
+      else
+        RCLONE_BASE_PATH=${!RCLONE_BASE_PATH_ENV_NAME}
+        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Rclone base path: $RCLONE_BASE_PATH"
     fi;
 
 }
@@ -741,8 +683,8 @@ function backup() {
 
   # Backup Start
   # Get the last backup date
-  LAST_BACKUP_TIME_FILE_PATH="$RCLONE_DRIVE_NAME:$S3_BUCKET_NAME/last-backup-time.dat"
-  LAST_BACKUP_TIME=$(rclone cat $LAST_BACKUP_TIME_FILE_PATH)
+  LAST_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/last-backup-time.dat"
+  LAST_BACKUP_TIME=$(rclone cat "$LAST_BACKUP_TIME_FILE_PATH")
   LAST_BACKUP_TIME_EPOCH=""
   if [ "$LAST_BACKUP_TIME" == "" ]; then
     echo_log "$FUNCTION_NAME: No last backup time"
@@ -752,7 +694,7 @@ function backup() {
   fi
 
   # Store the current date and time
-  RCLONE_START_BACKUP_TIME_FILE_PATH="$RCLONE_DRIVE_NAME:$S3_BUCKET_NAME/start-backup-time.dat"
+  RCLONE_START_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/start-backup-time.dat"
   echo_log "$FUNCTION_NAME: Listing start backup time"
   START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" | wc -l)
   if [ "$START_BACKUP_TIME_FILE_COUNT" != "0" ]; then
@@ -761,7 +703,7 @@ function backup() {
       exit 1
     else
       echo_log "$FUNCTION_NAME: Force used, using the stored start backup time. "
-      START_BACKUP_TIME=$(rclone cat $RCLONE_START_BACKUP_TIME_FILE_PATH)
+      START_BACKUP_TIME=$(rclone cat "$RCLONE_START_BACKUP_TIME_FILE_PATH")
       echo_log "$FUNCTION_NAME: Retrieved Start backup time: $START_BACKUP_TIME"
     fi
   else
@@ -807,7 +749,7 @@ function backup() {
 
     BUNDLE_NAME="${REPO_NAME}.bundle"
     BUNDLE_RELATIVE_PATH=$REPO_PARENT/$BUNDLE_NAME
-    BUNDLE_TARGET_PATH="$RCLONE_DRIVE_NAME:$S3_BUCKET_NAME/$BUNDLE_RELATIVE_PATH"
+    BUNDLE_TARGET_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/$BUNDLE_RELATIVE_PATH"
     TARGET_BUNDLE_PATH_COUNT=$(rclone lsf "$BUNDLE_TARGET_PATH" | wc -l)
     if [ "$TARGET_BUNDLE_PATH_COUNT" != "0" ]; then
       echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Backup bundle already exist at $BUNDLE_TARGET_PATH";
