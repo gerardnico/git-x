@@ -117,7 +117,7 @@ function help_list_repo() {
   echo ""
   echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
   echo ""
-  echo "   ${CLI_NAME} $FUNCTION_NAME git_registry [--silent] [--jq-raw-output] [--jq-expression] [--report=xxx]"
+  echo "   ${CLI_NAME} $FUNCTION_NAME git_registry [xxx]"
   echo ""
   echo "where:"
   echo "     * git_registry                - the git registry name to read from"
@@ -140,12 +140,12 @@ function help_backup() {
     echo ""
     echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
     echo ""
-    echo "   ${CLI_NAME} $FUNCTION_NAME source target [--silent]"
+    echo "   ${CLI_NAME} $FUNCTION_NAME source target [...]"
     echo ""
     echo "where:"
     echo "     * source                       - a git registry name to read from"
     echo "     * target                       - a git registry name to write to"
-    echo "     * --force                      - if a backup fail, it can be restarted with the force flag"
+    echo "     * --restart                    - if a backup fail, it can be restarted with the restart flag"
     echo "     * --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)"
     echo "     * --filter-max-repo-count='x'  - the maximum number of repositories to backup"
 
@@ -601,7 +601,7 @@ function backup() {
   local FUNCTION_NAME="backup"
   local GIT_SOURCE=""
   local GIT_TARGET=""
-  local FORCE=""
+  local RESTART=""
   local FILTER_MAX_REPO_COUNT=""
   local FILTER_EXCLUDE_PATTERN=""
   for arg in "$@"; do
@@ -610,8 +610,8 @@ function backup() {
           help_backup
           exit;
          ;;
-       "--force"|"-f")
-          FORCE="true"
+       "--restart")
+          RESTART="true"
           ;;
         --filter-max-repo-count=*)
           FILTER_MAX_REPO_COUNT=$(getOptionValue "$arg")
@@ -698,11 +698,11 @@ function backup() {
   echo_log "$FUNCTION_NAME: Listing start backup time"
   START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" | wc -l)
   if [ "$START_BACKUP_TIME_FILE_COUNT" != "0" ]; then
-    if [ "$FORCE" == "" ]; then
-      echo_err "$FUNCTION_NAME: Start backup time found, a backup may be running or was killed, add the --force option to pass this check"
+    if [ "$RESTART" == "" ]; then
+      echo_err "$FUNCTION_NAME: Start backup time found, a backup may be running or was killed, add the --restart option to pass this check"
       exit 1
     else
-      echo_log "$FUNCTION_NAME: Force used, using the stored start backup time. "
+      echo_log "$FUNCTION_NAME: Restart used, using the stored start backup time. "
       START_BACKUP_TIME=$(rclone cat "$RCLONE_START_BACKUP_TIME_FILE_PATH")
       echo_log "$FUNCTION_NAME: Retrieved Start backup time: $START_BACKUP_TIME"
     fi
