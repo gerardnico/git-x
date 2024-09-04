@@ -57,7 +57,7 @@ GITBKP_S3_PLATFORM=rclone # rclone
 GITBKP_S3_RCLONE_REMOTE_NAME=git_backup # remote name (only characters and _ as this an env)
 GITBKP_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
 ```
-  * `--filter-exclude-pattern=xxx` is a regexp pattern that if the expression matches the full name repository (`parent/name`) will exclude it from backup
+  * `--filter-exclude-pattern=xxx` is a regexp pattern that if the expression matches the full name repository (`workspace/name`) will exclude it from backup
 
 
 The rclone remote name is configured via [the native rclone environment variable](https://rclone.org/docs/#environment-variables). 
@@ -103,14 +103,14 @@ git clone https://host/path/to/repo.bundle
 The backup processing is:
 * Store the start time and get the last backup time
 * Get the repos via API and loop over them
-  * Skip its backup: 
+  * Skip the backup if: 
     * the last pushed time of the repo is earlier than the last backup (and if a backup exist)
     * the repository is empty
     * the repository is a fork
   * Otherwise:
     * git clone a mirror repository locally
     * create a bundle
-    * upload the bundle to `parent/repository_name`
+    * upload the bundle to `workspace/repository_name`
     * delete the clone
   * Repeat for another repo
 * Delete the start time
