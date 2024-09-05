@@ -100,7 +100,7 @@ git clone https://host/path/to/repo.bundle
 
 ## Backup processing explained
 
-The backup processing is:
+The backup processing implemented in the `backup` function of the [git-backup script](resources/git-backup/bin/git-backup) is:
 * Store the start time and get the last backup time
 * Get the repos via API and loop over them
   * Skip the backup if: 
