@@ -107,7 +107,7 @@ The backup processing implemented in the `backup` function of the [git-backup sc
     * the last pushed time of the repo is earlier than the last backup (and if a backup exist)
     * the repository is empty
     * the repository is a fork
-  * Otherwise, backup with the following commands
+  * Otherwise, backup with the following commands:
 ```bash
 # git clone a mirror repository locally
 git clone --mirror $REPO_SSH_URL $CLONE_TARGET_DIR
