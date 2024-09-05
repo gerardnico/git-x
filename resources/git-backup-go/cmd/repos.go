@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"github.com/urfave/cli/v3"
-	"os"
 )
 
 func ReposCommand() *cli.Command {
@@ -30,11 +30,12 @@ func ReposCommand() *cli.Command {
 func ReposAction() func(c context.Context, command *cli.Command) error {
 	return func(c context.Context, command *cli.Command) error {
 
-		if len(os.Args) <= 2 {
-			message := "At least a option should be given"
+		registry := command.Args().Get(0)
+		if registry == "" {
 			_ = cli.ShowSubcommandHelp(command)
-			return cli.Exit(message, 1)
+			return cli.Exit("A registry argument should be given", 1)
 		}
+		fmt.Println(registry)
 
 		return nil
 	}
