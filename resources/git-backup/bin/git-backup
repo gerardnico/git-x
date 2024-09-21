@@ -49,6 +49,10 @@ function finish() {
   echo_log "$SILENT_OPTION" "\n$CLI_NAME Script terminated\n"
 }
 
+## A trap on ERR, if set, is executed before the shell exits.
+# Because we show the $LINENO, we can;t create a function otherwise the line number would be not correct
+trap 'echo_err ""; echo_err "Command error on line ($0:$LINENO)"; exit 1' ERR
+
 trap finish EXIT
 
 # Retrieve the value of an option
@@ -367,15 +371,16 @@ function set_rclone_env(){
     # Rclone specific
     RCLONE_REMOTE_NAME_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_RCLONE_REMOTE_NAME"
     if [ -z "${!RCLONE_REMOTE_NAME_ENV_NAME+x}" ]; then
-        echo_err "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_REMOTE_NAME_ENV_NAME) is mandatory and was not found"
+        RCLONE_REMOTE_NAME=${GIT_REGISTRY}
+        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_REMOTE_NAME_ENV_NAME) was not found. Setting Rclone remote name to the Git Registry: ${GIT_REGISTRY}"
       else
         RCLONE_REMOTE_NAME=${!RCLONE_REMOTE_NAME_ENV_NAME}
-        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Rclone remote Name: $RCLONE_REMOTE_NAME"
     fi;
+    echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Rclone remote Name: $RCLONE_REMOTE_NAME"
 
     RCLONE_BASE_PATH_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_RCLONE_BASE_PATH"
     if [ -z "${!RCLONE_BASE_PATH_ENV_NAME+x}" ]; then
-        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_BASE_PATH_ENV_NAME) is mandatory and was not found"
+        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_BASE_PATH_ENV_NAME) was not found. Setting to empty string"
         RCLONE_BASE_PATH=""
       else
         RCLONE_BASE_PATH=${!RCLONE_BASE_PATH_ENV_NAME}
@@ -684,7 +689,11 @@ function backup() {
   # Backup Start
   # Get the last backup date
   LAST_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/last-backup-time.dat"
-  LAST_BACKUP_TIME=$(rclone cat "$LAST_BACKUP_TIME_FILE_PATH")
+  if ! LAST_BACKUP_TIME=$(rclone cat "$LAST_BACKUP_TIME_FILE_PATH" 2>/dev/null); then
+    # File does not exist
+    # Rclone Sftp returns an error while s3 does not
+    LAST_BACKUP_TIME=""
+  fi
   LAST_BACKUP_TIME_EPOCH=""
   if [ "$LAST_BACKUP_TIME" == "" ]; then
     echo_log "$FUNCTION_NAME: No last backup time"
@@ -696,7 +705,11 @@ function backup() {
   # Store the current date and time
   RCLONE_START_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/start-backup-time.dat"
   echo_log "$FUNCTION_NAME: Listing start backup time"
-  START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" | wc -l)
+  if ! START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" 2>/dev/null | wc -l); then
+    # File does not exist
+    # Rclone Sftp returns an error while s3 does not
+    START_BACKUP_TIME_FILE_COUNT="0"
+  fi
   if [ "$START_BACKUP_TIME_FILE_COUNT" != "0" ]; then
     if [ "$RESTART" == "" ]; then
       echo_err "$FUNCTION_NAME: Start backup time found, a backup may be running or was killed, add the --restart option to pass this check"
@@ -750,7 +763,11 @@ function backup() {
     BUNDLE_NAME="${REPO_NAME}.bundle"
     BUNDLE_RELATIVE_PATH=$REPO_PARENT/$BUNDLE_NAME
     BUNDLE_TARGET_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/$BUNDLE_RELATIVE_PATH"
-    TARGET_BUNDLE_PATH_COUNT=$(rclone lsf "$BUNDLE_TARGET_PATH" | wc -l)
+    if ! TARGET_BUNDLE_PATH_COUNT=$(rclone lsf "$BUNDLE_TARGET_PATH" 2>/dev/null | wc -l); then
+      # File does not exist
+      # Rclone Sftp returns an error while s3 does not
+      TARGET_BUNDLE_PATH_COUNT="0"
+    fi
     if [ "$TARGET_BUNDLE_PATH_COUNT" != "0" ]; then
       echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Backup bundle already exist at $BUNDLE_TARGET_PATH";
       # 2024-08-29T13:20:27Z
@@ -824,7 +841,6 @@ for arg in "$@"; do
     ;;
   --*|-*)
     ARGUMENTS+=("$arg")
-    shift
     ;;
   *)
     # Command or arg
@@ -833,7 +849,6 @@ for arg in "$@"; do
       else
         ARGUMENTS+=("$arg")
     fi
-    shift
     ;;
   esac
 done

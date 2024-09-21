@@ -31,11 +31,34 @@ docker run \
   -e RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms \
   ghcr.io/gerardnico/git-backup:latest \
   /bin/bash
+
+# or with bunny
+docker run \
+  --name git-backup \
+  --rm \
+  -it \
+  --user 1000:1000 \
+  -v ./resources/git-backup:/opt/git-backup \
+  -v ~/.ssh:/home/me/.ssh \
+  -e GITBKP_GITHUB_PLATFORM=github \
+  -e GITBKP_GITHUB_TOKEN=$GITHUB_TOKEN \
+  -e GITBKP_BUNNY_PLATFORM=rclone \
+  -e RCLONE_INPLACE=1 \
+  -e RCLONE_SIZE_ONLY=1 \
+  -e RCLONE_CONFIG_BUNNY_TYPE=sftp \
+  -e RCLONE_CONFIG_BUNNY_HOST=storage.bunnycdn.com \
+  -e RCLONE_CONFIG_BUNNY_ENDPOINT=h0k0.ca.idrivee2-22.com \
+  -e RCLONE_CONFIG_BUNNY_USER=git-backup \
+  -e RCLONE_CONFIG_BUNNY_PASS=$GIT_BACKUP_BUNNY_PASS \
+  ghcr.io/gerardnico/git-backup:latest \
+  /bin/bash
 ```
 * Modify the script
 * Run it
 ```bash
 git-backup ....
+# example
+git-backup backup github bunny --filter-exclude-pattern=site-com-datacadamia
 ```
 
 
@@ -103,7 +126,9 @@ docker run \
 ### Mount
 
 We tried to mount, but it was not really a success when using with git directly.
-
+```
+fusermount3: fuse device not found
+```
 If you want to test it again, for a rclone mount with fuse, you need to add the following options
 to the docker run.
 ```bash

@@ -1,1 +1,0 @@
-# Git Backup in Go
