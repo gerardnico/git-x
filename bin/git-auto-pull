@@ -1,0 +1,19 @@
+#!/bin/bash
+# Integrate the changes
+# AutoPull to stay in the same fashion than AutoCommit
+
+git fetch
+upstreamCommitToMerge=$(git rev-list HEAD...'@{u}' --count)
+
+echo "Integrating $upstreamCommitToMerge commits from $CURRENT_BRANCH_UPSTREAM into $CURRENT_BRANCH"
+if [ "$upstreamCommitToMerge" != 0 ]; then
+    # Stash before a merge to integrate the remote changes
+    # To avoid the error: Please commit your changes or stash them before you merge.
+    #
+    # Note that when the local changes do not conflict with the changes in the upstream,
+    # a simple git pull let you move forward but how do we know that ?
+    #
+    git stash
+    git merge '@{u}'
+    git stash pop # do a merge
+fi

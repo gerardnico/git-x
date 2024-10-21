@@ -1,0 +1,38 @@
+#!/bin/bash
+
+function git-commit-status() {
+
+  # Upstream
+  git fetch
+  upstreamCommitToMerge=$(git rev-list HEAD...'@{u}' --count)
+  localCommitToPush=$(git rev-list '@{u}'...HEAD --count)
+  echo "  * $upstreamCommitToMerge commits to merge"
+  echo "  * $localCommitToPush commits to push"
+
+  # for scripting: git status --porcelain
+  # porcelain means give the output in an easy-to-parse format for scripts
+  local vPorcelain
+  vPorcelain=$(git status --porcelain)
+  if [[ -z $vPorcelain ]]; then
+    echo "No modifications"
+  else
+    # output:
+    # for an unstaged file: `status space path`
+    # for a staged file: `status space space path`
+    echo "$vPorcelain" | while read -r fileStatusLine; do
+      # fileStatus=${fileStatusLine:0:1} # not yet used
+      fileStatusStaged=${fileStatusLine:1:2}
+      if [ "${fileStatusStaged}" == '  ' ]; then
+        inNextCommit=' (staged)'
+        # filePath=${fileStatusLine:3} # not yet used
+      else
+        inNextCommit=' (unstaged)'
+        # filePath=${fileStatusLine:2} # not yet used
+      fi
+      echo "$fileStatusLine$inNextCommit"
+    done
+  fi
+
+}
+
+git-commit-status

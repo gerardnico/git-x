@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Cancel all modifications and start fresh
+function git_reset_clean() {
+  git reset --hard
+  git clean -f
+}
+
+git_reset_clean

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+function git_working_status() {
+  modified=$(git ls-files -m)
+  if [[ -n $modified ]]; then
+    echo "Modified not in commit: $modified"
+  fi
+  deleted=$(git ls-files -d)
+  if [[ -n $deleted ]]; then
+    echo "Deleted: $deleted"
+  fi
+  untracked=$(git ls-files -o)
+  if [[ -n $untracked ]]; then
+    echo "Untracked/Added: $untracked"
+  fi
+  if [[ -z $modified && -z $deleted && -z $untracked ]]; then
+    echo "No modifications"
+  fi
+}
+
+git_working_status

@@ -1,12 +1,10 @@
-# Multi-Repo Git Plugins
+# Git All Plugins
 
 ## About
 
-`Multi Git` is:
-* a Git Wrapper 
+`Git All` is:
+* a Git Wrapper that supports one command against multiple repositories. 
 * and a series of Git Plugins command 
-
-that supports multiple repositories.
 
 
 ## Command List
