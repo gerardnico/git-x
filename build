@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# Exit immediately if a command exits with a non-zero status
-set -Eeuo pipefail
-
-docker build . -t ghcr.io/gerardnico/git-backup:latest

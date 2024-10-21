@@ -21,9 +21,9 @@ RUN apk update \
 # This labels are used by Github
 ####################################
 # * connect the repo
-LABEL org.opencontainers.image.source="https://github.com/gerardnico/git-backup"
+LABEL org.opencontainers.image.source="https://github.com/gerardnico/git-multi"
 # * set a description
-LABEL org.opencontainers.image.description="Git backup or clone"
+LABEL org.opencontainers.image.description="Git Multi (Git Command for everyday use against multiple repo)"
 
 
 ####################################
@@ -40,13 +40,13 @@ RUN addgroup -g 1000 megroup && \
 ####################################
 # App Install
 ####################################
-RUN mkdir "/opt/git-backup"
-COPY --chmod=0755 resources/git-backup /opt/git-backup/
-ENV PATH="/opt/git-backup/bin:${PATH}"
-CMD [ "git-backup" ]
+RUN mkdir -p "/opt/git-multi/bin"
+COPY --chmod=0755 bin /opt/git-multi/
+ENV PATH="/opt/git-multi/bin:${PATH}"
+CMD [ "git" ]
 
 ####################################
 # Docker entrypoint
 ####################################
-COPY --chmod=0755 resources/docker/git-backup-docker-entrypoint /usr/local/bin/
-ENTRYPOINT [ "git-backup-docker-entrypoint" ]
+COPY --chmod=0755 resources/docker/git-multi-docker-entrypoint /usr/local/bin/
+ENTRYPOINT [ "git-multi-docker-entrypoint" ]

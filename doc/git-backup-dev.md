@@ -1,4 +1,4 @@
-# How to dev
+# How to dev to develop the Git Backup command
 
 
 
@@ -9,7 +9,7 @@
 * The ssh key is needed for Git
 
 ```bash
-cd ~/code/git-backup
+cd ~/code/git-multi
 docker run \
   --name git-backup \
   --rm \
