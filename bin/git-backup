@@ -7,66 +7,14 @@
 
 
 # flag
-# e - Exit if any error
-# u - Treat unset variables as an error when substituting
-# o pipefail - the return value of a pipeline is the status of the last command to exit with a non-zero status or zero if no command exited with a non-zero status
-# E - the ERR trap is inherited by shell functions
 set -Eeuo pipefail
+source bashlib-echo.sh
+source bashlib-error.sh
+error::set_trap
 
 CLI_NAME=$(basename "$0") # Name of the cli
 
 
-# Echo a message
-# Accept as first argument a flag --silent or -s to no echo anything
-function echo_log() {
-
-  for arg in "$@"; do
-        case "$arg" in
-        "--silent"|"-s")
-          return
-          ;;
-        "")
-          # empty arg
-        ;;
-        *)
-          echo -e "$CLI_NAME: ${arg:-}"
-          ;;
-        esac
-  done
-
-
-}
-
-# Print the error message $1
-function echo_err() {
-  RED='\033[0;31m'
-  NC='\033[0m' # No Color
-  #(>&2 echo -e "${RED}$1${NC}")
-  echo_log "${RED}$1${NC}"
-}
-
-function finish() {
-  echo_log "$SILENT_OPTION" "\n$CLI_NAME Script terminated\n"
-}
-
-## A trap on ERR, if set, is executed before the shell exits.
-# Because we show the $LINENO, we can;t create a function otherwise the line number would be not correct
-trap 'echo_err ""; echo_err "Command error on line ($0:$LINENO)"; exit 1' ERR
-
-trap finish EXIT
-
-# Retrieve the value of an option
-# ie with `--name=value`, this function will return `value`
-# usage: `maximumMemory=$(getOptionValue "$arg")`
-function getOptionValue() {
-  # Options
-  # shellcheck disable=SC2034
-  IFS='=' read -r key value <<<"${1:2}"
-  if [ "$value" == "" ]; then
-    value=true
-  fi
-  echo "$value"
-}
 
 ######################################
 # Env
@@ -85,7 +33,7 @@ function help() {
   echo ""
   echo "where command is one of:"
   echo "     * help       - this help"
-  echo "     * list-repo  - list the repositories of a Git registry"
+  echo "     * list       - list the repositories of a Git registry"
   echo "     * backup     - backup the repositories of a Git registry"
   echo "     * mount      - mount a rclone Git registry "
   echo ""
@@ -115,9 +63,9 @@ function help_mount() {
 
 }
 
-function help_list_repo() {
+function help_list() {
 
-  FUNCTION_NAME="list_repo"
+  FUNCTION_NAME="list"
   echo ""
   echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
   echo ""
@@ -193,7 +141,7 @@ function mount(){
             if [ "$GIT_REGISTRY" == "" ]; then
                 GIT_REGISTRY="$arg"
               else
-                echo_err "$FUNCTION_NAME: Only one argument is supported. ($arg) is the second argument"
+                echo::err "$FUNCTION_NAME: Only one argument is supported. ($arg) is the second argument"
                 exit 1
             fi
             ;;
@@ -203,7 +151,7 @@ function mount(){
   # Unmount
   if [ "$FUSE_ACTION" == "unmount" ]; then
 
-    echo_log "$FUNCTION_NAME: Unmounting $RCLONE_MOUNTED_PATH"
+    echo::info "$FUNCTION_NAME: Unmounting $RCLONE_MOUNTED_PATH"
     # Force
     umount --force $RCLONE_MOUNTED_PATH
 
@@ -215,22 +163,22 @@ function mount(){
   fi
 
   if [ "$GIT_REGISTRY" == "" ]; then
-      echo_err "$FUNCTION_NAME: A Git registry name is needed as first argument "
+      echo::err "$FUNCTION_NAME: A Git registry name is needed as first argument "
       exit 1
   fi
 
   set_rclone_env "$SILENT_OPTION" $GIT_REGISTRY
 
-  echo_log "$FUNCTION_NAME: Mount Rclone $GIT_REGISTRY at $RCLONE_MOUNTED_PATH"
+  echo::info "$FUNCTION_NAME: Mount Rclone $GIT_REGISTRY at $RCLONE_MOUNTED_PATH"
 
   RCLONE_COMMAND="rclone mount $RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH $RCLONE_MOUNTED_PATH"
   if [ $RCLONE_PROCESS_MODE == "daemon" ]; then
     RCLONE_COMMAND="$RCLONE_COMMAND --daemon"
   fi;
-  echo_log "$FUNCTION_NAME: Executing the command: $RCLONE_COMMAND"
+  echo::info "$FUNCTION_NAME: Executing the command: $RCLONE_COMMAND"
   eval "$RCLONE_COMMAND"
 
-  echo_log "$FUNCTION_NAME: Rclone $GIT_REGISTRY mounted at $RCLONE_MOUNTED_PATH"
+  echo::info "$FUNCTION_NAME: Rclone $GIT_REGISTRY mounted at $RCLONE_MOUNTED_PATH"
 
 }
 
@@ -263,7 +211,7 @@ function set_env(){
           if [ "$GIT_REGISTRY" == "" ]; then
               GIT_REGISTRY="${arg^^}" # ^^ for uppercase
             else
-              echo_err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only one argument, the instance. ($arg) is the second argument"
+              echo::err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only one argument, the instance. ($arg) is the second argument"
               exit 1;
           fi
           shift
@@ -272,21 +220,32 @@ function set_env(){
     done
 
     if [ "$GIT_REGISTRY" == "" ]; then
-      echo_err "$FUNCTION_NAME: The first argument should be not empty with the git instance name"
+      echo::err "The Git Registry should be not empty"
       exit 1;
     fi
 
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Setting env for Git Instance: $GIT_REGISTRY"
+    echo::info "$SILENT_OPTION" "Setting env for Git Instance: $GIT_REGISTRY"
+
+
 
     # Target
     GIT_PLATFORM_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_PLATFORM"
     if [ -z "${!GIT_PLATFORM_ENV_NAME+x}" ]; then
-      echo_err "Environment variable '$GIT_PLATFORM_ENV_NAME' does not exist."
-      exit 1
+      # PLATFORM/Registry Type type not found
+      # Well-Known registry
+      case $GIT_REGISTRY in
+        "GITHUB")
+          GIT_PLATFORM="github"
+          ;;
+        *)
+          echo::err "Environment variable '$GIT_PLATFORM_ENV_NAME' does not exist."
+          exit 1
+          ;;
+      esac
     else
       GIT_PLATFORM=${!GIT_PLATFORM_ENV_NAME}
-      echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Platform: $GIT_PLATFORM"
     fi
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME:  * Platform: $GIT_PLATFORM"
 
     # Domain
     GIT_DOMAIN=""
@@ -297,7 +256,7 @@ function set_env(){
           GIT_DOMAIN="github.com"
           ;;
         gogs)
-          echo_err "Environment variable '$GIT_DOMAIN_ENV_NAME' is mandatory for gogs"
+          echo::err "Environment variable '$GIT_DOMAIN_ENV_NAME' is mandatory for gogs"
           exit 1
           ;;
         *)
@@ -307,16 +266,16 @@ function set_env(){
     else
       GIT_DOMAIN=${!GIT_DOMAIN_ENV_NAME}
     fi
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Domain: $GIT_DOMAIN"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME:  * Domain: $GIT_DOMAIN"
 
     # API Access Token
     GIT_TOKEN_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_TOKEN"
     if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
         unset GIT_TOKEN;
-        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
+        echo::warn "$SILENT_OPTION" "$FUNCTION_NAME:  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
       else
         GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
-        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Api Token: Found"
+        echo::info "$SILENT_OPTION" "$FUNCTION_NAME:  * Api Token: Found"
     fi;
 
 }
@@ -353,7 +312,7 @@ function set_rclone_env(){
           if [ "$GIT_REGISTRY" == "" ]; then
               GIT_REGISTRY="${arg^^}" # ^^ for uppercase
             else
-              echo_err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only one argument, a git registry. ($arg) is the second argument"
+              echo::err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only one argument, a git registry. ($arg) is the second argument"
               exit 1;
           fi
           shift
@@ -362,7 +321,7 @@ function set_rclone_env(){
     done
 
     if [ "$GIT_REGISTRY" == "" ]; then
-      echo_err "$FUNCTION_NAME: The first argument should be not empty with the git instance name"
+      echo::err "$FUNCTION_NAME: The first argument should be not empty with the git instance name"
       exit 1;
     fi
 
@@ -372,19 +331,19 @@ function set_rclone_env(){
     RCLONE_REMOTE_NAME_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_RCLONE_REMOTE_NAME"
     if [ -z "${!RCLONE_REMOTE_NAME_ENV_NAME+x}" ]; then
         RCLONE_REMOTE_NAME=${GIT_REGISTRY}
-        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_REMOTE_NAME_ENV_NAME) was not found. Setting Rclone remote name to the Git Registry: ${GIT_REGISTRY}"
+        echo::info "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_REMOTE_NAME_ENV_NAME) was not found. Setting Rclone remote name to the Git Registry: ${GIT_REGISTRY}"
       else
         RCLONE_REMOTE_NAME=${!RCLONE_REMOTE_NAME_ENV_NAME}
     fi;
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Rclone remote Name: $RCLONE_REMOTE_NAME"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME:  * Rclone remote Name: $RCLONE_REMOTE_NAME"
 
     RCLONE_BASE_PATH_ENV_NAME="${ENV_PREFIX}_${GIT_REGISTRY}_RCLONE_BASE_PATH"
     if [ -z "${!RCLONE_BASE_PATH_ENV_NAME+x}" ]; then
-        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_BASE_PATH_ENV_NAME) was not found. Setting to empty string"
+        echo::info "$SILENT_OPTION" "$FUNCTION_NAME:  * Env variable ($RCLONE_BASE_PATH_ENV_NAME) was not found. Setting to empty string"
         RCLONE_BASE_PATH=""
       else
         RCLONE_BASE_PATH=${!RCLONE_BASE_PATH_ENV_NAME}
-        echo_log "$SILENT_OPTION" "$FUNCTION_NAME:  * Rclone base path: $RCLONE_BASE_PATH"
+        echo::info "$SILENT_OPTION" "$FUNCTION_NAME:  * Rclone base path: $RCLONE_BASE_PATH"
     fi;
 
 }
@@ -395,7 +354,6 @@ function set_rclone_env(){
 #####################################
 function list_repo(){
 
-  local FUNCTION_NAME="List Repo"
   local GIT_REGISTRY=""
   # Report are default value for JQ expression
   local REPORT=""
@@ -428,7 +386,7 @@ function list_repo(){
       REPORT=$(getOptionValue "$arg")
       ;;
     "--help"|"-h")
-      help_list_repo
+      help_list
       exit
       ;;
     *)
@@ -436,12 +394,18 @@ function list_repo(){
       if [ "$GIT_REGISTRY" == "" ]; then
           GIT_REGISTRY=$arg
         else
-          echo_err "$FUNCTION_NAME: Too much argument found: list-repo except only one argument, the instance. ($arg) is the second argument"
+          echo::err "$FUNCTION_NAME: Too much argument found: list except only one argument, the registry. ($arg) is the second argument"
           exit 1;
       fi
       ;;
     esac
   done
+
+  if [ "$GIT_REGISTRY" = "" ]; then
+    help_list
+    echo::err "The git registry is mandatory"
+    exit 1
+  fi
 
   set_env "$GIT_REGISTRY" "$SILENT_OPTION"
 
@@ -449,9 +413,9 @@ function list_repo(){
   # Report are default values
   if [ "${REPORT}" == "" ]; then
     REPORT="default"
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: No Report found, set to: $REPORT"
+    echo::info "$SILENT_OPTION" "No Report found, set to: $REPORT"
   else
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Report: $REPORT"
+    echo::info "$SILENT_OPTION" "Report: $REPORT"
   fi
 
   case ${GIT_PLATFORM} in
@@ -459,7 +423,7 @@ function list_repo(){
 
     # Auth Token
     if [ -z "${GIT_TOKEN+x}" ]; then
-      echo_err "Git Token is mandatory to list repo for $GIT_PLATFORM"
+      echo::err "Git Token is mandatory to list repo for $GIT_PLATFORM"
       exit 1
     fi
 
@@ -481,7 +445,7 @@ function list_repo(){
         JQ_RAW_OUTPUT_OPTION="--raw-output"
         ;;
       *)
-        echo_err "$FUNCTION_NAME: The report ($REPORT) is unknown"
+        echo::err "$FUNCTION_NAME: The report ($REPORT) is unknown"
         exit 1;
       ;;
     esac
@@ -490,15 +454,15 @@ function list_repo(){
     if [ "${JQ_EXPRESSION}" == "" ]; then
         JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
     fi
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
     if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
         JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
     fi
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
 
     # URL AI
     URL_API="https://$GIT_DOMAIN/api/v1/user/repos"
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Requesting $URL_API"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Requesting $URL_API"
 
     # Execute
     echo "$SILENT_OPTION" ""
@@ -511,7 +475,7 @@ function list_repo(){
 
       # Auth Token
       if [ -z "${GIT_TOKEN+x}" ]; then
-        echo_err "Git Token is mandatory to list repo for $GIT_PLATFORM"
+        echo::err "Git Token is mandatory to list repo for $GIT_PLATFORM"
         exit 1
       fi
 
@@ -533,7 +497,7 @@ function list_repo(){
           JQ_RAW_OUTPUT_OPTION="--raw-output"
           ;;
         *)
-          echo_err "$FUNCTION_NAME: The report ($REPORT) is unknown"
+          echo::err "$FUNCTION_NAME: The report ($REPORT) is unknown"
           exit 1;
         ;;
       esac
@@ -542,11 +506,11 @@ function list_repo(){
       if [ "${JQ_EXPRESSION}" == "" ]; then
           JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
       fi
-      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
+      echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Jq Expression: $JQ_EXPRESSION"
       if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
           JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
       fi
-      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
+      echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
 
       # URL API: repo for the authenticated user
       # Doc: https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user
@@ -561,7 +525,7 @@ function list_repo(){
       while true; do
 
           REQUEST_URL="$URL_API?per_page=$REPO_BY_PAGE&page=$ACTUAL_PAGE"
-          echo_log "$SILENT_OPTION" "$FUNCTION_NAME: $ACTUAL_PAGE - Requesting $REPO_BY_PAGE repo ($REQUEST_URL)";
+          echo::info "$SILENT_OPTION" "$FUNCTION_NAME: $ACTUAL_PAGE - Requesting $REPO_BY_PAGE repo ($REQUEST_URL)";
 
           ACTUAL_REPOS=$(curl -sS -H "Authorization: token $GIT_TOKEN" "$REQUEST_URL")
           TOTAL_REPOS=$(jq -s '.[0] + .[1]' <(echo "$TOTAL_REPOS") <(echo "$ACTUAL_REPOS"))
@@ -573,13 +537,13 @@ function list_repo(){
 
           # Break on last page
           if [ "$COUNT" -lt "$REPO_BY_PAGE" ]; then
-              echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Retrieved $TOTAL_COUNT repositories";
+              echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Retrieved $TOTAL_COUNT repositories";
               break
           fi
 
           # Break on max count
           if [ "$FILTER_MAX_REPO_COUNT" != "" ] && [ "$TOTAL_COUNT" -ge "$FILTER_MAX_REPO_COUNT" ]; then
-              echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Max total count repositories ($TOTAL_COUNT) reached";
+              echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Max total count repositories ($TOTAL_COUNT) reached";
               break
           fi
 
@@ -587,14 +551,14 @@ function list_repo(){
 
       done
 
-      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: "
+      echo::info "$SILENT_OPTION" "$FUNCTION_NAME: "
       # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
       # shellcheck disable=SC2086
       echo "$TOTAL_REPOS" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
 
       ;;
   *)
-    echo_err "The git platform $GIT_PLATFORM is not yet implemented"
+    echo::err "The git platform $GIT_PLATFORM is not yet implemented"
     exit 1
     ;;
   esac
@@ -632,7 +596,7 @@ function backup() {
           elif [ "$GIT_TARGET" == "" ]; then
               GIT_TARGET="${arg^^}" # ^^ for uppercase
           else
-              echo_err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only 2 arguments, the source and the target. ($arg) is the third argument"
+              echo::err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only 2 arguments, the source and the target. ($arg) is the third argument"
               exit 1;
           fi
           shift
@@ -641,30 +605,30 @@ function backup() {
   done
 
   ## Arg feedback
-  echo_log "$FUNCTION_NAME: Arguments feedback"
+  echo::info "$FUNCTION_NAME: Arguments feedback"
   if [ "$FILTER_EXCLUDE_PATTERN" != "" ]; then
-    echo_log "$FUNCTION_NAME:   * Exclude pattern: $FILTER_EXCLUDE_PATTERN"
+    echo::info "$FUNCTION_NAME:   * Exclude pattern: $FILTER_EXCLUDE_PATTERN"
   else
-    echo_log "$FUNCTION_NAME:   * No Exclude pattern"
+    echo::info "$FUNCTION_NAME:   * No Exclude pattern"
   fi
   if [ "$FILTER_MAX_REPO_COUNT" != "" ]; then
-    echo_log "$FUNCTION_NAME:   * Max repo count: $FILTER_MAX_REPO_COUNT"
+    echo::info "$FUNCTION_NAME:   * Max repo count: $FILTER_MAX_REPO_COUNT"
   else
-    echo_log "$FUNCTION_NAME:   * No Max repo count"
+    echo::info "$FUNCTION_NAME:   * No Max repo count"
   fi
   # Source
   if [ "$GIT_SOURCE" == "" ]; then
-    echo_err "$FUNCTION_NAME: A git source is excepted as first argument"
+    echo::err "$FUNCTION_NAME: A git source is excepted as first argument"
     exit 1;
   else
-    echo_log "$FUNCTION_NAME:   * Git source: $GIT_SOURCE"
+    echo::info "$FUNCTION_NAME:   * Git source: $GIT_SOURCE"
   fi
   # Target
   if [ "$GIT_TARGET" == "" ]; then
-    echo_err "$FUNCTION_NAME: A git target is excepted as second argument"
+    echo::err "$FUNCTION_NAME: A git target is excepted as second argument"
     exit 1;
   else
-    echo_log "$FUNCTION_NAME:   * Git target: $GIT_TARGET"
+    echo::info "$FUNCTION_NAME:   * Git target: $GIT_TARGET"
   fi
 
   set_env "$GIT_SOURCE"
@@ -673,16 +637,16 @@ function backup() {
   set_env "$GIT_TARGET"
   GIT_PLATFORM_TARGET=$GIT_PLATFORM
   if [ "$GIT_PLATFORM_TARGET" != "rclone" ]; then
-    echo_err "$FUNCTION_NAME: Only a rclone git registry is supported as target"
+    echo::err "$FUNCTION_NAME: Only a rclone git registry is supported as target"
     exit 1
   fi
   set_rclone_env "$GIT_TARGET"
 
   # Get the Json as CSV and loop over it
-  echo_log "$FUNCTION_NAME: Looping over the repo of the registry $GIT_SOURCE"
+  echo::info "$FUNCTION_NAME: Looping over the repo of the registry $GIT_SOURCE"
 
   if [ $GIT_PLATFORM_SOURCE != "github" ]; then
-    echo_err "$FUNCTION_NAME: Only GitHub as registry source is supported, not $GIT_PLATFORM_SOURCE"
+    echo::err "$FUNCTION_NAME: Only GitHub as registry source is supported, not $GIT_PLATFORM_SOURCE"
     exit 1;
   fi
 
@@ -696,15 +660,15 @@ function backup() {
   fi
   LAST_BACKUP_TIME_EPOCH=""
   if [ "$LAST_BACKUP_TIME" == "" ]; then
-    echo_log "$FUNCTION_NAME: No last backup time"
+    echo::info "$FUNCTION_NAME: No last backup time"
   else
-    echo_log "$FUNCTION_NAME: Last backup time: $LAST_BACKUP_TIME"
+    echo::info "$FUNCTION_NAME: Last backup time: $LAST_BACKUP_TIME"
     LAST_BACKUP_TIME_EPOCH=$(TZ=UTC date -d "$LAST_BACKUP_TIME" +%s)
   fi
 
   # Store the current date and time
   RCLONE_START_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/start-backup-time.dat"
-  echo_log "$FUNCTION_NAME: Listing start backup time"
+  echo::info "$FUNCTION_NAME: Listing start backup time"
   if ! START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" 2>/dev/null | wc -l); then
     # File does not exist
     # Rclone Sftp returns an error while s3 does not
@@ -712,17 +676,17 @@ function backup() {
   fi
   if [ "$START_BACKUP_TIME_FILE_COUNT" != "0" ]; then
     if [ "$RESTART" == "" ]; then
-      echo_err "$FUNCTION_NAME: Start backup time found, a backup may be running or was killed, add the --restart option to pass this check"
+      echo::err "$FUNCTION_NAME: Start backup time found, a backup may be running or was killed, add the --restart option to pass this check"
       exit 1
     else
-      echo_log "$FUNCTION_NAME: Restart used, using the stored start backup time. "
+      echo::info "$FUNCTION_NAME: Restart used, using the stored start backup time. "
       START_BACKUP_TIME=$(rclone cat "$RCLONE_START_BACKUP_TIME_FILE_PATH")
-      echo_log "$FUNCTION_NAME: Retrieved Start backup time: $START_BACKUP_TIME"
+      echo::info "$FUNCTION_NAME: Retrieved Start backup time: $START_BACKUP_TIME"
     fi
   else
     START_BACKUP_TIME=$(TZ=UTC date +"%Y-%m-%dT%H:%M:%SZ")
-    echo_log "$FUNCTION_NAME: Start backup time: $START_BACKUP_TIME"
-    echo_log "$FUNCTION_NAME: Writing Start backup time to $RCLONE_START_BACKUP_TIME_FILE_PATH"
+    echo::info "$FUNCTION_NAME: Start backup time: $START_BACKUP_TIME"
+    echo::info "$FUNCTION_NAME: Writing Start backup time to $RCLONE_START_BACKUP_TIME_FILE_PATH"
     echo "$START_BACKUP_TIME" | rclone rcat "$RCLONE_START_BACKUP_TIME_FILE_PATH"
   fi;
 
@@ -730,13 +694,13 @@ function backup() {
 
   # Github Api Call
   # Note: pushed_at represents the date and time of the last commit
-  echo_log "$FUNCTION_NAME: Retrieving repos"
+  echo::info "$FUNCTION_NAME: Retrieving repos"
   FILTER_MAX_REPO_COUNT_OPTION=""
   if [ "$FILTER_MAX_REPO_COUNT" != "" ]; then
     FILTER_MAX_REPO_COUNT_OPTION="--filter-max-repo-count=$FILTER_MAX_REPO_COUNT"
   fi
   REPOS_COMMAND="$CLI_NAME list_repo $GIT_SOURCE $FILTER_MAX_REPO_COUNT_OPTION --jq-expression='(.[] | [.full_name, .fork, .ssh_url, .pushed_at]) | @csv' '--jq-raw-output' '--silent'"
-  echo_log "$FUNCTION_NAME: executing command: $REPOS_COMMAND"
+  echo::info "$FUNCTION_NAME: executing command: $REPOS_COMMAND"
   API_REPOS=$(eval "$REPOS_COMMAND")
 
   local ACTUAL_COUNT=0
@@ -747,16 +711,16 @@ function backup() {
 
     REPO_FULL_NAME=$(echo "$REPO_FULL_NAME" | tr -d '"')
     IFS='/' read -r REPO_PARENT REPO_NAME <<< "$REPO_FULL_NAME"
-    echo_log " "
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Backup Repo: $REPO_FULL_NAME"
+    echo::info " "
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Backup Repo: $REPO_FULL_NAME"
 
     if [ "$REPO_FORK" == true ]; then
-      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Skipped forked repo: $REPO_FULL_NAME";
+      echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Skipped forked repo: $REPO_FULL_NAME";
       continue
     fi
 
     if [ "$FILTER_EXCLUDE_PATTERN" != "" ] && [[ "$REPO_FULL_NAME" =~ $FILTER_EXCLUDE_PATTERN ]]; then
-      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Skipped pattern exclude repo: $REPO_FULL_NAME";
+      echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Skipped pattern exclude repo: $REPO_FULL_NAME";
       continue
     fi
 
@@ -769,31 +733,31 @@ function backup() {
       TARGET_BUNDLE_PATH_COUNT="0"
     fi
     if [ "$TARGET_BUNDLE_PATH_COUNT" != "0" ]; then
-      echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Backup bundle already exist at $BUNDLE_TARGET_PATH";
+      echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Backup bundle already exist at $BUNDLE_TARGET_PATH";
       # 2024-08-29T13:20:27Z
       PUSHED_AT_TRIMMED=$(echo "$PUSHED_AT" | tr -d '"')
       PUSHED_AT_EPOCH=$(TZ=UTC date -d"$PUSHED_AT_TRIMMED" +%s)
       if [ "$LAST_BACKUP_TIME" != "" ] && [ "$PUSHED_AT_EPOCH" -lt "$LAST_BACKUP_TIME_EPOCH" ]; then
-        echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Skipped backup repo: No push since last backup. Last Pushed Date ($PUSHED_AT) is less than the last backup time ($LAST_BACKUP_TIME)";
+        echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Skipped backup repo: No push since last backup. Last Pushed Date ($PUSHED_AT) is less than the last backup time ($LAST_BACKUP_TIME)";
         continue
       fi
     fi
 
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Cloning Repo: $REPO_FULL_NAME"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Cloning Repo: $REPO_FULL_NAME"
     CLONE_TARGET_DIR=/tmp/clone/$REPO_FULL_NAME
     if [ ! -d "$CLONE_TARGET_DIR" ]; then
       mkdir -p "$CLONE_TARGET_DIR"
       CLONE_COMMAND="git clone --mirror $REPO_SSH_URL $CLONE_TARGET_DIR --quiet"
-      echo_log "$FUNCTION_NAME: Executing : $CLONE_COMMAND"
+      echo::info "$FUNCTION_NAME: Executing : $CLONE_COMMAND"
       eval "$CLONE_COMMAND"
     else
-      echo_log "$FUNCTION_NAME: Clone already done"
+      echo::info "$FUNCTION_NAME: Clone already done"
     fi
 
     # Empty repo?
     OBJECT_COUNT=$(find "$CLONE_TARGET_DIR"/objects -type f | wc -l)
     if [ "$OBJECT_COUNT" == 0 ]; then
-      echo_log "$FUNCTION_NAME: Skipping backup - repo empty: $REPO_FULL_NAME"
+      echo::info "$FUNCTION_NAME: Skipping backup - repo empty: $REPO_FULL_NAME"
       continue
     fi
 
@@ -801,20 +765,20 @@ function backup() {
     BUNDLE_SOURCE_PATH="/tmp/$BUNDLE_RELATIVE_PATH"
     BUNDLE_SOURCE_PARENT_PATH="/tmp/$REPO_PARENT"
     mkdir -p "$BUNDLE_SOURCE_PARENT_PATH"
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Creating bundle: $BUNDLE_SOURCE_PATH"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Creating bundle: $BUNDLE_SOURCE_PATH"
     BUNDLE_COMMAND="git -C $CLONE_TARGET_DIR -c 'pack.threads=1' bundle create $BUNDLE_SOURCE_PATH --all --quiet"
-    echo_log "$FUNCTION_NAME: Executing : $BUNDLE_COMMAND"
+    echo::info "$FUNCTION_NAME: Executing : $BUNDLE_COMMAND"
     eval "$BUNDLE_COMMAND"
 
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Uploading bundle: $BUNDLE_NAME"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Uploading bundle: $BUNDLE_NAME"
     MOVE_COMMAND="rclone moveto $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH --progress"
-    echo_log "$FUNCTION_NAME: Executing : $MOVE_COMMAND"
+    echo::info "$FUNCTION_NAME: Executing : $MOVE_COMMAND"
     eval "$MOVE_COMMAND"
 
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Cleaning up"
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Deleting Git repo: $CLONE_TARGET_DIR"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Cleaning up"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Deleting Git repo: $CLONE_TARGET_DIR"
     rm -rf "$CLONE_TARGET_DIR"
-    echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Deleting Git repo: Done"
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Deleting Git repo: Done"
 
 
   done <<< "$API_REPOS" # needed to not run as pipeline and get ACTUAL_COUNT
@@ -822,8 +786,8 @@ function backup() {
 
   echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH"
   rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH"
-  echo_log " "
-  echo_log "$SILENT_OPTION" "$FUNCTION_NAME: Processed $ACTUAL_COUNT repositories";
+  echo::info " "
+  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Processed $ACTUAL_COUNT repositories";
 
 }
 
@@ -854,30 +818,30 @@ for arg in "$@"; do
 done
 
 if [ -z "$COMMAND" ]; then
-  echo_log "$SILENT_OPTION" 'No command was given, help chosen.'
+  echo::info "$SILENT_OPTION" 'No command was given, help chosen.'
   COMMAND='help'
 fi
 
- echo_log "$SILENT_OPTION" ""
- echo_log "$SILENT_OPTION" "${CLI_NAME^} ${COMMAND^}"
- echo_log "$SILENT_OPTION" "-------------------------------------------"
- echo_log "$SILENT_OPTION" ""
+ echo::echo "$SILENT_OPTION" ""
+ echo::echo "$SILENT_OPTION" "${CLI_NAME^} ${COMMAND^}"
+ echo::echo "$SILENT_OPTION" "-------------------------------------------"
+ echo::echo "$SILENT_OPTION" ""
 case ${COMMAND} in
-help)
-  help
-  ;;
-list_repo)
-  list_repo "$SILENT_OPTION" "${ARGUMENTS[@]}"
-  ;;
-backup)
-  backup "$SILENT_OPTION" "${ARGUMENTS[@]}"
-  ;;
-mount)
-  mount "$SILENT_OPTION" "${ARGUMENTS[@]}"
-  ;;
-*)
-  echo_err "The command $COMMAND is unknown"
-  help
-  exit 1
-  ;;
+  "help")
+    help
+    ;;
+  "list")
+    list_repo "$SILENT_OPTION" "${ARGUMENTS[@]}"
+    ;;
+  "backup")
+    backup "$SILENT_OPTION" "${ARGUMENTS[@]}"
+    ;;
+  "mount")
+    mount "$SILENT_OPTION" "${ARGUMENTS[@]}"
+    ;;
+  *)
+    help
+    echo::err "The command $COMMAND is unknown"
+    exit 1
+    ;;
 esac

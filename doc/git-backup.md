@@ -35,7 +35,7 @@ docker run \
   -e RCLONE_CONFIG_S3_ACCESS_KEY_ID=$GIT_BACKUP_ACCESS_KEY \
   -e RCLONE_CONFIG_S3_NO_CHECK_BUCKET=true \
   -e RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms \
-  ghcr.io/gerardnico/git-backup:latest \
+  ghcr.io/gerardnico/git-multi:latest \
   git backup github s3 --filter-exclude-pattern=site-com-datacadamia
 ```
 
@@ -163,7 +163,7 @@ The [Gickup application](https://cooperspencer.github.io/gickup-documentation/) 
 
 ## How to contribute
 
-See [dev](git-backup-dev)
+See [dev](git-backup-dev.md)
 
 
 ## Why do you choose SSH over Personal Access Token for Github
@@ -171,10 +171,9 @@ See [dev](git-backup-dev)
 That's the easiest way to login.
 
 Note that AskPass or a helper may be used to pass the token
-as stated in the [doc](https://git-scm.com/docs/gitcredentials)
-but it's not yet implemented
+as stated in the [doc](https://git-scm.com/docs/gitcredentials), but it's not yet implemented
 
-The `Personal Access Token` should not be used in a Basic Auth URL as this URL is stored
+The `Personal Access Token (PAT)` should not be used in a Basic Auth URL as this URL is stored
 ```
 https://user:$TOKEN/github.com/parent/repo
 ```
@@ -187,6 +186,6 @@ to create the `host_known` file with GitHub SSH keys and avoid the error: `Host 
 
 Example:
 ```yaml
-command: [ "git-backup-docker-entrypoint" ]
+command: [ "git-multi-docker-entrypoint" ]
 args: [ "git-backup", "backup", "github", "s3", "--filter-exclude-pattern=site-com-datacadamia", "--restart" ]
 ```

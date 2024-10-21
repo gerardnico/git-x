@@ -41,7 +41,7 @@ RUN addgroup -g 1000 megroup && \
 # App Install
 ####################################
 RUN mkdir -p "/opt/git-multi/bin"
-COPY --chmod=0755 bin /opt/git-multi/
+COPY --chmod=0755 bin /opt/git-multi/bin
 ENV PATH="/opt/git-multi/bin:${PATH}"
 CMD [ "git" ]
 
