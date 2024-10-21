@@ -1,0 +1,30 @@
+#!/bin/bash
+# @description
+#    A commit wrapper function for `Git Add, Commit and Push`
+#
+#    You can add it as alias in your `~.gitconfig`
+#    ```ini
+#    [alias]
+#       # commit all
+#       acp = "!git-acp"
+#    ```
+#
+#   Example:
+#   ```bash
+#   git-acp "My Commit Message"
+#   ```
+
+source bashlib-echo.sh
+
+if [ "${1:-}" = "" ]; then
+    echo::err "A commit message is mandatory"
+    exit 1
+fi
+
+# `--renormalize` to correct the EOL in the working tree
+git add --renormalize .
+# renormalize does not add any file into the index
+# we need to add it twice
+git add .
+git commit -v -a -m "$1"
+git push

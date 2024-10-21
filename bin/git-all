@@ -5,6 +5,9 @@
 
 set -Eeuo pipefail
 source bashlib-echo.sh
+source bashlib-git.sh
+source bashlib-string.sh
+source bashlib-path.sh
 source bashlib-error.sh
 error::set_trap
 
@@ -13,14 +16,14 @@ error::set_trap
 GITALL_CONF_FILE=${GITALL_CONF_FILE:-}
 if [ "$GITALL_CONF_FILE" != "" ] && [ -f "$GITALL_CONF_FILE" ]; then
   IFS=$'\n' read -r -a REPO_DIRS -d $'\c0' <"$GITALL_CONF_FILE"
-  echo::info"${#REPO_DIRS[*]} directory found in $GITALL_CONF_FILE"
+  echo::info "${#REPO_DIRS[*]} directory found in $GITALL_CONF_FILE"
 fi
 
 
 # The root directory where all repository may be the children
 GITALL_CODE_HOME=${GITALL_CODE_HOME:-$HOME/code}
 for childPath in "$GITALL_CODE_HOME"/*; do
-  if [ -d "$childPath" ]; then
+  if [ -d "$childPath/.git" ]; then
     REPO_DIRS+=("$childPath")
   fi
 done
@@ -32,20 +35,33 @@ fi
 
 
 for REPO_DIR in "${REPO_DIRS[@]}"; do
+
   pushd "$REPO_DIR" >/dev/null
-  PWD=$(pwd)
-  FQDN=${PWD##*/} # the directory name is the FQDN
-  echo "* ${FQDN^} ($PWD)"
-  CURRENT_BRANCH=$(git symbolic-ref HEAD --short)
-  echo "  * Branch: $CURRENT_BRANCH"
-  CURRENT_BRANCH_UPSTREAM=$(git rev-parse --abbrev-ref "@{u}")
-  echo "  * Upstream: $CURRENT_BRANCH_UPSTREAM"
+
+  # Header for each repo
+  DIRECTORY_NAME=$(path::get_current_directory_name) # the directory name is the DIRECTORY_NAME
+  CURRENT_BRANCH=$(git::get_current_branch)
+  CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch)
+  # The format for branch and upstream comes from `git status --branch`
+  HEAD="$(string::set_color "yellow" "${DIRECTORY_NAME}") (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
+
   COMMAND="git $@"
-  if ! (eval "$COMMAND"); then
+  if ! OUTPUT=$(eval "$COMMAND"); then
+    echo::err "$HEAD"
     echo::err "The command ${COMMAND} has error"
+    popd > /dev/null
+    continue
   fi
-  echo ""
+
+  # remove the space and test if not of length zero
+  if [[ ! -z ${OUTPUT// } ]]; then
+    echo::echo ""
+    echo::echo "$HEAD"
+    echo::echo "$OUTPUT"
+  fi
+
   popd >/dev/null
+
 done
 
 if [[ ${COMMAND} == 'status' ]]; then

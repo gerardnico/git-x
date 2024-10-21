@@ -7,6 +7,7 @@ upstreamCommitToMerge=$(git rev-list HEAD...'@{u}' --count)
 
 echo "Integrating $upstreamCommitToMerge commits from $CURRENT_BRANCH_UPSTREAM into $CURRENT_BRANCH"
 if [ "$upstreamCommitToMerge" != 0 ]; then
+
     # Stash before a merge to integrate the remote changes
     # To avoid the error: Please commit your changes or stash them before you merge.
     #
@@ -16,4 +17,5 @@ if [ "$upstreamCommitToMerge" != 0 ]; then
     git stash
     git merge '@{u}'
     git stash pop # do a merge
+
 fi
