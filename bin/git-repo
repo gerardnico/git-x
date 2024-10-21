@@ -28,8 +28,7 @@ if [ "$GIT_COMMAND" == "diff" ]; then
   ARGS+=("color.ui=always")
 fi
 
-
-if ! OUTPUT=$(eval "git" "$GIT_COMMAND" "$(printf '%q' "$ARGS")"); then
+if ! OUTPUT=$(eval "git" "$GIT_COMMAND" "$(printf '%q' "${ARGS[@]")"); then
   echo::err "The command ${GIT_COMMAND} "${ARGS}" has error"
   popd > /dev/null
   exit 1
