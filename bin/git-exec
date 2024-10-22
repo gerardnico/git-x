@@ -46,6 +46,7 @@ if [ ${#REPO_DIRS[*]} == 0 ]; then
   exit 1
 fi
 
+COMMAND=$(git::get_eval_string "$@")
 
 for REPO_DIR in "${REPO_DIRS[@]}"; do
 
@@ -64,7 +65,6 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
       continue
   fi
 
-  COMMAND=$(git::get_eval_string "$@")
   if ! OUTPUT=$(eval "$COMMAND"); then
     echo::err "$HEAD"
     echo::err "The command (${COMMAND}) has error"
