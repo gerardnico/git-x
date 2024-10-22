@@ -79,7 +79,7 @@ REPO_NAME=$1
 REPO_DIR="$GITX_REPOS_HOME/$REPO_NAME"
 if [ -d "$REPO_DIR/.git" ]; then
     REPO_DIRS+=("$REPO_DIR")
-    shift;
+    shift
 else
   for GITX_REPO_DIR in "$GITX_REPOS_HOME"/*; do
     if [ -d "$GITX_REPO_DIR/.git" ]; then
@@ -99,7 +99,6 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
 
   pushd "$REPO_DIR" >/dev/null
 
-
   # Header for each repo
   DIRECTORY_NAME=$(path::get_current_directory_name) # the directory name is the DIRECTORY_NAME
   CURRENT_BRANCH=$(git::get_current_branch)
@@ -107,7 +106,8 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   # The format for branch and upstream comes from `git status --branch`
   HEAD="$(string::set_color "yellow" "${DIRECTORY_NAME}") (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
 
-  if ! git::is_dirty; then
+  # If a batch exec, skip the non-dirty repo
+  if ! git::is_dirty && [ ${#REPO_DIRS[@]} -ne 1  ]; then
       popd > /dev/null
       continue
   fi
