@@ -161,7 +161,7 @@ The [Gickup application](https://cooperspencer.github.io/gickup-documentation/) 
 
 ## How to contribute
 
-See [dev](git-backup-dev.md)
+See [dev](../contrib/git-service-backup-dev)
 
 
 ## Why do you choose SSH over Personal Access Token for Github
