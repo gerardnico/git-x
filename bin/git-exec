@@ -44,10 +44,15 @@
 #
 #    ## TIP
 #
-#    You can add it as alias in your `~.gitconfig`
+#    You can add it as alias:
+#    * in your `~.gitconfig`
 #    ```ini
 #    [alias]
 #       x = "!git-exec"
+#    ```
+#    * or in your `.bashrc`
+#    ```bash
+#    alias gx='git exec'
 #    ```
 
 set -Eeuo pipefail
