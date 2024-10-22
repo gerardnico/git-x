@@ -1,18 +1,32 @@
 #!/bin/bash
+# @name Git Acp
+# @brief Add, Commit and Push at once
 # @description
-#    A commit wrapper function for `Git Add, Commit and Push`
 #
-#    You can add it as alias in your `~.gitconfig`
-#    ```ini
-#    [alias]
-#       # commit all
-#       acp = "!git-acp"
+#    A commit utility function for `Git Add, Commit and Push`
+#
+#    ## Example
+#
+#    * For one repository
+#
+#    ```bash
+#    git acp "My Commit Message"
 #    ```
 #
-#   Example:
-#   ```bash
-#   git-acp "My Commit Message"
-#   ```
+#    * For all repositories under the repo home directory with `git exec`
+#
+#    ```bash
+#    git exec acp "My Commit Message"
+#    ```
+#
+#    ## Syntax
+#
+#    ```bash
+#    git acp <Commit Message>
+#    ```
+#
+
+
 
 source bashlib-echo.sh
 
