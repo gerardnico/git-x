@@ -46,7 +46,7 @@ error::set_trap
 
 COMMIT_MESSAGE=${1:-}
 if [ "$COMMIT_MESSAGE" = "" ]; then
-  COMMIT_MESSAGE=git::get_auto_commit_message
+  COMMIT_MESSAGE=$(git::get_auto_commit_message)
   echo::info "Commit message generated: $COMMIT_MESSAGE"
 fi
 
