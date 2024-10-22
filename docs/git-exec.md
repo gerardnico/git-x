@@ -1,13 +1,14 @@
+% git-exec(1) Version Latest | git-exec
 # Git Exec
 
-Execute a command against multiple local repositories at once
+Execute a git command against multiple local repositories at once
 
-## Overview
+## DESCRIPTION
 
-Execute a git command against multiple local repositories at once.
+Execute a git command against all local repositories
 stored under the directory located by the `$GITX_REPOS_HOME` environment variable
 
-## Example
+## EXAMPLE
 
 * Shows the status of all repositories
 
@@ -27,12 +28,12 @@ git exec acp "My Commit Message"
 git exec my-repo commit -m "My Commit"
 ```
 
-## Config
+## CONFIG
 
 You should set the environment variable `GITX_REPOS_HOME` to a valid directory
 that host multiple repositories as sub-directories.
 
-## Syntax
+## SYNOPSIS
 
 ```bash
 git exec [repo name] <git sub-command>
@@ -43,7 +44,7 @@ where:
 * `repo name`, optional when specified the command will execute only against this repository (the `repo name` is the name of directory)
 * `git sub-command` is any git sub-command
 
-## Tip
+## TIP
 
 You can add it as alias in your `~.gitconfig`
 ```ini

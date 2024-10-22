@@ -14,17 +14,16 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "" "" "" "" ""
+.TH "git-exec" "1" "" "Version Latest" "git-exec"
 .hy
 .SH Git Exec
 .PP
-Execute a command against multiple local repositories at once
-.SS Overview
+Execute a git command against multiple local repositories at once
+.SS DESCRIPTION
 .PP
-Execute a git command against multiple local repositories at once.
-stored under the directory located by the \f[V]$GITX_REPOS_HOME\f[R]
-environment variable
-.SS Example
+Execute a git command against all local repositories stored under the
+directory located by the \f[V]$GITX_REPOS_HOME\f[R] environment variable
+.SS EXAMPLE
 .IP \[bu] 2
 Shows the status of all repositories
 .IP
@@ -49,11 +48,11 @@ Perform a commit only again the \f[V]my-repo\f[R] repository
 git exec my-repo commit -m \[dq]My Commit\[dq]
 \f[R]
 .fi
-.SS Config
+.SS CONFIG
 .PP
 You should set the environment variable \f[V]GITX_REPOS_HOME\f[R] to a
 valid directory that host multiple repositories as sub-directories.
-.SS Syntax
+.SS SYNOPSIS
 .IP
 .nf
 \f[C]
@@ -68,7 +67,7 @@ only against this repository (the \f[V]repo name\f[R] is the name of
 directory)
 .IP \[bu] 2
 \f[V]git sub-command\f[R] is any git sub-command
-.SS Tip
+.SS TIP
 .PP
 You can add it as alias in your \f[V]\[ti].gitconfig\f[R]
 .IP

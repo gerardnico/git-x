@@ -1,12 +1,12 @@
-# Git Acp
+% git-acp(1) Version Latest | git-acp
+# DESCRIPTION
 
-Add, Commit and Push at once
-
-## Overview
+## DESCRIPTION
 
 A commit utility function for `Git Add, Commit and Push`
 
-## Example
+
+# EXAMPLE
 
 * For one repository
 
@@ -20,7 +20,7 @@ git acp "My Commit Message"
 git exec acp "My Commit Message"
 ```
 
-## Syntax
+# SYNTAX
 
 ```bash
 git acp <Commit Message>

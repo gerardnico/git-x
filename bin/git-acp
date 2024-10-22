@@ -1,11 +1,11 @@
 #!/bin/bash
-# @name Git Acp
-# @brief Add, Commit and Push at once
+# @name DESCRIPTION
 # @description
 #
 #    A commit utility function for `Git Add, Commit and Push`
 #
-#    ## Example
+#
+#    # EXAMPLE
 #
 #    * For one repository
 #
@@ -19,7 +19,7 @@
 #    git exec acp "My Commit Message"
 #    ```
 #
-#    ## Syntax
+#    # SYNTAX
 #
 #    ```bash
 #    git acp <Commit Message>
