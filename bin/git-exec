@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wrapper script around git to perform
-# action on multiple repository
+# action on multiple repository from a
 
 
 set -Eeuo pipefail
@@ -13,20 +13,33 @@ error::set_trap
 
 
 # Git Directory to checkout may be in a config file
-GITALL_CONF_FILE=${GITALL_CONF_FILE:-}
-if [ "$GITALL_CONF_FILE" != "" ] && [ -f "$GITALL_CONF_FILE" ]; then
-  IFS=$'\n' read -r -a REPO_DIRS -d $'\c0' <"$GITALL_CONF_FILE"
-  echo::info "${#REPO_DIRS[*]} directory found in $GITALL_CONF_FILE"
+GITX_REPOS_FILE=${GITX_REPOS_FILE:-}
+if [ "$GITX_REPOS_FILE" != "" ] && [ -f "$GITX_REPOS_FILE" ]; then
+  IFS=$'\n' read -r -a REPO_DIRS -d $'\c0' <"$GITX_REPOS_FILE"
+  echo::info "${#REPO_DIRS[*]} directory found in $GITX_REPOS_FILE"
 fi
 
 
 # The root directory where all repository may be the children
-GITALL_CODE_HOME=${GITALL_CODE_HOME:-$HOME/code}
-for childPath in "$GITALL_CODE_HOME"/*; do
-  if [ -d "$childPath/.git" ]; then
-    REPO_DIRS+=("$childPath")
-  fi
-done
+GITX_REPOS_HOME=${GITX_REPOS_HOME:-}
+if [ -z "$GITX_REPOS_HOME" ]; then
+  echo::err "The environment variable GITX_REPOS_HOME was not found. It's the path of a directory where all your git repository are stored"
+  exit 1
+fi
+
+
+REPO_NAME=$1
+REPO_DIR="$GITX_REPOS_HOME/$REPO_NAME"
+if [ -d "$REPO_DIR/.git" ]; then
+    REPO_DIRS+=("$REPO_DIR")
+    shift;
+else
+  for GITX_REPO_DIR in "$GITX_REPOS_HOME"/*; do
+    if [ -d "$GITX_REPO_DIR/.git" ]; then
+      REPO_DIRS+=("$GITX_REPO_DIR")
+    fi
+  done
+fi
 
 if [ ${#REPO_DIRS[*]} == 0 ]; then
   echo::err 'No Git repository found'
@@ -38,6 +51,7 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
 
   pushd "$REPO_DIR" >/dev/null
 
+
   # Header for each repo
   DIRECTORY_NAME=$(path::get_current_directory_name) # the directory name is the DIRECTORY_NAME
   CURRENT_BRANCH=$(git::get_current_branch)
@@ -45,10 +59,15 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   # The format for branch and upstream comes from `git status --branch`
   HEAD="$(string::set_color "yellow" "${DIRECTORY_NAME}") (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
 
-  COMMAND="git $@"
+  if ! git::is_dirty; then
+      popd > /dev/null
+      continue
+  fi
+
+  COMMAND=$(git::get_eval_string "$@")
   if ! OUTPUT=$(eval "$COMMAND"); then
     echo::err "$HEAD"
-    echo::err "The command ${COMMAND} has error"
+    echo::err "The command (${COMMAND}) has error"
     popd > /dev/null
     continue
   fi

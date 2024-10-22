@@ -2,7 +2,7 @@
 
 ## About
 
-This [command](../bin/git-backup) back up Git repositories:
+This [command](../bin/git-server) back up Git repositories:
 * from GitHub
 * to a [Rclone destination](https://rclone.org/overview/)
 * as a [Git bundle](https://git-scm.com/book/en/v2/Git-Tools-Bundling)
@@ -134,7 +134,7 @@ git clone https://host/path/to/repo.bundle
 
 ## Backup processing explained
 
-The backup processing implemented in the `backup` function of the [git-backup script](../bin/git-backup) is:
+The backup processing implemented in the `backup` function of the [git-backup script](../bin/git-server) is:
 * Store the start time and get the last backup time
 * Get the repos via API and loop over them
   * Skip the backup if: 

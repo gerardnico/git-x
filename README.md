@@ -1,15 +1,14 @@
-# Git All Plugins
+# Git X - A collection of Git Extension 
 
 ## About
 
-`Git All` is:
-* a Git Wrapper that supports one command against multiple repositories. 
-* and a series of Git Plugins command 
+`GitX` is a collection of Git Extensions:
 
 
 ## Command List
 
-* [backup](doc/git-backup.md) - backup your repositories
+* [git exec]() - execute a command against multiple local repositories at once
+* [server](doc/git-server.md) - list and backup your repositories on a Git Hosting Service
 
 
 ## Installation

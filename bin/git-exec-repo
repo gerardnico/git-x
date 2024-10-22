@@ -24,11 +24,12 @@ shift
 
 ARGS=${@}
 if [ "$GIT_COMMAND" == "diff" ]; then
+  # https://git-scm.com/book/sv/v2/Customizing-Git-Git-Configuration#_colors_in_git
   ARGS+=("-c")
   ARGS+=("color.ui=always")
 fi
 
-if ! OUTPUT=$(eval "git" "$GIT_COMMAND" "$(printf '%q' "${ARGS[@]")"); then
+if ! OUTPUT=$(eval git::get_command ); then
   echo::err "The command ${GIT_COMMAND} "${ARGS}" has error"
   popd > /dev/null
   exit 1
