@@ -2,13 +2,15 @@
 
 ## About
 
-`GitX` is a collection of Git Extensions:
+`GitX` is a collection of Git command Extensions.
 
 
 ## Command List
 
+* [git acp]() - add, commit and push (ie acp) in one command
 * [git exec]() - execute a command against multiple local repositories at once
-* [server](doc/git-server.md) - list and backup your repositories on a Git Hosting Service
+* [git service](doc/git-service-backup) - list and backup your repositories on a Git Hosting Service
+* [git restart]() - restart with a clean state
 
 
 ## Installation

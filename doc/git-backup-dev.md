@@ -29,7 +29,7 @@ docker run \
   -e RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=$GIT_BACKUP_ACCESS_KEY \
   -e RCLONE_CONFIG_GIT_BACKUP_NO_CHECK_BUCKET=true \
   -e RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms \
-  ghcr.io/gerardnico/git-multi:latest \
+  ghcr.io/gerardnico/git-x:latest \
   /bin/bash
 
 # or with bunny
@@ -50,15 +50,15 @@ docker run \
   -e RCLONE_CONFIG_BUNNY_ENDPOINT=h0k0.ca.idrivee2-22.com \
   -e RCLONE_CONFIG_BUNNY_USER=git-backup \
   -e RCLONE_CONFIG_BUNNY_PASS=$GIT_BACKUP_BUNNY_PASS \
-  ghcr.io/gerardnico/git-multi:latest \
+  ghcr.io/gerardnico/git-x:latest \
   /bin/bash
 ```
 * Modify the script
 * Run it
 ```bash
-git-backup ....
+git-service ....
 # example
-git-backup backup github bunny --filter-exclude-pattern=site-com-datacadamia
+git-service backup github bunny --filter-exclude-pattern=site-com-datacadamia
 ```
 
 

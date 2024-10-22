@@ -1,9 +1,9 @@
-# Git Backup from GitHub to Rclone 
+# Git Service Backup from GitHub to Rclone 
 
 ## About
 
-This [command](../bin/git-server) back up Git repositories:
-* from GitHub
+This `git service backup` command back up Git repositories:
+* from `GitHub`
 * to a [Rclone destination](https://rclone.org/overview/)
 * as a [Git bundle](https://git-scm.com/book/en/v2/Git-Tools-Bundling)
 
@@ -24,7 +24,6 @@ docker run \
   --rm \
   --user 1000:1000 \
   -v ~/.ssh:/home/me/.ssh \
-  -e GITBKP_GITHUB_PLATFORM=github \
   -e GITBKP_GITHUB_TOKEN=$GITHUB_TOKEN \
   -e GITBKP_S3_PLATFORM=rclone \
   -e GITBKP_S3_RCLONE_BASE_PATH=git-backup \
@@ -35,8 +34,8 @@ docker run \
   -e RCLONE_CONFIG_S3_ACCESS_KEY_ID=$GIT_BACKUP_ACCESS_KEY \
   -e RCLONE_CONFIG_S3_NO_CHECK_BUCKET=true \
   -e RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms \
-  ghcr.io/gerardnico/git-multi:latest \
-  git backup github s3 --filter-exclude-pattern=site-com-datacadamia
+  ghcr.io/gerardnico/git-x:latest \
+  git service backup github s3 --filter-exclude-pattern=site-com-datacadamia
 ```
 
 ### SFTP Bunny
@@ -52,7 +51,6 @@ docker run \
   --rm \
   --user 1000:1000 \
   -v ~/.ssh:/home/me/.ssh \
-  -e GITBKP_GITHUB_PLATFORM=github \
   -e GITBKP_GITHUB_TOKEN=$GITHUB_TOKEN \
   -e GITBKP_BUNNY_PLATFORM=rclone \
   -e RCLONE_INPLACE=1 \
@@ -62,8 +60,8 @@ docker run \
   -e RCLONE_CONFIG_BUNNY_ENDPOINT=h0k0.ca.idrivee2-22.com \
   -e RCLONE_CONFIG_BUNNY_USER=git-backup \
   -e RCLONE_CONFIG_BUNNY_PASS=$GIT_BACKUP_BUNNY_PASS \
-  ghcr.io/gerardnico/git-multi:latest \
-  git backup github bunny --filter-exclude-pattern=site-com-datacadamia
+  ghcr.io/gerardnico/git-x:latest \
+  git service backup github bunny --filter-exclude-pattern=site-com-datacadamia
 ```
 
 Note that:
@@ -76,16 +74,16 @@ Note that:
 
 The command executed is:
 ```
-git-backup backup github s3 --filter-exclude-pattern=site-com-datacadamia
+git-service backup github s3 --filter-exclude-pattern=site-com-datacadamia
 ```
 where:
   * `backup` is the command
-  * `github` is the source registry defined by the following `GITBKP_REGISTRY_NAME_xxx` envs
+  * `github` is the service defined by the following `GITBKP_SERVICE_NAME_xxx` envs)
 ```bash
 GITBKP_GITHUB_PLATFORM=github # platform type
 GITBKP_GITHUB_TOKEN=$GITHUB_TOKEN # API Token 
 ```
-  * `s3` is the target registry defined by the following `GITBKP_REGISTRY_NAME_xxx` envs
+  * `s3` is the target defined by the following `GITBKP_SERVICE_NAME_xxx` envs
 ```bash
 GITBKP_S3_PLATFORM=rclone # rclone 
 GITBKP_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
@@ -134,7 +132,7 @@ git clone https://host/path/to/repo.bundle
 
 ## Backup processing explained
 
-The backup processing implemented in the `backup` function of the [git-backup script](../bin/git-server) is:
+The backup processing implemented in the `backup` function of the [git-backup script](../bin/git-service) is:
 * Store the start time and get the last backup time
 * Get the repos via API and loop over them
   * Skip the backup if: 
