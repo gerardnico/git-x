@@ -1,21 +1,45 @@
 #!/bin/bash
-# Integrate the changes
+# @name git-auto-pull
+# @description
+# Integrate the changes from an upstream
+# (Stash if needed and pull)
+#
+# ## SYNOPSIS
+# ```bash
+# git auto-pull
+# ```
 # AutoPull to stay in the same fashion than AutoCommit
+# ## TIP
+#
+# You can add it as alias in your `~.gitconfig`
+# Example with `sp` that stands for `stash, pull`
+# ```ini
+# [alias]
+#    sp = "!git-auto-pull"
+# ```
 
-git fetch
-upstreamCommitToMerge=$(git rev-list HEAD...'@{u}' --count)
+source bashlib-git.sh
+source bashlib-error.sh
+error::set_trap
 
-echo "Integrating $upstreamCommitToMerge commits from $CURRENT_BRANCH_UPSTREAM into $CURRENT_BRANCH"
-if [ "$upstreamCommitToMerge" != 0 ]; then
 
-    # Stash before a merge to integrate the remote changes
-    # To avoid the error: Please commit your changes or stash them before you merge.
-    #
-    # Note that when the local changes do not conflict with the changes in the upstream,
-    # a simple git pull let you move forward but how do we know that ?
-    #
-    git stash
-    git merge '@{u}'
-    git stash pop # do a merge
+# Stash before a merge to integrate the remote changes
+# To avoid the error: Please commit your changes or stash them before you merge.
+#
+# Note that when the local changes do not conflict with the changes in the upstream,
+# a simple git pull let you move forward but how do we know that ?
+#
+STASH=0
+if git::is_dirty; then
+  STASH=1
+if
 
+if [ "$STASH" = "1" ]; then
+  git stash
+fi
+
+git pull
+
+if [ "$STASH" = "1" ]; then
+  git stash pop # do a merge
 fi

@@ -1,4 +1,13 @@
 #!/bin/bash
+# @name git-commit-status
+# @description
+# Shows the commit integration status (ie to push or to merge)
+#
+# ## SYNOPSIS
+# ```bash
+# git commit-status
+# ```
+#
 
 function git-commit-status() {
 

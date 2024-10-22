@@ -1,0 +1,76 @@
+#!/bin/bash
+# @name git-auto-commit
+# @description
+#
+#    A commit utility function for `Git Add, Commit and Push`
+#
+#    Before the commit, these command checks if there is no remote commit
+#    to integrate. If this is the case, it will execute a `git auto-pull`
+#
+#    # EXAMPLE
+#
+#    * For one repository with an automatically generated message from the files in the commit
+#
+#    ```bash
+#    git auto-commit
+#    ```
+#
+#    * For all repositories under the repo home directory with `git exec`
+#
+#    ```bash
+#    git exec auto-commit "My Commit Message"
+#    ```
+#
+#    # SYNOPSIS
+#
+#    ```bash
+#    git auto-commit [Commit Message]
+#    ```
+#    If the commit message is not given, it will be generated with the files in the commit.
+#
+#    ## TIP
+#
+#    You can add it as alias in your `~.gitconfig`
+#    Example with `acp` that stands for `add, commit, push`
+#    ```ini
+#    [alias]
+#       acp = "!git-auto-commit"
+#    ```
+
+source bashlib-echo.sh
+source bashlib-git.sh
+source bashlib-error.sh
+error::set_trap
+
+
+
+COMMIT_MESSAGE=${1:-}
+if [ "$COMMIT_MESSAGE" = "" ]; then
+  COMMIT_MESSAGE=git::get_auto_commit_message
+  echo::info "Commit message generated: $COMMIT_MESSAGE"
+fi
+
+# `--renormalize` to correct the EOL in the working tree
+git add --renormalize .
+# renormalize does not add any file into the index
+# we need to add it twice
+git add .
+
+# Check if there is commit to integrate
+# `Updates were rejected because the tip of your current branch is behind`
+# ! [rejected]        master -> master (non-fast-forward)
+#error: failed to push some refs to 'https://gerardnico:ghp_glKrr7@github.com/ComboStrap/website'
+#hint: Updates were rejected because the tip of your current branch is behind
+#hint: its remote counterpart. Merge the remote changes (e.g. 'git pull')
+#hint: before pushing again.
+#hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+git fetch
+UPSTREAM_COMMIT_TO_MERGE=$(git rev-list HEAD...'@{u}' --count)
+if [ "$UPSTREAM_COMMIT_TO_MERGE" != 0 ]; then
+  echo::warn "$UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
+  git auto-pull
+fi
+
+# Commit safely
+git commit -v -a -m "$COMMIT_MESSAGE"
+git push

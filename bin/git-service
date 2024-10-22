@@ -1,9 +1,28 @@
 #!/bin/bash
-# Dependencies
-# Date from coreutils mandatory
-# git
-# openssh
-# curl
+# @name Git Service
+# @brief Execute a command against a Git Hosting Service
+# @description
+#
+# List and backup the repositories of a Git Hosting Service
+#
+# ## SYNOPSIS
+#
+# ```bash
+# git service command [argument ...] [--option[=value] ...]
+# ```
+# where command is one of:
+# * `help`       - this help
+# * `list`       - list the repositories of a Git Hosting Service"
+# * `backup`     - backup the repositories of a Git Hosting Service"
+# * `mount`      - mount a rclone target as file system"
+#
+#
+# To get the help on one command"
+# ```bash
+# git service command --help"
+# ```
+#
+
 
 
 # flag
@@ -21,29 +40,7 @@ CLI_NAME=$(basename "$0") # Name of the cli
 #####################################
 ENV_PREFIX="GITBKP"
 
-######################################
-# Usage
-#####################################
-function help() {
 
-  echo ""
-  echo "Usage of the cli ${CLI_NAME}"
-  echo ""
-  echo "   ${CLI_NAME} command [argument ...] [--option[=value] ...]"
-  echo ""
-  echo "where command is one of:"
-  echo "     * help       - this help"
-  echo "     * list       - list the repositories of a Git registry"
-  echo "     * backup     - backup the repositories of a Git registry"
-  echo "     * mount      - mount a rclone Git registry "
-  echo ""
-  echo ""
-  echo "To get the help on one command"
-  echo ""
-  echo "   ${CLI_NAME} command --help"
-  echo ""
-
-}
 
 function help_mount() {
 
@@ -54,7 +51,7 @@ function help_mount() {
   echo "   ${CLI_NAME} $FUNCTION_NAME git_registry [--silent] [--unmount] [--daemon]"
   echo ""
   echo "where:"
-  echo "     * git_registry            - the git registry name to read from"
+  echo "     * target                  - the target name to read from"
   echo "     * --silent                - a boolean option that will output only the API_REPOS"
   echo "     * --unmount               - unmount"
   echo "     * --daemon                - put rclone process in the background"
@@ -95,11 +92,16 @@ function help_backup() {
     echo "   ${CLI_NAME} $FUNCTION_NAME source target [...]"
     echo ""
     echo "where:"
-    echo "     * source                       - a git registry name to read from"
-    echo "     * target                       - a git registry name to write to"
+    echo "     * source                       - a git hosting service name to read from"
+    echo "     * target                       - a target name to backup to"
     echo "     * --restart                    - if a backup fail, it can be restarted with the restart flag"
     echo "     * --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)"
     echo "     * --filter-max-repo-count='x'  - the maximum number of repositories to backup"
+    # ## Dependencies
+    # * Date from coreutils mandatory
+    # * git
+    # * openssh
+    # * curl
 
 }
 

@@ -19,7 +19,7 @@ git exec status --short
 * `Add, Commit and Push` on all repositories
 
 ```bash
-git exec acp "My Commit Message"
+git exec auto-commit
 ```
 
 * Perform a commit only again the `my-repo` repository

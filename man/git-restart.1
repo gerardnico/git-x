@@ -16,3 +16,28 @@
 .\}
 .TH "git-restart" "1" "" "Version Latest" "git-restart"
 .hy
+.SH git-restart
+.SS DESCRIPTION
+.PP
+Reset as if it was a clean \f[V]git clone\f[R].
+Cancel all modifications and start fresh
+.PP
+This function performs a reset hard and clean
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+git restart
+\f[R]
+.fi
+.SS TIP
+.PP
+You can add it as alias in your \f[V]\[ti].gitconfig\f[R] Example with
+\f[V]rc\f[R] that stands for \f[V]reset, clean\f[R]
+.IP
+.nf
+\f[C]
+[alias]
+sp = \[dq]!git-auto-pull\[dq]
+\f[R]
+.fi

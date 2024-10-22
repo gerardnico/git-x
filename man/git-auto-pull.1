@@ -16,3 +16,26 @@
 .\}
 .TH "git-auto-pull" "1" "" "Version Latest" "git-auto-pull"
 .hy
+.SH git-auto-pull
+.SS DESCRIPTION
+.PP
+Integrate the changes from an upstream (Stash if needed and pull)
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+git auto-pull
+\f[R]
+.fi
+.PP
+AutoPull to stay in the same fashion than AutoCommit ## TIP
+.PP
+You can add it as alias in your \f[V]\[ti].gitconfig\f[R] Example with
+\f[V]sp\f[R] that stands for \f[V]stash, pull\f[R]
+.IP
+.nf
+\f[C]
+[alias]
+sp = \[dq]!git-auto-pull\[dq]
+\f[R]
+.fi

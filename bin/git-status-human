@@ -1,4 +1,16 @@
 #!/bin/bash
+# @name Git Status Human
+# @description
+#
+# If you don't recall the one letter status meaning, this command will
+# output the status with a human description
+#
+# ## SYNOPSIS
+#
+# ```bash
+# git status-human
+# ```
+#
 
 function git_working_status() {
   modified=$(git ls-files -m)

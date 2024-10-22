@@ -1,4 +1,4 @@
-# Git X - A collection of Git Extension 
+# Git X - A collection of Git Plugins Extension 
 
 ## About
 
@@ -7,17 +7,38 @@
 
 ## Command List
 
-* [git acp]() - add, commit and push (ie acp) in one command
-* [git exec]() - execute a command against multiple local repositories at once
-* [git service](man-source/git-service-backup.md) - list and backup your repositories on a Git Hosting Service
-* [git restart]() - restart with a clean state
+* [git auto-commit](docs/git-auto-commit.md) - Pull, add, commit and push in one command, no argument needed
+* [git auto-pull](docs/git-auto-pull.md) - Stash, Pull in one command
+* [git commit-status](docs/git-commit-status.md) - Shows the commit status (to push/to merge)
+* [git exec](docs/git-exec.md) - Execute a command against multiple local repositories at once
+* [git service](docs/git-service.md) - List the repositories of a Git Hosting Service
+* [git service backup](man-source/git-service-backup.md) - Backup your repositories on a Git Hosting Service
+* [git status-human](docs/git-status-human.md) - Print the status in a human way (ie one letter status explained)
+* [git restart](docs/git-restart.md) - Restart with a clean state (as `git clone`)
 
 
 ## Installation
 
-* Docker
+### Docker
 
-## Related Git Projects
+[Docker](https://github.com/gerardnico/git-x/pkgs/container/git-x)
+
+```bash
+docker run \
+  --rm \
+  ghcr.io/gerardnico/git-x:latest
+```
+
+### HomeBrew
+ 
+Mac / Linux / Windows WSL with HomeBrew
+
+```bash
+brew install --HEAD gerardnico/tap/gitx
+```
+
+
+## Other Git Plugin Command Projects
 
 * [git-extras commands](https://github.com/tj/git-extras/blob/main/Commands.md)
 * [git-standup command](https://github.com/kamranahmedse/git-standup) - Already installed by git-extras
