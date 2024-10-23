@@ -1,0 +1,32 @@
+#!/bin/bash
+# A improved version of `last = log -1 HEAD`
+
+source bashlib-string.sh
+
+# https://git-scm.com/docs/git-config#Documentation/git-config.txt-color
+# https://git-scm.com/docs/git-log#_pretty_formats
+
+HEAD_COLOR="green"
+colored_header(){
+  echo "%C($HEAD_COLOR)$*%Creset"
+}
+padded_header(){
+  #string::set_color "$HEAD_COLOR" "$*"
+  # The %<(N) syntax format only the next placeholder as N columns wide
+  # Therefore we need to use printf to right pad the header
+  PADDED_HEAD=$(printf '%-15s' "$*")
+  colored_header "$PADDED_HEAD"
+}
+
+COMMIT_HASH="$(padded_header 'Commit'): %H"
+AUTHOR="$(padded_header 'Author'): %an <%ae>"
+AUTHOR_DATE="$(padded_header 'AuthorDate'): %ai"
+COMMITTER="$(padded_header 'Committer'): %cn <%ce>"
+COMMITTER_DATE="$(padded_header 'Committer Date'): %ci"
+BRANCH="$(padded_header 'Branch'): %D%n"
+MESSAGE="$(padded_header 'Message'): %s"
+FILES="$(colored_header 'Files'):"
+
+git show --name-status \
+    --pretty=format:"${COMMIT_HASH}%n${AUTHOR}%n${AUTHOR_DATE}%n${COMMITTER}%n${COMMITTER_DATE}%n${BRANCH}%n${MESSAGE}%n%n${FILES}" \
+    HEAD
