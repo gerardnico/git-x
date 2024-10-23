@@ -136,19 +136,18 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   fi
 
   # remove the space and test if not of length zero
-  if [[ ! -z ${OUTPUT// } ]]; then
-    echo::echo ""
-    echo::echo "$HEAD"
-    echo::echo "$OUTPUT"
-  fi
-
+  echo::echo ""
+  echo::echo "$HEAD"
+  # one echo to be able to capture the output
+  echo "$OUTPUT"
+  
   popd >/dev/null
 
 done
 
 if [ "$ALL_REPO_MODE" == "false" ]; then
   echo::echo ""
-  echo::tip "Mode of execution was to run the command only on dirty repository"
+  echo::tip "Mode of execution was to run the command only on dirty repository (working tree not clean)"
   echo::tip "Use the flag -f to run the command on all repos. ie"
   echo::tip ""
   echo::tip "      git exec -f $*"
