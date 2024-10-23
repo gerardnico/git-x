@@ -140,7 +140,7 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   echo::echo "$HEAD"
   # one echo to be able to capture the output
   echo "$OUTPUT"
-  
+
   popd >/dev/null
 
 done
