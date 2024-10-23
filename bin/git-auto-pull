@@ -18,7 +18,9 @@
 #    sp = "!git-auto-pull"
 # ```
 
+set -Eeuo pipefail
 source bashlib-git.sh
+source bashlib-echo.sh
 source bashlib-error.sh
 error::set_trap
 
@@ -31,15 +33,21 @@ error::set_trap
 #
 STASH=0
 if git::is_dirty; then
+  echo::info "Working area dirty"
   STASH=1
-if
+else
+  echo::info "Working area not dirty"
+fi
 
 if [ "$STASH" = "1" ]; then
+  echo::info "Stashing the files $(git::get_dirty_files)"
   git stash
 fi
 
+echo::info "Pulling"
 git pull
 
 if [ "$STASH" = "1" ]; then
+  echo::info "UnStashing"
   git stash pop # do a merge
 fi

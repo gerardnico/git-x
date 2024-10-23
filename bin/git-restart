@@ -21,5 +21,9 @@
 # ```
 #
 
+set -Eeuo pipefail
+source bashlib-error.sh
+error::set_trap
+
 git reset --hard
 git clean -f

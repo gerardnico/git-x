@@ -37,6 +37,7 @@
 #       acp = "!git-auto-commit"
 #    ```
 
+set -Eeuo pipefail
 source bashlib-echo.sh
 source bashlib-git.sh
 source bashlib-error.sh

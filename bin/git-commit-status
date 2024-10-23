@@ -9,6 +9,10 @@
 # ```
 #
 
+set -Eeuo pipefail
+source bashlib-error.sh
+error::set_trap
+
 function git-commit-status() {
 
   # Upstream

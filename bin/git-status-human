@@ -12,6 +12,10 @@
 # ```
 #
 
+set -Eeuo pipefail
+source bashlib-error.sh
+error::set_trap
+
 function git_working_status() {
   modified=$(git ls-files -m)
   if [[ -n $modified ]]; then
