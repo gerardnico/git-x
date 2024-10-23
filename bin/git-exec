@@ -79,11 +79,21 @@ if [ -z "$GITX_REPOS_HOME" ]; then
   exit 1
 fi
 
+# Perform the command on all repo
+# even if the repo is not dirty
+FIRST_ARG=$1
+ALL_REPO_MODE=false
+if [[ $FIRST_ARG =~ "-f" ]]; then
+  ALL_REPO_MODE=true
+  shift
+fi
 
-REPO_NAME=$1
-REPO_DIR="$GITX_REPOS_HOME/$REPO_NAME"
+# Perform only on one repo
+FIRST_ARG=$1
+REPO_DIR="$GITX_REPOS_HOME/$FIRST_ARG"
 if [ -d "$REPO_DIR/.git" ]; then
     REPO_DIRS+=("$REPO_DIR")
+    ALL_REPO_MODE=false
     shift
 else
   for GITX_REPO_DIR in "$GITX_REPOS_HOME"/*; do
@@ -97,6 +107,7 @@ if [ ${#REPO_DIRS[*]} == 0 ]; then
   echo::err 'No Git repository found'
   exit 1
 fi
+
 
 COMMAND=$(git::get_eval_string "$@")
 
@@ -112,7 +123,7 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   HEAD="$(string::set_color "yellow" "${DIRECTORY_NAME}") (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
 
   # If a batch exec, skip the non-dirty repo
-  if ! git::is_dirty && [ ${#REPO_DIRS[@]} -ne 1  ]; then
+  if ! git::is_dirty && [ "$ALL_REPO_MODE" == "false" ]; then
       popd > /dev/null
       continue
   fi
@@ -134,6 +145,15 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   popd >/dev/null
 
 done
+
+if [ "$ALL_REPO_MODE" == "false" ]; then
+  echo::echo ""
+  echo::tip "Mode of execution was to run the command only on dirty repository"
+  echo::tip "Use the flag -f to run the command on all repos. ie"
+  echo::tip ""
+  echo::tip "      git exec -f $*"
+  echo::tip ""
+fi
 
 if [[ ${COMMAND} == 'status' ]]; then
   # As stated: https://git-scm.com/docs/git-ls-files#Documentation/git-ls-files.txt--t
