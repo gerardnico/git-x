@@ -35,6 +35,8 @@ Mac / Linux / Windows WSL with HomeBrew
 
 ```bash
 brew install --HEAD gerardnico/tap/gitx
+# Add the libraries directory into your path in your `.bashrc` file
+export PATH=$(brew --prefix bashlib)/lib:$PATH
 ```
 
 
