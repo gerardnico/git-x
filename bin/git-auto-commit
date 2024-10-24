@@ -53,8 +53,9 @@ fi
 
 # `--renormalize` to correct the EOL in the working tree
 # You get an error on Delete file
-if MODIFIED_FILE=$(git status --porcelain | grep -v '^ D\|^D' | awk '{print $2}'); then
-  git add --renormalize "$MODIFIED_FILE"
+if MODIFIED_FILE=$(git status --porcelain | grep -v '^ D\|^D' | awk '{print $2}' | tr "\n" " "); then
+  # shellcheck disable=SC2086
+  git add --renormalize $MODIFIED_FILE
 fi
 
 # renormalize does not add any file into the index
