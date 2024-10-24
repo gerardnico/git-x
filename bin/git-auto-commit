@@ -53,7 +53,7 @@ fi
 
 # `--renormalize` to correct the EOL in the working tree
 # You get an error on Delete file
-if MODIFIED_FILE=$(status --porcelain | grep -v '^ D\|^D' | awk '{print $2}'); then
+if MODIFIED_FILE=$(git status --porcelain | grep -v '^ D\|^D' | awk '{print $2}'); then
   git add --renormalize "$MODIFIED_FILE"
 fi
 
