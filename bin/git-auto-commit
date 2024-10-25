@@ -41,6 +41,7 @@ set -Eeuo pipefail
 source bashlib-echo.sh
 source bashlib-git.sh
 source bashlib-error.sh
+source bashlib-command.sh
 error::set_trap
 
 
@@ -52,10 +53,15 @@ if [ "$COMMIT_MESSAGE" = "" ]; then
 fi
 
 # `--renormalize` to correct the EOL in the working tree
-# You get an error on Delete file
-if MODIFIED_FILE=$(git status --porcelain | grep -v '^ D\|^D' | awk '{print $2}' | tr "\n" " "); then
+# You get an error on Delete file and we need to take the last element
+# Example of output:
+#  M README.md
+# D docs/lib/bashlib-crypto.md
+#RM lib/bashlib-function.sh -> lib/bashlib-bash.sh
+#?? docs/lib/bashlib-bash.md
+if MODIFIED_FILE=$(git status --porcelain | grep -v '^ D\|^D' | awk '{print $NF}' | tr "\n" " "); then
   # shellcheck disable=SC2086
-  git add --renormalize $MODIFIED_FILE
+  command::echo_eval "git add --renormalize $MODIFIED_FILE"
 fi
 
 # renormalize does not add any file into the index
