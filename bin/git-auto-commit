@@ -60,8 +60,9 @@ fi
 #RM lib/bashlib-function.sh -> lib/bashlib-bash.sh
 #?? docs/lib/bashlib-bash.md
 if MODIFIED_FILE=$(git status --porcelain | grep -v '^ D\|^D' | awk '{print $NF}' | tr "\n" " "); then
+  # Shell check because we want the modified files to split
   # shellcheck disable=SC2086
-  command::echo_eval "git add --renormalize $MODIFIED_FILE"
+  git add --renormalize $MODIFIED_FILE
 fi
 
 # renormalize does not add any file into the index
