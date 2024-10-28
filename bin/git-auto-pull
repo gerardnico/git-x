@@ -3,6 +3,7 @@
 # @description
 # Integrate the changes from an upstream
 # (Stash if needed and pull)
+# AutoStash with all pull type
 #
 # ## SYNOPSIS
 # ```bash
@@ -17,6 +18,21 @@
 # [alias]
 #    sp = "!git-auto-pull"
 # ```
+#
+# ## Note on Rebase AutoStash
+#
+# Pull has also a [rebase autostash option](https://git-scm.com/docs/git-pull/2.17.0#Documentation/git-pull.txt---autostash)
+# ```bash
+# git pull --rebase --autostash
+# ```
+# This script does not care the type of change integration, it works also with a `merge`
+#
+# You can automate a `git pull --rebase --autostash` via configuration.
+# ```bash
+# git config [--global] pull.rebase true
+# git config [--global] rebase.autoStash true
+# ```
+#
 
 set -Eeuo pipefail
 source bashlib-git.sh
