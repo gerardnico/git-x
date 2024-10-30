@@ -117,14 +117,17 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
 
   # Header for each repo
   DIRECTORY_NAME=$(path::get_current_directory_name) # the directory name is the DIRECTORY_NAME
+  HEAD=$(string::set_color "yellow" "${DIRECTORY_NAME}")
   CURRENT_BRANCH=$(git::get_current_branch)
-  if ! CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch); then
+  if ! CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch &>/dev/null); then
+    echo::echo ""
+    echo::echo "$HEAD"
     echo::warn "The branch $CURRENT_BRANCH has no upstream. Skipping"
     popd >/dev/null
     continue
   fi
   # The format for branch and upstream comes from `git status --branch`
-  HEAD="$(string::set_color "yellow" "${DIRECTORY_NAME}") (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
+  HEAD="$HEAD (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
 
   # If a batch exec, skip the non-dirty repo
   if ! git::is_dirty && [ "$ALL_REPO_MODE" == "false" ]; then
