@@ -140,7 +140,8 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   # 2>&1 because git output all to 2
   if ! OUTPUT=$(eval "$COMMAND" 2>&1); then
     echo::err "$HEAD"
-    echo::err "The command (${COMMAND}) has error"
+    echo::err "The command (${COMMAND}) has errors:"
+    echo::err "$OUTPUT"
     popd > /dev/null
     continue
   fi
