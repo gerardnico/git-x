@@ -1,0 +1,6 @@
+#!/bin/bash
+# Delete the last commit
+
+source bashlib-comand.sh
+
+command::echo_eval "git reset --hard HEAD^"
