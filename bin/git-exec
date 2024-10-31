@@ -156,7 +156,7 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
 
 done
 
-if [ "$MODE" == "false" ]; then
+if [ "$MODE" == "$MODE_DIRTY" ]; then
   echo::echo ""
   echo::tip "Mode of execution was to run the command only on dirty repository (working tree not clean)"
   echo::tip "Use the flag -f to run the command on all repos. ie"
