@@ -35,11 +35,13 @@
 #
 
 set -Eeuo pipefail
-source bashlib-git.sh
-source bashlib-echo.sh
 source bashlib-error.sh
 error::set_trap
+source bashlib-git.sh
+source bashlib-echo.sh
+source bashlib-path.sh
 
+DIRECTORY_NAME=$(path::get_current_directory_name)
 
 # Stash before a merge to integrate the remote changes
 # To avoid the error: Please commit your changes or stash them before you merge.
@@ -49,21 +51,21 @@ error::set_trap
 #
 STASH=0
 if git::is_dirty; then
-  echo::info "Working area dirty"
+  echo::info "$DIRECTORY_NAME - Working area dirty"
   STASH=1
 else
-  echo::info "Working area not dirty"
+  echo::info "$DIRECTORY_NAME - Working area not dirty"
 fi
 
 if [ "$STASH" = "1" ]; then
-  echo::info "Stashing the files $(git::get_dirty_files)"
+  echo::info "$DIRECTORY_NAME - Stashing the files $(git::get_dirty_files)"
   git stash
 fi
 
-echo::info "Pulling"
+echo::info "$DIRECTORY_NAME - Pulling"
 git pull
 
 if [ "$STASH" = "1" ]; then
-  echo::info "UnStashing"
+  echo::info "$DIRECTORY_NAME - UnStashing"
   git stash pop # do a merge
 fi

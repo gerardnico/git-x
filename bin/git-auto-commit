@@ -38,18 +38,19 @@
 #    ```
 
 set -Eeuo pipefail
+source bashlib-error.sh
+error::set_trap
 source bashlib-echo.sh
 source bashlib-git.sh
-source bashlib-error.sh
 source bashlib-command.sh
-error::set_trap
+source bashlib-path.sh
 
-
+DIRECTORY_NAME=$(path::get_current_directory_name)
 
 COMMIT_MESSAGE=${1:-}
 if [ "$COMMIT_MESSAGE" = "" ]; then
   COMMIT_MESSAGE=$(git::get_auto_commit_message)
-  echo::info "Commit message generated: $COMMIT_MESSAGE"
+  echo::info "DIRECTORY_NAME - Commit message generated: $COMMIT_MESSAGE"
 fi
 
 # `--renormalize` to correct the EOL in the working tree
@@ -80,7 +81,7 @@ git add .
 git fetch
 UPSTREAM_COMMIT_TO_MERGE=$(git rev-list HEAD...'@{u}' --count)
 if [ "$UPSTREAM_COMMIT_TO_MERGE" != 0 ]; then
-  echo::warn "$UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
+  echo::warn "$DIRECTORY_NAME - $UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
   git auto-pull
 fi
 
