@@ -82,9 +82,11 @@ fi
 # Perform the command on all repo
 # even if the repo is not dirty
 FIRST_ARG=$1
-ALL_REPO_MODE=false
+MODE_FORCE="all"
+MODE_DIRTY="dirty"
+MODE=$MODE_DIRTY
 if [[ $FIRST_ARG =~ "-f" ]]; then
-  ALL_REPO_MODE=true
+  MODE=$MODE_FORCE
   shift
 fi
 
@@ -93,7 +95,7 @@ FIRST_ARG=$1
 REPO_DIR="$GITX_REPOS_HOME/$FIRST_ARG"
 if [ -d "$REPO_DIR/.git" ]; then
     REPO_DIRS+=("$REPO_DIR")
-    ALL_REPO_MODE=false
+    MODE=$MODE_FORCE
     shift
 else
   for GITX_REPO_DIR in "$GITX_REPOS_HOME"/*; do
@@ -130,12 +132,13 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   HEAD="$HEAD (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
 
   # If a batch exec, skip the non-dirty repo
-  if ! git::is_dirty && [ "$ALL_REPO_MODE" == "false" ]; then
+  if ! git::is_dirty && [ "$MODE" == "$MODE_DIRTY" ]; then
       popd > /dev/null
       continue
   fi
 
-  if ! OUTPUT=$(eval "$COMMAND"); then
+  # 2>&1 because git output all to 2
+  if ! OUTPUT=$(eval "$COMMAND" 2>&1); then
     echo::err "$HEAD"
     echo::err "The command (${COMMAND}) has error"
     popd > /dev/null
@@ -152,7 +155,7 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
 
 done
 
-if [ "$ALL_REPO_MODE" == "false" ]; then
+if [ "$MODE" == "false" ]; then
   echo::echo ""
   echo::tip "Mode of execution was to run the command only on dirty repository (working tree not clean)"
   echo::tip "Use the flag -f to run the command on all repos. ie"
