@@ -7,14 +7,14 @@
 
 ## Command List
 
-* [git auto-commit](docs/git-auto-commit.md) - Pull, add, commit and push in one command, no argument needed
-* [git auto-pull](docs/git-auto-pull.md) - Stash, Pull in one command
-* [git commit-status](docs/git-commit-status.md) - Shows the commit status (to push/to merge)
-* [git exec](docs/git-exec.md) - Execute a command against multiple local repositories at once
-* [git service](docs/git-service.md) - List the repositories of a Git Hosting Service
+* [git auto-commit](docs/bin/git-auto-commit.md) - Pull, add, commit and push in one command, no argument needed
+* [git auto-pull](docs/bin/git-auto-pull.md) - Stash, Pull in one command
+* [git commit-status](docs/bin/git-commit-status.md) - Shows the commit status (to push/to merge)
+* [git exec](docs/bin/git-exec.md) - Execute a command against multiple local repositories at once
+* [git service](docs/bin/git-service.md) - List the repositories of a Git Hosting Service
 * [git service backup](man-source/git-service-backup.md) - Backup your repositories on a Git Hosting Service
-* [git status-human](docs/git-status-human.md) - Print the status in a human way (ie one letter status explained)
-* [git restart](docs/git-restart.md) - Restart with a clean state (as `git clone`)
+* [git status-human](docs/bin/git-status-human.md) - Print the status in a human way (ie one letter status explained)
+* [git restart](docs/bin/git-restart.md) - Restart with a clean state (as `git clone`)
 
 
 ## Installation

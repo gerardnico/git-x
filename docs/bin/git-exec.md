@@ -31,7 +31,7 @@ git exec my-repo commit -m "My Commit"
 ## CONFIG
 
 You should set the environment variable `GITX_REPOS_HOME` to a valid directory
-that host multiple repositories as sub-directories.
+that host multiple repositories as subdirectories.
 
 ## SYNOPSIS
 
