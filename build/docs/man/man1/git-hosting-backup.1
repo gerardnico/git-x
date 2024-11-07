@@ -14,17 +14,16 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "" "" "" "" ""
+.TH "git-hosting-backup" "1" "" "Version Latest" "Backing up Git Hosted Repo"
 .hy
-.SH Git Service Backup from GitHub to Rclone
-.SS About
+.SH DESCRIPTION
 .PP
-This \f[V]git service backup\f[R] command back up Git repositories: *
+This \f[V]git-hosting-backup\f[R] command back up Git repositories: *
 from \f[V]GitHub\f[R] * to a Rclone
 destination (https://rclone.org/overview/) * as a Git
 bundle (https://git-scm.com/book/en/v2/Git-Tools-Bundling)
 .SS Example
-.SS S3
+.SS Backup Github Repos to S3
 .PP
 To back up your repositories: * from github * to s3 * excluding the repo
 \f[V]site-com-datacadamia\f[R] you would execute:
@@ -32,13 +31,13 @@ To back up your repositories: * from github * to s3 * excluding the repo
 .nf
 \f[C]
 docker run \[rs]
-  --name git-backup \[rs]
+  --name git-hosting-backup \[rs]
   --rm \[rs]
   --user 1000:1000 \[rs]
   -v \[ti]/.ssh:/home/me/.ssh \[rs]
-  -e GITBKP_GITHUB_TOKEN= \[rs]
-  -e GITBKP_S3_PLATFORM=rclone \[rs]
-  -e GITBKP_S3_RCLONE_BASE_PATH=git-backup \[rs]
+  -e GIT_X_BKP_GITHUB_TOKEN= \[rs]
+  -e GIT_X_BKP_S3_PLATFORM=rclone \[rs]
+  -e GIT_X_BKP_S3_RCLONE_BASE_PATH=git-backup \[rs]
   -e RCLONE_CONFIG_S3_TYPE=s3 \[rs]
   -e RCLONE_CONFIG_S3_PROVIDER=IDrive \[rs]
   -e RCLONE_CONFIG_S3_ENDPOINT=h0k0.ca.idrivee2-22.com \[rs]
@@ -47,10 +46,10 @@ docker run \[rs]
   -e RCLONE_CONFIG_S3_NO_CHECK_BUCKET=true \[rs]
   -e RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms \[rs]
   ghcr.io/gerardnico/git-x:latest \[rs]
-  git service backup github s3 --filter-exclude-pattern=site-com-datacadamia
+  git-hosting-backup github s3 --filter-exclude-pattern=site-com-datacadamia
 \f[R]
 .fi
-.SS SFTP Bunny
+.SS Backup Github Repos to SFTP Bunny
 .PP
 To back up your repositories: * from github * to Bunny with Rclone
 SFTP (https://rclone.org/sftp/) * excluding the repo
@@ -63,17 +62,17 @@ docker run \[rs]
   --rm \[rs]
   --user 1000:1000 \[rs]
   -v \[ti]/.ssh:/home/me/.ssh \[rs]
-  -e GITBKP_GITHUB_TOKEN= \[rs]
-  -e GITBKP_BUNNY_PLATFORM=rclone \[rs]
+  -e GIT_X_BKP_GITHUB_TOKEN= \[rs]
+  -e GIT_X_BKP_BUNNY_PLATFORM=rclone \[rs]
   -e RCLONE_INPLACE=1 \[rs]
   -e RCLONE_SIZE_ONLY=1 \[rs]
   -e RCLONE_CONFIG_BUNNY_TYPE=sftp \[rs]
   -e RCLONE_CONFIG_BUNNY_HOST=storage.bunnycdn.com \[rs]
   -e RCLONE_CONFIG_BUNNY_ENDPOINT=h0k0.ca.idrivee2-22.com \[rs]
   -e RCLONE_CONFIG_BUNNY_USER=git-backup \[rs]
-  -e RCLONE_CONFIG_BUNNY_PASS= \[rs]
+  -e RCLONE_CONFIG_BUNNY_PASS=GIT_BACKUP_BUNNY_PASS \[rs]
   ghcr.io/gerardnico/git-x:latest \[rs]
-  git service backup github bunny --filter-exclude-pattern=site-com-datacadamia
+  git-hosting-backup github bunny --filter-exclude-pattern=site-com-datacadamia
 \f[R]
 .fi
 .PP
@@ -84,34 +83,35 @@ Leading to error such as
 \f[V]partial file rename failed: Move Rename failed: sftp: \[dq]Internal server error.\[dq] (SSH_FX_FAILURE)\f[R]
 * \f[V]RCLONE_SIZE_ONLY=1\f[R] is needed because Bunny does not support
 modification time update.
-.SS Example Explanation
+.SH Example Explanation
 .PP
 The command executed is:
 .IP
 .nf
 \f[C]
-git-service backup github s3 --filter-exclude-pattern=site-com-datacadamia
+git-hosting-backup github s3 --filter-exclude-pattern=site-com-datacadamia
 \f[R]
 .fi
 .PP
 where: * \f[V]backup\f[R] is the command * \f[V]github\f[R] is the
-service defined by the following \f[V]GITBKP_SERVICE_NAME_xxx\f[R] envs)
+service defined by the following \f[V]GIT_X_BKP_SERVICE_NAME_xxx\f[R]
+envs)
 .IP
 .nf
 \f[C]
-GITBKP_GITHUB_PLATFORM=github # platform type
-GITBKP_GITHUB_TOKEN= # API Token 
+GIT_X_BKP_GITHUB_PLATFORM=github # platform type (optional as it defaults to the name)
+GIT_X_BKP_GITHUB_TOKEN=GITHUB_TOKEN # API Token 
 \f[R]
 .fi
 .IP \[bu] 2
 \f[V]s3\f[R] is the target defined by the following
-\f[V]GITBKP_SERVICE_NAME_xxx\f[R] envs
+\f[V]GIT_X_BKP_PLATFORM_NAME_xxx\f[R] envs
 .IP
 .nf
 \f[C]
-GITBKP_S3_PLATFORM=rclone # rclone 
-GITBKP_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
-GITBKP_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
+GIT_X_BKP_S3_PLATFORM=rclone # rclone 
+GIT_X_BKP_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
+GIT_X_BKP_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
 \f[R]
 .fi
 .IP \[bu] 2
@@ -125,12 +125,12 @@ ie \f[V]RCLONE_CONFIG_REMOTE_NAME_XXX\f[R]
 .IP
 .nf
 \f[C]
-# in our case the GIT_BACKUP remote name was defined via the env \[ga]GITBKP_S3_RCLONE_REMOTE_NAME=git_backup\[ga]
+# in our case the GIT_BACKUP remote name was defined via the env \[ga]GIT_X_BKP_S3_RCLONE_REMOTE_NAME=git_backup\[ga]
 RCLONE_CONFIG_S3_TYPE=s3
 RCLONE_CONFIG_S3_PROVIDER=IDrive
 RCLONE_CONFIG_S3_ENDPOINT=h0k0.ca.idrivee2-22.com
-RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=
-RCLONE_CONFIG_S3_ACCESS_KEY_ID=
+RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=GIT_BACKUP_SECRET_KEY
+RCLONE_CONFIG_S3_ACCESS_KEY_ID=\[rs]
 RCLONE_CONFIG_S3_NO_CHECK_BUCKET=true
 RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
 \f[R]
@@ -167,7 +167,8 @@ with the scope \f[V]repo\f[R] for public and private repo
 .IP \[bu] 2
 A Rclone destination (https://rclone.org/overview/)
 .IP \[bu] 2
-The dependencies # How to restore
+The dependencies
+.SH How to restore
 .PP
 A bundle (https://git-scm.com/book/en/v2/Git-Tools-Bundling) can be
 cloned.
@@ -191,11 +192,11 @@ Otherwise, backup with the following commands:
 .nf
 \f[C]
 # git clone a mirror repository locally
-git clone --mirror  
+git clone --mirror REPO_SSH_URL CLONE_TARGET_DIR
 # create a bundle
-git bundle create  --all
+git bundle create BUNDLE_SOURCE_PATH --all
 # upload the bundle to \[ga]workspace/repository_name\[ga]
-rclone moveto   --progress
+rclone moveto BUNDLE_SOURCE_PATH BUNDLE_TARGET_PATH --progress
 \f[R]
 .fi
 .IP \[bu] 2
@@ -211,9 +212,6 @@ End
 The Gickup
 application (https://cooperspencer.github.io/gickup-documentation/) is
 more suited for that.
-.SH How to contribute
-.PP
-See dev
 .SH Why do you choose SSH over Personal Access Token for Github
 .PP
 That\[cq]s the easiest way to login.

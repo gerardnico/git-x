@@ -6,7 +6,7 @@ Execute a git command against multiple local repositories at once
 # DESCRIPTION
 
 Execute a git command against all local repositories stored:
-* under the directory located by the `` environment variable
+* under the directory located by the `/home/admin/code` environment variable
 * at the paths defined in the `` file
 
 # EXAMPLE

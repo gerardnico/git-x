@@ -1,5 +1,5 @@
-% git-service(1) Version Latest | git-service
-# Git Service
+% git-hosting(1) Version Latest | Execute a command against a Git Hosting Service
+# Git Hosting
 
 Execute a command against a Git Hosting Service
 
@@ -13,14 +13,14 @@ List and backup the repositories of a Git Hosting Service
 git-hosting command [argument ...] [--option[=value] ...]
 ```
   where command is one of:
-  * `list`     - list the repositories of a Git Hosting Service"
-  * `backup`   - backup the repositories of a Git Hosting Service"
-  * `mount`    - mount a rclone target as file system"
+  * `list`     - list the repositories of a Git Hosting Service
+  * `backup`   - backup the repositories of a Git Hosting Service
+  * `mount`    - mount a rclone target as file system
 
 
-To get the help on one command"
+To get the help on one command
 ```bash
-git service command --help"
+git hosting command --help
 ```
 
 

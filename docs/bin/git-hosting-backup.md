@@ -58,7 +58,7 @@ docker run \
   -e RCLONE_CONFIG_BUNNY_HOST=storage.bunnycdn.com \
   -e RCLONE_CONFIG_BUNNY_ENDPOINT=h0k0.ca.idrivee2-22.com \
   -e RCLONE_CONFIG_BUNNY_USER=git-backup \
-  -e RCLONE_CONFIG_BUNNY_PASS=$GIT_BACKUP_BUNNY_PASS \
+  -e RCLONE_CONFIG_BUNNY_PASS=GIT_BACKUP_BUNNY_PASS \
   ghcr.io/gerardnico/git-x:latest \
   git-hosting-backup github bunny --filter-exclude-pattern=site-com-datacadamia
 ```
@@ -80,7 +80,7 @@ where:
   * `github` is the service defined by the following `GIT_X_BKP_SERVICE_NAME_xxx` envs)
 ```bash
 GIT_X_BKP_GITHUB_PLATFORM=github # platform type (optional as it defaults to the name)
-GIT_X_BKP_GITHUB_TOKEN=$GITHUB_TOKEN # API Token 
+GIT_X_BKP_GITHUB_TOKEN=GITHUB_TOKEN # API Token 
 ```
   * `s3` is the target defined by the following `GIT_X_BKP_PLATFORM_NAME_xxx` envs
 ```bash
@@ -98,8 +98,8 @@ ie `RCLONE_CONFIG_REMOTE_NAME_XXX`
 RCLONE_CONFIG_S3_TYPE=s3
 RCLONE_CONFIG_S3_PROVIDER=IDrive
 RCLONE_CONFIG_S3_ENDPOINT=h0k0.ca.idrivee2-22.com
-RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=$GIT_BACKUP_SECRET_KEY
-RCLONE_CONFIG_S3_ACCESS_KEY_ID=$GIT_BACKUP_ACCESS_KEY
+RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=GIT_BACKUP_SECRET_KEY
+RCLONE_CONFIG_S3_ACCESS_KEY_ID=GIT_BACKUP_ACCESS_KEY
 RCLONE_CONFIG_S3_NO_CHECK_BUCKET=true
 RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
 ```
@@ -142,11 +142,11 @@ The backup processing implemented in the `backup` function of the [git-backup sc
   * Otherwise, backup with the following commands:
 ```bash
 # git clone a mirror repository locally
-git clone --mirror $REPO_SSH_URL $CLONE_TARGET_DIR
+git clone --mirror REPO_SSH_URL CLONE_TARGET_DIR
 # create a bundle
-git bundle create $BUNDLE_SOURCE_PATH --all
+git bundle create BUNDLE_SOURCE_PATH --all
 # upload the bundle to `workspace/repository_name`
-rclone moveto $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH --progress
+rclone moveto BUNDLE_SOURCE_PATH BUNDLE_TARGET_PATH --progress
 ```
   * Repeat for another repo
 * Delete the start time

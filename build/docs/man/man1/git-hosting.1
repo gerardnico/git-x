@@ -14,9 +14,9 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "git-service" "1" "" "Version Latest" "git-service"
+.TH "git-hosting" "1" "" "Version Latest" "Execute a command against a Git Hosting Service"
 .hy
-.SH Git Service
+.SH Git Hosting
 .PP
 Execute a command against a Git Hosting Service
 .SS DESCRIPTION
@@ -31,14 +31,14 @@ git-hosting command [argument ...] [--option[=value] ...]
 .fi
 .PP
 where command is one of: * \f[V]list\f[R] - list the repositories of a
-Git Hosting Service\[rq] * \f[V]backup\f[R] - backup the repositories of
-a Git Hosting Service\[rq] * \f[V]mount\f[R] - mount a rclone target as
-file system\[rq]
+Git Hosting Service * \f[V]backup\f[R] - backup the repositories of a
+Git Hosting Service * \f[V]mount\f[R] - mount a rclone target as file
+system
 .PP
-To get the help on one command\[rq]
+To get the help on one command
 .IP
 .nf
 \f[C]
-git service command --help\[dq]
+git hosting command --help
 \f[R]
 .fi
