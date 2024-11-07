@@ -33,4 +33,7 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-command::echo_eval "git reset --hard HEAD^"
+# A Hard delete will delete the commit and the files
+# A Soft delete will delete the commit put the commited file back in the working directory
+command::echo_eval "git reset --soft HEAD^"
+
