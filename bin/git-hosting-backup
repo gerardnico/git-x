@@ -15,9 +15,9 @@ function synopsis() {
 
 
     echo ""
-    echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
+    echo "Usage of $(basename "$0")"
     echo ""
-    echo "   ${CLI_NAME} $FUNCTION_NAME source target [...]"
+    echo "   $(basename "$0") source target [...]"
     echo ""
     echo "where:"
     echo "     * source                       - a git hosting service name to read from"
@@ -28,3 +28,231 @@ function synopsis() {
 
 
 }
+
+if [ "${1:-}" == "synopsis" ]; then
+  synopsis
+  exit
+fi
+
+if [[ "${1:-}" =~ -h|--help|help ]]; then
+  doc::help synopsis
+  exit
+fi
+
+FUNCTION_NAME="backup"
+GIT_SOURCE=""
+GIT_TARGET=""
+RESTART=""
+FILTER_MAX_REPO_COUNT=""
+FILTER_EXCLUDE_PATTERN=""
+for arg in "$@"; do
+    case "$arg" in
+     "--restart")
+        RESTART="true"
+        ;;
+      "--filter-max-repo-count")
+        FILTER_MAX_REPO_COUNT=$(getOptionValue "$arg")
+        ;;
+      --filter-exclude-pattern)
+        FILTER_EXCLUDE_PATTERN=$(getOptionValue "$arg")
+        ;;
+      "")
+      ;;
+      *)
+        if [ "$GIT_SOURCE" == "" ]; then
+            GIT_SOURCE="${arg^^}" # ^^ for uppercase
+        elif [ "$GIT_TARGET" == "" ]; then
+            GIT_TARGET="${arg^^}" # ^^ for uppercase
+        else
+            echo::err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only 2 arguments, the source and the target. ($arg) is the third argument"
+            exit 1;
+        fi
+        shift
+        ;;
+    esac
+done
+
+## Arg feedback
+echo::info "$FUNCTION_NAME: Arguments feedback"
+if [ "$FILTER_EXCLUDE_PATTERN" != "" ]; then
+  echo::info "$FUNCTION_NAME:   * Exclude pattern: $FILTER_EXCLUDE_PATTERN"
+else
+  echo::info "$FUNCTION_NAME:   * No Exclude pattern"
+fi
+if [ "$FILTER_MAX_REPO_COUNT" != "" ]; then
+  echo::info "$FUNCTION_NAME:   * Max repo count: $FILTER_MAX_REPO_COUNT"
+else
+  echo::info "$FUNCTION_NAME:   * No Max repo count"
+fi
+# Source
+if [ "$GIT_SOURCE" == "" ]; then
+  echo::err "$FUNCTION_NAME: A git source is excepted as first argument"
+  exit 1;
+else
+  echo::info "$FUNCTION_NAME:   * Git source: $GIT_SOURCE"
+fi
+# Target
+if [ "$GIT_TARGET" == "" ]; then
+  echo::err "$FUNCTION_NAME: A git target is excepted as second argument"
+  exit 1;
+else
+  echo::info "$FUNCTION_NAME:   * Git target: $GIT_TARGET"
+fi
+
+set_env "$GIT_SOURCE"
+GIT_PLATFORM_SOURCE=$GIT_PLATFORM
+
+set_env "$GIT_TARGET"
+GIT_PLATFORM_TARGET=$GIT_PLATFORM
+if [ "$GIT_PLATFORM_TARGET" != "rclone" ]; then
+  echo::err "$FUNCTION_NAME: Only a rclone git registry is supported as target"
+  exit 1
+fi
+set_rclone_env "$GIT_TARGET"
+
+# Get the Json as CSV and loop over it
+echo::info "$FUNCTION_NAME: Looping over the repo of the registry $GIT_SOURCE"
+
+if [ "$GIT_PLATFORM_SOURCE" != "github" ]; then
+  echo::err "$FUNCTION_NAME: Only GitHub as registry source is supported for now, not $GIT_PLATFORM_SOURCE"
+  exit 1;
+fi
+
+# Backup Start
+# Get the last backup date
+LAST_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/last-backup-time.dat"
+if ! LAST_BACKUP_TIME=$(rclone cat "$LAST_BACKUP_TIME_FILE_PATH" 2>/dev/null); then
+  # File does not exist
+  # Rclone Sftp returns an error while s3 does not
+  LAST_BACKUP_TIME=""
+fi
+LAST_BACKUP_TIME_EPOCH=""
+if [ "$LAST_BACKUP_TIME" == "" ]; then
+  echo::info "$FUNCTION_NAME: No last backup time"
+else
+  echo::info "$FUNCTION_NAME: Last backup time: $LAST_BACKUP_TIME"
+  LAST_BACKUP_TIME_EPOCH=$(TZ=UTC date -d "$LAST_BACKUP_TIME" +%s)
+fi
+
+# Store the current date and time
+RCLONE_START_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/start-backup-time.dat"
+echo::info "$FUNCTION_NAME: Listing start backup time"
+if ! START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" 2>/dev/null | wc -l); then
+  # File does not exist
+  # Rclone Sftp returns an error while s3 does not
+  START_BACKUP_TIME_FILE_COUNT="0"
+fi
+if [ "$START_BACKUP_TIME_FILE_COUNT" != "0" ]; then
+  if [ "$RESTART" == "" ]; then
+    echo::err "$FUNCTION_NAME: Start backup time found, a backup may be running or was killed, add the --restart option to pass this check"
+    exit 1
+  else
+    echo::info "$FUNCTION_NAME: Restart used, using the stored start backup time. "
+    START_BACKUP_TIME=$(rclone cat "$RCLONE_START_BACKUP_TIME_FILE_PATH")
+    echo::info "$FUNCTION_NAME: Retrieved Start backup time: $START_BACKUP_TIME"
+  fi
+else
+  START_BACKUP_TIME=$(TZ=UTC date +"%Y-%m-%dT%H:%M:%SZ")
+  echo::info "$FUNCTION_NAME: Start backup time: $START_BACKUP_TIME"
+  echo::info "$FUNCTION_NAME: Writing Start backup time to $RCLONE_START_BACKUP_TIME_FILE_PATH"
+  echo "$START_BACKUP_TIME" | rclone rcat "$RCLONE_START_BACKUP_TIME_FILE_PATH"
+fi;
+
+
+
+# Github Api Call
+# Note: pushed_at represents the date and time of the last commit
+echo::info "$FUNCTION_NAME: Retrieving repos"
+FILTER_MAX_REPO_COUNT_OPTION=""
+if [ "$FILTER_MAX_REPO_COUNT" != "" ]; then
+  FILTER_MAX_REPO_COUNT_OPTION="--filter-max-repo-count=$FILTER_MAX_REPO_COUNT"
+fi
+REPOS_COMMAND="$CLI_NAME list_repo $GIT_SOURCE $FILTER_MAX_REPO_COUNT_OPTION --jq-expression='(.[] | [.full_name, .fork, .ssh_url, .pushed_at]) | @csv' '--jq-raw-output' '--silent'"
+echo::info "$FUNCTION_NAME: executing command: $REPOS_COMMAND"
+API_REPOS=$(eval "$REPOS_COMMAND")
+
+ACTUAL_COUNT=0
+while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
+
+  # Analytics
+  ACTUAL_COUNT=$((ACTUAL_COUNT + 1))
+
+  REPO_FULL_NAME=$(echo "$REPO_FULL_NAME" | tr -d '"')
+  IFS='/' read -r REPO_PARENT REPO_NAME <<< "$REPO_FULL_NAME"
+  echo::info " "
+  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Backup Repo: $REPO_FULL_NAME"
+
+  if [ "$REPO_FORK" == true ]; then
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Skipped forked repo: $REPO_FULL_NAME";
+    continue
+  fi
+
+  if [ "$FILTER_EXCLUDE_PATTERN" != "" ] && [[ "$REPO_FULL_NAME" =~ $FILTER_EXCLUDE_PATTERN ]]; then
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Skipped pattern exclude repo: $REPO_FULL_NAME";
+    continue
+  fi
+
+  BUNDLE_NAME="${REPO_NAME}.bundle"
+  BUNDLE_RELATIVE_PATH=$REPO_PARENT/$BUNDLE_NAME
+  BUNDLE_TARGET_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/$BUNDLE_RELATIVE_PATH"
+  if ! TARGET_BUNDLE_PATH_COUNT=$(rclone lsf "$BUNDLE_TARGET_PATH" 2>/dev/null | wc -l); then
+    # File does not exist
+    # Rclone Sftp returns an error while s3 does not
+    TARGET_BUNDLE_PATH_COUNT="0"
+  fi
+  if [ "$TARGET_BUNDLE_PATH_COUNT" != "0" ]; then
+    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Backup bundle already exist at $BUNDLE_TARGET_PATH";
+    # 2024-08-29T13:20:27Z
+    PUSHED_AT_TRIMMED=$(echo "$PUSHED_AT" | tr -d '"')
+    PUSHED_AT_EPOCH=$(TZ=UTC date -d"$PUSHED_AT_TRIMMED" +%s)
+    if [ "$LAST_BACKUP_TIME" != "" ] && [ "$PUSHED_AT_EPOCH" -lt "$LAST_BACKUP_TIME_EPOCH" ]; then
+      echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Skipped backup repo: No push since last backup. Last Pushed Date ($PUSHED_AT) is less than the last backup time ($LAST_BACKUP_TIME)";
+      continue
+    fi
+  fi
+
+  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Cloning Repo: $REPO_FULL_NAME"
+  CLONE_TARGET_DIR=/tmp/clone/$REPO_FULL_NAME
+  if [ ! -d "$CLONE_TARGET_DIR" ]; then
+    mkdir -p "$CLONE_TARGET_DIR"
+    CLONE_COMMAND="git clone --mirror $REPO_SSH_URL $CLONE_TARGET_DIR --quiet"
+    echo::info "$FUNCTION_NAME: Executing : $CLONE_COMMAND"
+    eval "$CLONE_COMMAND"
+  else
+    echo::info "$FUNCTION_NAME: Clone already done"
+  fi
+
+  # Empty repo?
+  OBJECT_COUNT=$(find "$CLONE_TARGET_DIR"/objects -type f | wc -l)
+  if [ "$OBJECT_COUNT" == 0 ]; then
+    echo::info "$FUNCTION_NAME: Skipping backup - repo empty: $REPO_FULL_NAME"
+    continue
+  fi
+
+
+  BUNDLE_SOURCE_PATH="/tmp/$BUNDLE_RELATIVE_PATH"
+  BUNDLE_SOURCE_PARENT_PATH="/tmp/$REPO_PARENT"
+  mkdir -p "$BUNDLE_SOURCE_PARENT_PATH"
+  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Creating bundle: $BUNDLE_SOURCE_PATH"
+  BUNDLE_COMMAND="git -C $CLONE_TARGET_DIR -c 'pack.threads=1' bundle create $BUNDLE_SOURCE_PATH --all --quiet"
+  echo::info "$FUNCTION_NAME: Executing : $BUNDLE_COMMAND"
+  eval "$BUNDLE_COMMAND"
+
+  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Uploading bundle: $BUNDLE_NAME"
+  MOVE_COMMAND="rclone moveto $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH --progress"
+  echo::info "$FUNCTION_NAME: Executing : $MOVE_COMMAND"
+  eval "$MOVE_COMMAND"
+
+  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Cleaning up"
+  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Deleting Git repo: $CLONE_TARGET_DIR"
+  rm -rf "$CLONE_TARGET_DIR"
+  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Deleting Git repo: Done"
+
+
+done <<< "$API_REPOS" # needed to not run as pipeline and get ACTUAL_COUNT
+
+
+echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH"
+rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH"
+echo::info " "
+echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Processed $ACTUAL_COUNT repositories";

@@ -1,5 +1,5 @@
-% git-service(1) Version Latest | git-service
-# Git Service
+% git-hosting(1) Version Latest | Execute a command against a Git Hosting Service
+# Git Hosting
 
 Execute a command against a Git Hosting Service
 
@@ -12,9 +12,9 @@ List and backup the repositories of a Git Hosting Service
 ${SYNOPSIS}
 
 
-To get the help on one command"
+To get the help on one command
 ```bash
-git service command --help"
+git hosting command --help
 ```
 
 

@@ -24,9 +24,9 @@ docker run \
   --rm \
   --user 1000:1000 \
   -v ~/.ssh:/home/me/.ssh \
-  -e GITBKP_GITHUB_TOKEN= \
-  -e GITBKP_S3_PLATFORM=rclone \
-  -e GITBKP_S3_RCLONE_BASE_PATH=git-backup \
+  -e GIT_X_BKP_GITHUB_TOKEN= \
+  -e GIT_X_BKP_S3_PLATFORM=rclone \
+  -e GIT_X_BKP_S3_RCLONE_BASE_PATH=git-backup \
   -e RCLONE_CONFIG_S3_TYPE=s3 \
   -e RCLONE_CONFIG_S3_PROVIDER=IDrive \
   -e RCLONE_CONFIG_S3_ENDPOINT=h0k0.ca.idrivee2-22.com \
@@ -51,8 +51,8 @@ docker run \
   --rm \
   --user 1000:1000 \
   -v ~/.ssh:/home/me/.ssh \
-  -e GITBKP_GITHUB_TOKEN= \
-  -e GITBKP_BUNNY_PLATFORM=rclone \
+  -e GIT_X_BKP_GITHUB_TOKEN= \
+  -e GIT_X_BKP_BUNNY_PLATFORM=rclone \
   -e RCLONE_INPLACE=1 \
   -e RCLONE_SIZE_ONLY=1 \
   -e RCLONE_CONFIG_BUNNY_TYPE=sftp \
@@ -78,16 +78,16 @@ git-service backup github s3 --filter-exclude-pattern=site-com-datacadamia
 ```
 where:
   * `backup` is the command
-  * `github` is the service defined by the following `GITBKP_SERVICE_NAME_xxx` envs)
+  * `github` is the service defined by the following `GIT_X_BKP_SERVICE_NAME_xxx` envs)
 ```bash
-GITBKP_GITHUB_PLATFORM=github # platform type
-GITBKP_GITHUB_TOKEN= # API Token 
+GIT_X_BKP_GITHUB_PLATFORM=github # platform type
+GIT_X_BKP_GITHUB_TOKEN= # API Token 
 ```
-  * `s3` is the target defined by the following `GITBKP_SERVICE_NAME_xxx` envs
+  * `s3` is the target defined by the following `GIT_X_BKP_SERVICE_NAME_xxx` envs
 ```bash
-GITBKP_S3_PLATFORM=rclone # rclone 
-GITBKP_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
-GITBKP_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
+GIT_X_BKP_S3_PLATFORM=rclone # rclone 
+GIT_X_BKP_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
+GIT_X_BKP_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
 ```
   * `--filter-exclude-pattern=xxx` is a regexp pattern that if the expression matches the full name repository (`workspace/name`) will exclude it from backup
 
@@ -95,7 +95,7 @@ GITBKP_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucke
 The rclone remote name is configured via [the native rclone environment variable](https://rclone.org/docs/#environment-variables). 
 ie `RCLONE_CONFIG_REMOTE_NAME_XXX` 
 ```bash
-# in our case the GIT_BACKUP remote name was defined via the env `GITBKP_S3_RCLONE_REMOTE_NAME=git_backup`
+# in our case the GIT_BACKUP remote name was defined via the env `GIT_X_BKP_S3_RCLONE_REMOTE_NAME=git_backup`
 RCLONE_CONFIG_S3_TYPE=s3
 RCLONE_CONFIG_S3_PROVIDER=IDrive
 RCLONE_CONFIG_S3_ENDPOINT=h0k0.ca.idrivee2-22.com
