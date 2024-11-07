@@ -1,45 +1,45 @@
 #!/bin/bash
 # @name git-auto-pull
-# @description
-# Integrate the changes from an upstream
-# (Stash if needed and pull)
-# AutoStash with all pull type
-#
-# ## SYNOPSIS
-# ```bash
-# git auto-pull
-# ```
-# AutoPull to stay in the same fashion than AutoCommit
-# ## TIP
-#
-# You can add it as alias in your `~.gitconfig`
-# Example with `sp` that stands for `stash, pull`
-# ```ini
-# [alias]
-#    sp = "!git-auto-pull"
-# ```
-#
-# ## Note on Rebase AutoStash
-#
-# Pull has also a [rebase autostash option](https://git-scm.com/docs/git-pull/2.17.0#Documentation/git-pull.txt---autostash)
-# ```bash
-# git pull --rebase --autostash
-# ```
-# This script does not care the type of change integration, it works also with a `merge`
-#
-# You can automate a `git pull --rebase --autostash` via configuration.
-# ```bash
-# git config [--global] pull.rebase true
-# git config [--global] rebase.autoStash true
-# ```
-#
+
+
 
 set -Eeuo pipefail
-source bashlib-error.sh
+# shellcheck source=../..//bash-lib/lib/bashlib-error.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
 error::set_trap
-source bashlib-git.sh
-source bashlib-echo.sh
-source bashlib-path.sh
+# shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-echo.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-git.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-path.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-path.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+
+# Synopsis
+function synopsis(){
+
+  cat <<EOF
+Easy AutoPull
+\`\`\`bash
+$(basename "$0")
+\`\`\`
+EOF
+
+}
+
+# Doc Synopsis
+if [ "${1:-}" = "synopsis" ]; then
+  synopsis
+  exit 0
+fi
+
+# Help
+if [[ "${1:-}" =~ -h|--help|help ]]; then
+  doc::help synopsis
+  exit 0
+fi
+
 
 DIRECTORY_NAME=$(path::get_current_directory_name)
 

@@ -1,7 +1,36 @@
 #!/bin/bash
 # A improved version of `last = log -1 HEAD`
 
-source bashlib-string.sh
+set -Eeuo pipefail
+# shellcheck source=../..//bash-lib/lib/bashlib-error.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+error::set_trap
+# shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-string.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-string.sh"
+
+function synopsis(){
+
+  cat <<EOF
+\`\`\`bash
+$(basename "$0")
+\`\`\`
+EOF
+
+}
+
+# Doc Synopsis
+if [ "${1:-}" = "synopsis" ]; then
+  synopsis
+  exit 0
+fi
+
+# Help
+if [[ "${1:-}" =~ -h|--help|help ]]; then
+  doc::help synopsis
+  exit 0
+fi
 
 # https://git-scm.com/docs/git-config#Documentation/git-config.txt-color
 # https://git-scm.com/docs/git-log#_pretty_formats

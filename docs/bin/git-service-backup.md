@@ -132,7 +132,7 @@ git clone https://host/path/to/repo.bundle
 
 ## Backup processing explained
 
-The backup processing implemented in the `backup` function of the [git-backup script](../bin/git-service) is:
+The backup processing implemented in the `backup` function of the [git-backup script](../../bin/git-service) is:
 * Store the start time and get the last backup time
 * Get the repos via API and loop over them
   * Skip the backup if: 
@@ -179,7 +179,7 @@ https://user:$TOKEN/github.com/parent/repo
 
 ## Kubernetes
 
-In the `command` property of a container, you should use the [entrypoint](../resources/docker/git-multi-docker-entrypoint)
+In the `command` property of a container, you should use the [entrypoint](../../resources/docker/git-multi-docker-entrypoint)
 to create the `host_known` file with GitHub SSH keys and avoid the error: `Host key verification failed`
 
 Example:

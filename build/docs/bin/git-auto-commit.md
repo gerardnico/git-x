@@ -24,7 +24,10 @@ git exec auto-commit "My Commit Message"
 
 # SYNOPSIS
 
-${SYNOPSIS}
+```bash
+git auto-commit [Commit Message]
+```
+If the commit message is not given, it will be generated with the files in the commit.
 
 ## TIP
 

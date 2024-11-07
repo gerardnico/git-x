@@ -12,7 +12,7 @@
 * [git commit-status](docs/bin/git-commit-status.md) - Shows the commit status (to push/to merge)
 * [git exec](docs/bin/git-exec.md) - Execute a command against multiple local repositories at once
 * [git service](docs/bin/git-service.md) - List the repositories of a Git Hosting Service
-* [git service backup](man-source/git-service-backup.md) - Backup your repositories on a Git Hosting Service
+* [git service backup](docs/bin/git-service-backup.md) - Backup your repositories on a Git Hosting Service
 * [git status-human](docs/bin/git-status-human.md) - Print the status in a human way (ie one letter status explained)
 * [git restart](docs/bin/git-restart.md) - Restart with a clean state (as `git clone`)
 

@@ -1,25 +1,22 @@
 % git-restart(1) Version Latest | git-restart
-# git-restart
+# NAME
 
-## DESCRIPTION
-
-Reset as if it was a clean `git clone`.
+Reset as if it was a clean `git clone` with `Reset Hard and Clean`
 Cancel all modifications and start fresh
 
 This function performs a reset hard and clean
 
-## SYNOPSIS
-```bash
-git restart
-```
+# SYNOPSIS
 
-## TIP
+${SYNOPSIS}
+
+# TIP
 
 You can add it as alias in your `~.gitconfig`
-Example with `rc` that stands for `reset, clean`
+Example with `rs` that stands for `restart`
 ```ini
 [alias]
-sp = "!git-auto-pull"
+rs = "!git-restart"
 ```
 
 

@@ -1,5 +1,4 @@
 #!/bin/bash
-# Delete the last commit
 
 
 set -Eeuo pipefail
@@ -8,15 +7,15 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
-# shellcheck source=../..//bash-lib/lib/bashlib-string.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-command.sh"
+
 
 function synopsis(){
 
   cat <<EOF
 \`\`\`bash
-$(basename "$0")
+$(basename "$0") [args]
 \`\`\`
+where \`args\` are arguments of \`git logs\`
 EOF
 
 }
@@ -33,4 +32,17 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-command::echo_eval "git reset --hard HEAD^"
+HASH="%C(always,yellow)%h%C(always,reset)"
+RELATIVE_TIME="%C(always,green)%ar%C(always,reset)"
+AUTHOR="%C(always,bold blue)%an%C(always,reset)"
+REFS="%C(always,red)%d%C(always,reset)"
+SUBJECT="%s"
+FORMAT="$HASH $RELATIVE_TIME{$AUTHOR{$REFS $SUBJECT"
+
+pretty_git_logs() {
+  git log --graph --pretty="tformat:$FORMAT" "$@" |
+  column -t -s '{' |
+  less -XRS --quit-if-one-screen
+}
+
+pretty_git_logs "$@"

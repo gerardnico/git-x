@@ -1,104 +1,88 @@
 #!/bin/bash
 # @name Git Exec
 # @brief Execute a git command against multiple local repositories at once
-# @description
-#
-#    Execute a git command against all local repositories
-#    stored under the directory located by the `$GITX_REPOS_HOME` environment variable
-#
-#    ## EXAMPLE
-#
-#    * Shows the status of all repositories
-#
-#    ```bash
-#    git exec status --short
-#    ```
-#
-#    * `Add, Commit and Push` on all repositories
-#
-#    ```bash
-#    git exec auto-commit
-#    ```
-#
-#    * Perform a commit only again the `my-repo` repository
-#
-#    ```bash
-#    git exec my-repo commit -m "My Commit"
-#    ```
-#
-#    ## CONFIG
-#
-#    You should set the environment variable `GITX_REPOS_HOME` to a valid directory
-#    that host multiple repositories as sub-directories.
-#
-#    ## SYNOPSIS
-#
-#    ```bash
-#    git exec [repo name] <git sub-command>
-#    ```
-#
-#    where:
-#
-#    * `repo name`, optional when specified the command will execute only against this repository (the `repo name` is the name of directory)
-#    * `git sub-command` is any git sub-command
-#
-#    ## TIP
-#
-#    You can add it as alias:
-#    * in your `~.gitconfig`
-#    ```ini
-#    [alias]
-#       x = "!git-exec"
-#    ```
-#    * or in your `.bashrc`
-#    ```bash
-#    alias gx='git exec'
-#    ```
+
 
 set -Eeuo pipefail
-source bashlib-echo.sh
-source bashlib-git.sh
-source bashlib-string.sh
-source bashlib-path.sh
-source bashlib-error.sh
+# shellcheck source=../..//bash-lib/lib/bashlib-error.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
 error::set_trap
+# shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-git.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-string.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-string.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-path.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-path.sh"
 
 
-# Git Directory to checkout may be in a config file
-GITX_REPOS_FILE=${GITX_REPOS_FILE:-}
-if [ "$GITX_REPOS_FILE" != "" ] && [ -f "$GITX_REPOS_FILE" ]; then
-  IFS=$'\n' read -r -a REPO_DIRS -d $'\c0' <"$GITX_REPOS_FILE"
-  echo::info "${#REPO_DIRS[*]} directory found in $GITX_REPOS_FILE"
+function synopsis(){
+
+  cat <<EOF
+\`\`\`bash
+git exec [-f|--force] [repo name] <git sub-command>
+\`\`\`
+where:
+* \`-f\` or \`--force\` will force the execution against all repositories (not only the dirty ones)
+* \`repo name\`, optional when specified the command will execute only against this repository (the \`repo name\` is the name of directory)
+* \`git sub-command\` is any git sub-command
+EOF
+
+}
+
+# Doc Synopsis
+if [ "${1:-}" = "synopsis" ]; then
+  synopsis
+  exit 0
 fi
 
+# Help
+if [[ "${1:-}" =~ -h|--help|help ]]; then
+  doc::help synopsis
+  exit 0
+fi
+
+# Git Directory to checkout may be in a config file
+GIT_X_REPOS_FILE=${GIT_X_REPOS_FILE:-}
+if [ "$GIT_X_REPOS_FILE" != "" ] && [ -f "$GIT_X_REPOS_FILE" ]; then
+  IFS=$'\n' read -r -a REPO_DIRS -d $'\c0' <"$GIT_X_REPOS_FILE"
+  echo::info "${#REPO_DIRS[*]} directory found in $GIT_X_REPOS_FILE"
+fi
 
 # The root directory where all repository may be the children
-GITX_REPOS_HOME=${GITX_REPOS_HOME:-}
-if [ -z "$GITX_REPOS_HOME" ]; then
-  echo::err "The environment variable GITX_REPOS_HOME was not found. It's the path of a directory where all your git repository are stored"
+GIT_X_REPOS_DIR=${GIT_X_REPOS_DIR:-}
+
+
+# Execution mode
+MODE_FORCE="all" # Perform the command on all repo even if the repo is not dirty
+MODE_DIRTY="dirty" # Files has been touched or commit not pushed
+MODE="$MODE_DIRTY" # default
+
+# First Arg
+FIRST_ARG=${1:-}
+if [ "$FIRST_ARG" == "" ]; then
+  doc::help synopsis
+  echo::err "An argument is mandatory"
   exit 1
 fi
 
-# Perform the command on all repo
-# even if the repo is not dirty
-FIRST_ARG=$1
-MODE_FORCE="all"
-MODE_DIRTY="dirty"
-MODE=$MODE_DIRTY
-if [[ $FIRST_ARG =~ "-f" ]]; then
+# Force flag
+if [[ "$FIRST_ARG" =~ -f|--force ]]; then
   MODE=$MODE_FORCE
   shift
 fi
 
 # Perform only on one repo
 FIRST_ARG=$1
-REPO_DIR="$GITX_REPOS_HOME/$FIRST_ARG"
+REPO_DIRS=()
+REPO_DIR="$GIT_X_REPOS_DIR/$FIRST_ARG"
 if [ -d "$REPO_DIR/.git" ]; then
     REPO_DIRS+=("$REPO_DIR")
     MODE=$MODE_FORCE
     shift
 else
-  for GITX_REPO_DIR in "$GITX_REPOS_HOME"/*; do
+  for GITX_REPO_DIR in "$GIT_X_REPOS_DIR"/*; do
     if [ -d "$GITX_REPO_DIR/.git" ]; then
       REPO_DIRS+=("$GITX_REPO_DIR")
     fi
@@ -106,7 +90,13 @@ else
 fi
 
 if [ ${#REPO_DIRS[*]} == 0 ]; then
-  echo::err 'No Git repository found'
+  echo::err "No Git repositories found with the following env:";
+  echo::err ""
+  echo::err "     GIT_X_REPOS_DIR=${GIT_X_REPOS_DIR:-}"
+  echo::err "     GIT_X_REPOS_FILE=${GIT_X_REPOS_FILE:-}"
+  echo::err ""
+  echo::err "GIT_X_REPOS_FILE is the path of a file that contains a list of directories containing git repositories"
+  echo::err "GIT_X_REPOS_DIR is the path of a home directory where all your git repositories are located"
   exit 1
 fi
 
