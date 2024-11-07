@@ -6,8 +6,8 @@
 Shows the commit integration status (ie to push or to merge)
 
 ## SYNOPSIS
-```bash
-git commit-status
-```
 
+```bash
+git-commit-status
+```
 

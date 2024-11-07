@@ -43,12 +43,33 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
+REPO_DIRS=()
+
 # Git Directory to checkout may be in a config file
 GIT_X_REPOS_FILE=${GIT_X_REPOS_FILE:-}
 if [ "$GIT_X_REPOS_FILE" != "" ] && [ -f "$GIT_X_REPOS_FILE" ]; then
   IFS=$'\n' read -r -a REPO_DIRS -d $'\c0' <"$GIT_X_REPOS_FILE"
   echo::info "${#REPO_DIRS[*]} directory found in $GIT_X_REPOS_FILE"
 fi
+
+# Path
+GIT_X_REPOS_PATH=${GIT_X_REPOS_PATH:-}
+if [ "$GIT_X_REPOS_PATH" != "" ]; then
+{
+  IFS="::" # Set the internal field separator to double colon, but only for the code inside the braces
+  for REPO_PATH in $GIT_X_REPOS_PATH
+  do
+    REPO_DIRS=()
+    if [ -d "$REPO_PATH/.git" ]; then
+      REPO_DIRS+=("$REPO_PATH")
+    else
+      echo::warn "The path $REPO_PATH defined in GIT_X_REPOS_PATH is not a git repository"
+    fi
+  done
+}
+fi
+
+
 
 # The root directory where all repository may be the children
 GIT_X_REPOS_DIR=${GIT_X_REPOS_DIR:-}
@@ -75,7 +96,6 @@ fi
 
 # Perform only on one repo
 FIRST_ARG=$1
-REPO_DIRS=()
 REPO_DIR="$GIT_X_REPOS_DIR/$FIRST_ARG"
 if [ -d "$REPO_DIR/.git" ]; then
     REPO_DIRS+=("$REPO_DIR")

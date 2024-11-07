@@ -68,3 +68,4 @@ To execute the git command against all repositories
 
 * `GIT_X_REPOS_DIR`: A directory where all repositories are stored
 * `GIT_X_REPOS_FILE`: A file where each line is a path to a repository
+* `GIT_X_REPOS_PATH`: A path environment variable where each path is a git repository path separated by a colon.

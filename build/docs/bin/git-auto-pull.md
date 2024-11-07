@@ -3,21 +3,41 @@
 
 ## DESCRIPTION
 
-Integrate the changes from an upstream
-(Stash if needed and pull)
+Integrate the changes from an upstream branch
+(ie stash if needed and pull)
+
+ie [pull auto-stash](#note-on-rebase-autostash) but with all `pull` type.
+
+The `AutoPull` name is to stay in the same fashion as `AutoCommit`
 
 ## SYNOPSIS
+
+Easy AutoPull
 ```bash
-git auto-pull
+git-auto-pull
 ```
-AutoPull to stay in the same fashion than AutoCommit
+
 ## TIP
 
 You can add it as alias in your `~.gitconfig`
-Example with `sp` that stands for `stash, pull`
+Example with `ap` that stands for `auto pull`
 ```ini
 [alias]
-sp = "!git-auto-pull"
+ap = "!git-auto-pull"
+```
+
+## Note on Rebase AutoStash
+
+Pull has also a [rebase auto-stash option](https://git-scm.com/docs/git-pull/2.17.0#Documentation/git-pull.txt---autostash)
+```bash
+git pull --rebase --autostash
+```
+This script does not care the type of change integration, it works also with a `merge`
+
+You can also automate your `git pull` as `--rebase --autostash` via configuration.
+```bash
+git config [--global] pull.rebase true
+git config [--global] rebase.autoStash true
 ```
 
 
