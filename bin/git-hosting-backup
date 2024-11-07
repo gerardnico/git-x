@@ -1,0 +1,30 @@
+#!/bin/bash
+
+
+
+set -Eeuo pipefail
+# shellcheck source=../..//bash-lib/lib/bashlib-error.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+error::set_trap
+# shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+
+
+
+function synopsis() {
+
+
+    echo ""
+    echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
+    echo ""
+    echo "   ${CLI_NAME} $FUNCTION_NAME source target [...]"
+    echo ""
+    echo "where:"
+    echo "     * source                       - a git hosting service name to read from"
+    echo "     * target                       - a target name to backup to"
+    echo "     * --restart                    - if a backup fail, it can be restarted with the restart flag"
+    echo "     * --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)"
+    echo "     * --filter-max-repo-count='x'  - the maximum number of repositories to backup"
+
+
+}

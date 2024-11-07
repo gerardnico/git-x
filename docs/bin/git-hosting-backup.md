@@ -111,7 +111,7 @@ RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
 -v ~/.ssh:/home/me/.ssh
 ```
 
-## Prerequisites
+# Prerequisites
 
 * SSH Authentication:
   * An SSH private key in your `~/.ssh` directory. ie [Generate a key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
@@ -119,8 +119,8 @@ RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
 * [A GitHub API Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) known as Personal Access Token or PAT 
   * with the scope `repo` for public and private repo 
 * A [Rclone destination](https://rclone.org/overview/)
-
-## How to restore
+* The [dependencies](#)
+# How to restore
 
 A [bundle](https://git-scm.com/book/en/v2/Git-Tools-Bundling) can be cloned.
 ```bash
@@ -130,9 +130,9 @@ git clone https://host/path/to/repo.bundle
 ```
 
 
-## Backup processing explained
+# Backup processing explained
 
-The backup processing implemented in the `backup` function of the [git-backup script](../../bin/git-service) is:
+The backup processing implemented in the `backup` function of the [git-backup script](../../bin/git-hosting) is:
 * Store the start time and get the last backup time
 * Get the repos via API and loop over them
   * Skip the backup if: 
@@ -154,17 +154,17 @@ rclone moveto $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH --progress
 * End
 
 
-## Tip: How to sync between 2 git registries
+# Tip: How to sync between 2 git registries
 
 The [Gickup application](https://cooperspencer.github.io/gickup-documentation/) is more suited for that.
 
 
-## How to contribute
+# How to contribute
 
 See [dev](../contrib/git-service-backup-dev)
 
 
-## Why do you choose SSH over Personal Access Token for Github
+# Why do you choose SSH over Personal Access Token for Github
 
 That's the easiest way to login.
 
@@ -177,7 +177,7 @@ https://user:$TOKEN/github.com/parent/repo
 ```
 
 
-## Kubernetes
+# Kubernetes
 
 In the `command` property of a container, you should use the [entrypoint](../../resources/docker/git-multi-docker-entrypoint)
 to create the `host_known` file with GitHub SSH keys and avoid the error: `Host key verification failed`
@@ -187,3 +187,11 @@ Example:
 command: [ "git-multi-docker-entrypoint" ]
 args: [ "git-backup", "backup", "github", "s3", "--filter-exclude-pattern=site-com-datacadamia", "--restart" ]
 ```
+
+# Dependencies
+
+We use the following dependencies are
+* Date from coreutils mandatory
+* git
+* openssh
+* curl

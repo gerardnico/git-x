@@ -7,13 +7,13 @@
 
 ## Command List
 
-* [git auto-commit](docs/bin/git-auto-commit.md) - Pull, add, commit and push in one command, no argument needed
-* [git auto-pull](docs/bin/git-auto-pull.md) - Stash, Pull in one command
-* [git commit-status](docs/bin/git-commit-status.md) - Shows the commit status (to push/to merge)
-* [git exec](docs/bin/git-exec.md) - Execute a command against multiple local repositories at once
-* [git service](docs/bin/git-service.md) - List the repositories of a Git Hosting Service
-* [git service backup](docs/bin/git-service-backup.md) - Backup your repositories on a Git Hosting Service
-* [git status-human](docs/bin/git-status-human.md) - Print the status in a human way (ie one letter status explained)
+* [git auto-commit](build/docs/bin/git-auto-commit.md) - Pull, add, commit and push in one command, no argument needed
+* [git auto-pull](build/docs/bin/git-auto-pull.md) - Stash, Pull in one command
+* [git commit-status](build/docs/bin/git-commit-status.md) - Shows the commit status (to push/to merge)
+* [git exec](build/docs/bin/git-exec.md) - Execute a command against multiple local repositories at once
+* [git service](build/docs/bin/git-service.md) - List the repositories of a Git Hosting Service
+* [git service backup](build/docs/bin/git-service-backup.md) - Backup your repositories on a Git Hosting Service
+* [git status-human](build/docs/bin/git-status-human.md) - Print the status in a human way (ie one letter status explained)
 * [git restart](docs/bin/git-restart.md) - Restart with a clean state (as `git clone`)
 
 

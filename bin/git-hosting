@@ -38,9 +38,19 @@ CLI_NAME=$(basename "$0") # Name of the cli
 ######################################
 # Env
 #####################################
-ENV_PREFIX="GITBKP"
+ENV_PREFIX="GIT_X_BKP"
 
-
+function synopsis(){
+  cat <<EOF
+\`\`\`bash
+$(basename "$0") command [argument ...] [--option[=value] ...]
+\`\`\`
+  where command is one of:
+  * \`list\`     - list the repositories of a Git Hosting Service"
+  * \`backup\`   - backup the repositories of a Git Hosting Service"
+  * \`mount\`    - mount a rclone target as file system"
+EOF
+}
 
 function help_mount() {
 
@@ -83,27 +93,7 @@ function help_list() {
 
 }
 
-function help_backup() {
 
-  FUNCTION_NAME="backup"
-    echo ""
-    echo "Usage of the $FUNCTION_NAME command of ${CLI_NAME}"
-    echo ""
-    echo "   ${CLI_NAME} $FUNCTION_NAME source target [...]"
-    echo ""
-    echo "where:"
-    echo "     * source                       - a git hosting service name to read from"
-    echo "     * target                       - a target name to backup to"
-    echo "     * --restart                    - if a backup fail, it can be restarted with the restart flag"
-    echo "     * --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)"
-    echo "     * --filter-max-repo-count='x'  - the maximum number of repositories to backup"
-    # ## Dependencies
-    # * Date from coreutils mandatory
-    # * git
-    # * openssh
-    # * curl
-
-}
 
 
 
@@ -831,6 +821,9 @@ fi
 case ${COMMAND} in
   "help")
     help
+    ;;
+  "synopsis")
+    synopsis
     ;;
   "list")
     list_repo "$SILENT_OPTION" "${ARGUMENTS[@]}"
