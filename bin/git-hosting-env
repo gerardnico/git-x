@@ -1,0 +1,98 @@
+#!/bin/bash
+
+set -Eeuo pipefail
+# shellcheck source=../..//bash-lib/lib/bashlib-error.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+error::set_trap
+# shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-echo.sh"
+
+function synopsis(){
+
+  cat <<EOF
+Create environment export statement
+\`\`\`bash
+$(basename "$0") HostingName
+\`\`\`
+where \`HostingName\` is a Git Hosting such as GitHub, Gogs, ....
+EOF
+
+}
+
+# The prefix for our env
+ENV_PREFIX="GIT_X"
+
+# The registry is an unique name
+# that identifies a Git Server instance
+PLATFORM_NAME=""
+
+# Command or arg
+FIRST_ARG=${1:--}
+if [ "$FIRST_ARG" == "" ]; then
+  doc::help synopsis
+  echo::err "The Platform Name should be not empty"
+  exit 1;
+fi
+
+if [ "$FIRST_ARG" == "synopsis" ]; then
+  synopsis
+  exit;
+fi
+
+PLATFORM_NAME="${FIRST_ARG^^}" # ^^ for uppercase
+echo::info  "Setting env for Platform: $PLATFORM_NAME"
+
+
+# Target
+GIT_PLATFORM_ENV_NAME="${ENV_PREFIX}_${PLATFORM_NAME}_PLATFORM"
+if [ -z "${!GIT_PLATFORM_ENV_NAME+x}" ]; then
+  # PLATFORM/Registry Type type not found
+  # Well-Known registry
+  case $PLATFORM_NAME in
+    "GITHUB")
+      GIT_PLATFORM="github"
+      ;;
+    *)
+      echo::err "Environment variable '$GIT_PLATFORM_ENV_NAME' does not exist."
+      exit 1
+      ;;
+  esac
+else
+  GIT_PLATFORM=${!GIT_PLATFORM_ENV_NAME}
+fi
+echo::info  "  * Platform: $GIT_PLATFORM"
+
+# Domain
+GIT_DOMAIN=""
+GIT_DOMAIN_ENV_NAME="${ENV_PREFIX}_${PLATFORM_NAME}_DOMAIN"
+if [ -z "${!GIT_DOMAIN_ENV_NAME+x}" ]; then
+  case ${GIT_PLATFORM} in
+    github)
+      GIT_DOMAIN="github.com"
+      ;;
+    gogs)
+      echo::err "Environment variable '$GIT_DOMAIN_ENV_NAME' is mandatory for gogs"
+      exit 1
+      ;;
+    *)
+      # Local registry does not have any domain
+      ;;
+    esac
+else
+  GIT_DOMAIN=${!GIT_DOMAIN_ENV_NAME}
+fi
+echo::info  "  * Domain: $GIT_DOMAIN"
+
+# API Access Token
+GIT_TOKEN_ENV_NAME="${ENV_PREFIX}_${PLATFORM_NAME}_TOKEN"
+if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
+    unset GIT_TOKEN;
+    echo::warn  "  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
+  else
+    GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
+    echo::info  "  * Api Token: Found"
+    echo "export GIT_TOKEN=$GIT_TOKEN"
+fi;
+
