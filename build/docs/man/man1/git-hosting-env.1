@@ -32,7 +32,7 @@ eval $(git-hosting-platform-env \[dq]platformName\[dq])
 .fi
 .SS SYNOPSIS
 .PP
-Create environment export statement
+ENV_PREFIX=GIT_X Create environment export statement
 .IP
 .nf
 \f[C]
@@ -42,3 +42,8 @@ git-hosting-env HostingName
 .PP
 where \f[V]HostingName\f[R] is a Git Hosting such as GitHub, Gogs,
 \&....
+.SS ENV OUTPUT
+.PP
+This script return the following env: * \f[V]GIT_PLAFORM\f[R]: the
+platform type * \f[V]GIT_TOKEN\f[R]: the API token *
+\f[V]ENV_PREFIX\f[R]: The env prefix (ie \f[V]GIT_X\f[R])

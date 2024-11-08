@@ -8,9 +8,9 @@ This `git-hosting-backup` command back up Git repositories:
 
 
 
-## Example
+# Example
 
-### Backup Github Repos to S3
+## Backup Github Repos to S3
 
 To back up your repositories:
 * from github 
@@ -37,7 +37,7 @@ docker run \
   git-hosting-backup github s3 --filter-exclude-pattern=site-com-datacadamia
 ```
 
-### Backup Github Repos to SFTP Bunny
+## Backup Github Repos to SFTP Bunny
 
 To back up your repositories:
 * from github

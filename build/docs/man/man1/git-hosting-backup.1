@@ -22,7 +22,7 @@ This \f[V]git-hosting-backup\f[R] command back up Git repositories: *
 from \f[V]GitHub\f[R] * to a Rclone
 destination (https://rclone.org/overview/) * as a Git
 bundle (https://git-scm.com/book/en/v2/Git-Tools-Bundling)
-.SS Example
+.SH Example
 .SS Backup Github Repos to S3
 .PP
 To back up your repositories: * from github * to s3 * excluding the repo
@@ -237,7 +237,7 @@ Example:
 .IP
 .nf
 \f[C]
-command: [ \[dq]git-multi-docker-entrypoint\[dq] ]
+command: [ \[dq]git-x-docker-entrypoint\[dq] ]
 args: [ \[dq]git-backup\[dq], \[dq]backup\[dq], \[dq]github\[dq], \[dq]s3\[dq], \[dq]--filter-exclude-pattern=site-com-datacadamia\[dq], \[dq]--restart\[dq] ]
 \f[R]
 .fi

@@ -21,9 +21,7 @@
 Execute a git command against multiple local repositories at once
 .SH DESCRIPTION
 .PP
-Execute a git command against all local repositories stored: * under the
-directory located by the \f[V]$GIT_X_REPOS_DIR\f[R] environment variable
-* at the paths defined in the \f[V]$GIT_X_REPOS_FILE\f[R] file
+Execute a git command against local repositories
 .SH EXAMPLE
 .IP \[bu] 2
 Shows the status of all dirty repositories
@@ -57,10 +55,42 @@ Perform a commit only again the \f[V]my-repo\f[R] repository
 git exec my-repo commit -m \[dq]My Commit\[dq]
 \f[R]
 .fi
-.SH CONFIG
+.SH CONF / ENV
 .PP
-You should set the environment variable \f[V]GITX_REPOS_HOME\f[R] to a
-valid directory that host multiple repositories as subdirectories.
+You can define the location of the Git repositories with the following
+environment variables:
+.IP \[bu] 2
+\f[V]GIT_X_REPOS_DIR\f[R]: A directory where all sub-repositories are
+git repositories
+.IP \[bu] 2
+\f[V]GIT_X_REPOS_FILE\f[R]: A file where each line is a path to a
+repository
+.IP \[bu] 2
+\f[V]GIT_X_REPOS_PATH\f[R]: A path environment variable where each path
+is a git repository path separated by a colon.
+.PP
+Example in \f[V].bashrc\f[R]
+.IP
+.nf
+\f[C]
+# All repositories are cloned in $HOME/code 
+export GIT_X_REPOS_DIR=$HOME/code
+# Add an extra repo such as the Homebrew tap repo and another 
+export GIT_X_REPOS_PATH=/home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/gerardnico/homebrew-tap:/path/to/another-repo
+# Define the paths in a file (one path by line)
+export GIT_X_REPOS_DIR=$HOME/conf/git-x-repo.txt
+\f[R]
+.fi
+.PP
+where \f[V]git-x-repo.txt\f[R] is a file with one path by line.
+Example:
+.IP
+.nf
+\f[C]
+/path/to/my-first-repo
+/path/to/my-second-repo
+\f[R]
+.fi
 .SH SYNOPSIS
 .IP
 .nf
@@ -81,7 +111,7 @@ You can add it as alias in your \f[V]\[ti].gitconfig\f[R]
 .nf
 \f[C]
 [alias]
-x = \[dq]!git-exec\[dq]
+gx = \[dq]!git-exec\[dq]
 \f[R]
 .fi
 .SH MODE OF EXECUTION
@@ -93,13 +123,5 @@ By default, \f[V]git exec\f[R] will execute only against a
 A dirty repository is a repository that has: * commits not pushed *
 files modified (in the index)
 .PP
-To execute the git command against all repositories
-.SH ENV
-.IP \[bu] 2
-\f[V]GIT_X_REPOS_DIR\f[R]: A directory where all repositories are stored
-.IP \[bu] 2
-\f[V]GIT_X_REPOS_FILE\f[R]: A file where each line is a path to a
-repository
-.IP \[bu] 2
-\f[V]GIT_X_REPOS_PATH\f[R]: A path environment variable where each path
-is a git repository path separated by a colon.
+To execute the git command against all repositories, you need to force
+it with the \f[V]-f\f[R] or \f[V]--force\f[R] option
