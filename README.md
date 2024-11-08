@@ -53,4 +53,4 @@ export BASHLIB_LIBRARY_PATH=$(brew --prefix bashlib)/lib
 
 ## How to contribute
 
-For [git-hosting-backup](build/docs/bin/git-hosting-backup.md), see [git-hosting-backup dev](contrib/git-hosting-backup-dev.md)
+See [CONTRIB](contrib/CONTRIB.md)

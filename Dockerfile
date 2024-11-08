@@ -13,7 +13,7 @@ RUN apk update \
     && apk add --no-cache git \
     # Bash is not installed with the alpine rclone base image \
     # coreutils is for the date
-    && apk add --no-cache bash curl jq openssh coreutils
+    && apk add --no-cache bash curl jq openssh coreutils sed
 
 ####################################
 # Label
@@ -37,16 +37,36 @@ RUN addgroup -g 1000 megroup && \
     adduser -u 1000 -G megroup -D --shell /bin/bash me
 
 
+# Download and extract GitHub repository archive, then copy 'bin' directory contents
+# Branch Download https://docs.github.com/en/repositories/working-with-files/using-files/downloading-source-code-archives
+#ADD https://github.com/gerardnico/bash-lib/archive/refs/heads/main.tar.gz /tmp/bashlib.tar.gz
+#RUN mkdir -p "/opt/git-x/bin"
+#COPY --chmod=0755 bin /opt/git-x/bin
+#ENV PATH="/opt/git-x/bin:${PATH}"
+#CMD [ "git" ]
+#
+#RUN curl -L https://github.com/<username>/<repository>/archive/refs/heads/<branch>.tar.gz | \
+#    tar -xz --strip-components=2 "<repository>-<branch>/bin/" && \
+#    mv bin/* /opt/myapp/ && rm -rf bin \
+
+####################################
+# BashLib Install
+####################################
+RUN mkdir -p "/opt/bash-lib/lib"
+COPY bash-lib/lib /opt/bash-lib/lib
+ENV BASHLIB_LIBRARY_PATH="/opt/bash-lib/lib"
+
 ####################################
 # App Install
 ####################################
 RUN mkdir -p "/opt/git-x/bin"
-COPY --chmod=0755 bin /opt/git-x/bin
+COPY --chmod=0755 git-x/bin /opt/git-x/bin
 ENV PATH="/opt/git-x/bin:${PATH}"
 CMD [ "git" ]
+
 
 ####################################
 # Docker entrypoint
 ####################################
-COPY --chmod=0755 resources/docker/git-x-docker-entrypoint /usr/local/bin/
+COPY --chmod=0755 git-x/resources/docker/git-x-docker-entrypoint /usr/local/bin/
 ENTRYPOINT [ "git-x-docker-entrypoint" ]

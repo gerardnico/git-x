@@ -17,6 +17,7 @@ CLI_NAME=$(basename "$0") # Name of the cli
 
 
 function synopsis(){
+
   cat <<EOF
 \`\`\`bash
 $(basename "$0") command [argument ...] [--option[=value] ...]
