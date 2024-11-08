@@ -14,6 +14,7 @@
 * [git hosting](build/docs/bin/git-hosting.md) - Main entry for Git Hosting Command
 * [git hosting backup](build/docs/bin/git-hosting-backup.md) - Backup your repositories on a Git Hosting Service such as GitHub
 * [git last](build/docs/bin/git-last.md) - Shows the last commit
+* [git-last-delete](build/docs/bin/git-last-delete.md) - Delete the last commit and put the files back in the working area
 * [git log pretty](build/docs/bin/git-log-pretty.md) - Shows the commit logs in a pretty way
 * [git status-human](build/docs/bin/git-status-human.md) - Print the status in a human way (ie one letter status explained)
 * [git restart](docs/bin/git-restart.md) - Restart with a clean state (as `git clone`)
