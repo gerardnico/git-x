@@ -8,10 +8,10 @@
 
 ### Git-Exec - Multiple-repository execution
 
-The most useful one is [git exec](build/docs/bin/git-exec.md) that permits to
+The most useful one is [git exec](build/docs/bin/git-exec.md). This extension permits to
 execute a git command against multiple repositories at once.
 
-This tool permits to manage a mono-repository where all subdirectories are an independent git repository.
+You can then manage a mono-repository where all subdirectories are an independent git repository.
 
 ### Git-Hosting-Backup - Backup your repositories
 
