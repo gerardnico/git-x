@@ -64,8 +64,8 @@ git exec [-f|--force] [repo name] <git sub-command>
 ```
 where:
 * `-f` or `--force` will force the execution against all repositories (not only the dirty ones)
-* `repo name`, optional when specified the command will execute only against this repository (the `repo name` is the name of directory)
-* `git sub-command` is any git sub-command
+* `repo name`, optional when specified the command will execute only against this repository (the `repo name` is the name of the directory)
+* `git sub-command` is any git sub-command such as `clone`, `push`, ...
 
 # TIP
 
@@ -77,14 +77,14 @@ gx = "!git-exec"
 
 # MODE OF EXECUTION
 
-## DIRTY MODE (Default)
 By default, `git exec` will execute only against a `dirty` repository.
 
 A dirty repository is a repository that has:
 * commits not pushed
 * files modified (in the index)
 
-To execute the git command against all repositories, 
-you need to force it with the `-f` or `--force` option
+To execute the git command against:
+* all repositories, you need to force it with the `-f` or `--force` option
+* one repository, you need to pass the repository as first argument.
 
 

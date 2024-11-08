@@ -71,14 +71,14 @@ gx = "!git-exec"
 
 # MODE OF EXECUTION
 
-## DIRTY MODE (Default)
 By default, `git exec` will execute only against a `dirty` repository.
 
 A dirty repository is a repository that has:
 * commits not pushed
 * files modified (in the index)
 
-To execute the git command against all repositories, 
-you need to force it with the `-f` or `--force` option
+To execute the git command against:
+* all repositories, you need to force it with the `-f` or `--force` option
+* one repository, you need to pass the repository as first argument.
 
 

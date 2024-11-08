@@ -102,8 +102,9 @@ git exec [-f|--force] [repo name] <git sub-command>
 where: * \f[V]-f\f[R] or \f[V]--force\f[R] will force the execution
 against all repositories (not only the dirty ones) *
 \f[V]repo name\f[R], optional when specified the command will execute
-only against this repository (the \f[V]repo name\f[R] is the name of
-directory) * \f[V]git sub-command\f[R] is any git sub-command
+only against this repository (the \f[V]repo name\f[R] is the name of the
+directory) * \f[V]git sub-command\f[R] is any git sub-command such as
+\f[V]clone\f[R], \f[V]push\f[R], \&...
 .SH TIP
 .PP
 You can add it as alias in your \f[V]\[ti].gitconfig\f[R]
@@ -115,7 +116,6 @@ gx = \[dq]!git-exec\[dq]
 \f[R]
 .fi
 .SH MODE OF EXECUTION
-.SS DIRTY MODE (Default)
 .PP
 By default, \f[V]git exec\f[R] will execute only against a
 \f[V]dirty\f[R] repository.
@@ -123,5 +123,6 @@ By default, \f[V]git exec\f[R] will execute only against a
 A dirty repository is a repository that has: * commits not pushed *
 files modified (in the index)
 .PP
-To execute the git command against all repositories, you need to force
-it with the \f[V]-f\f[R] or \f[V]--force\f[R] option
+To execute the git command against: * all repositories, you need to
+force it with the \f[V]-f\f[R] or \f[V]--force\f[R] option * one
+repository, you need to pass the repository as first argument.
