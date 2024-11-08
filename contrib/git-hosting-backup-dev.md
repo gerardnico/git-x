@@ -1,27 +1,25 @@
 # How to dev to develop the Git Backup command
 
 
-
-
 ## Github to s3 via Rclone
 
 * The token is needed for the API
 * The ssh key is needed for Git
 
 ```bash
-cd ~/code/git-multi
+cd ~/code/git-x
 docker run \
-  --name git-backup \
+  --name git-x \
   --rm \
   -it \
   --user 1000:1000 \
   -v ./resources/git-backup:/opt/git-backup \
   -v ~/.ssh:/home/me/.ssh \
-  -e GITBKP_GITHUB_PLATFORM=github \
-  -e GITBKP_GITHUB_TOKEN=$GITHUB_TOKEN \
-  -e GITBKP_S3_PLATFORM=rclone \
-  -e GITBKP_S3_RCLONE_REMOTE_NAME=git_backup \
-  -e GITBKP_S3_RCLONE_BASE_PATH=git-backup \
+  -e GIT_X_GITHUB_PLATFORM=github \
+  -e GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN \
+  -e GIT_X_S3_PLATFORM=rclone \
+  -e GIT_X_S3_RCLONE_REMOTE_NAME=git_backup \
+  -e GIT_X_S3_RCLONE_BASE_PATH=git-backup \
   -e RCLONE_CONFIG_GIT_BACKUP_TYPE=s3 \
   -e RCLONE_CONFIG_GIT_BACKUP_PROVIDER=IDrive \
   -e RCLONE_CONFIG_GIT_BACKUP_ENDPOINT=h0k0.ca.idrivee2-22.com \
@@ -40,9 +38,9 @@ docker run \
   --user 1000:1000 \
   -v ./resources/git-backup:/opt/git-backup \
   -v ~/.ssh:/home/me/.ssh \
-  -e GITBKP_GITHUB_PLATFORM=github \
-  -e GITBKP_GITHUB_TOKEN=$GITHUB_TOKEN \
-  -e GITBKP_BUNNY_PLATFORM=rclone \
+  -e GIT_X_GITHUB_PLATFORM=github \
+  -e GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN \
+  -e GIT_X_BUNNY_PLATFORM=rclone \
   -e RCLONE_INPLACE=1 \
   -e RCLONE_SIZE_ONLY=1 \
   -e RCLONE_CONFIG_BUNNY_TYPE=sftp \
@@ -56,9 +54,9 @@ docker run \
 * Modify the script
 * Run it
 ```bash
-git-service ....
+git-hosting ....
 # example
-git-service backup github bunny --filter-exclude-pattern=site-com-datacadamia
+git-hosting-backup github bunny --filter-exclude-pattern=site-com-datacadamia
 ```
 
 
@@ -115,11 +113,11 @@ docker run \
   --rm \
   -it \
   -v ./resources/git-backup:/opt/git-backup \
-  -e GIT_GOGS_PLATFORM=gogs \
-  -e GIT_GOGS_DOMAIN=gogs.bytle.net \
-  -e GIT_GOGS_TOKEN=$GOGS_TOKEN \
-  ghcr.io/gerardnico/git-multi:latest \
-  /bin/bash
+  -e GIT_X_GOGS_PLATFORM=gogs \
+  -e GIT_X_GOGS_DOMAIN=gogs.bytle.net \
+  -e GIT_X_GOGS_TOKEN=$GOGS_TOKEN \
+  ghcr.io/gerardnico/git-x:latest \
+  git-hosting-list gogs
 ```
 
 ## Note

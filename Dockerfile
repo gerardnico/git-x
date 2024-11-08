@@ -21,9 +21,9 @@ RUN apk update \
 # This labels are used by Github
 ####################################
 # * connect the repo
-LABEL org.opencontainers.image.source="https://github.com/gerardnico/git-multi"
+LABEL org.opencontainers.image.source="https://github.com/gerardnico/git-x"
 # * set a description
-LABEL org.opencontainers.image.description="Git Multi (Git Command for everyday use against multiple repo)"
+LABEL org.opencontainers.image.description="Git X (Git Command for everyday use against multiple repo)"
 
 
 ####################################
@@ -40,13 +40,13 @@ RUN addgroup -g 1000 megroup && \
 ####################################
 # App Install
 ####################################
-RUN mkdir -p "/opt/git-multi/bin"
-COPY --chmod=0755 bin /opt/git-multi/bin
-ENV PATH="/opt/git-multi/bin:${PATH}"
+RUN mkdir -p "/opt/git-x/bin"
+COPY --chmod=0755 bin /opt/git-x/bin
+ENV PATH="/opt/git-x/bin:${PATH}"
 CMD [ "git" ]
 
 ####################################
 # Docker entrypoint
 ####################################
-COPY --chmod=0755 resources/docker/git-multi-docker-entrypoint /usr/local/bin/
-ENTRYPOINT [ "git-multi-docker-entrypoint" ]
+COPY --chmod=0755 resources/docker/git-x-docker-entrypoint /usr/local/bin/
+ENTRYPOINT [ "git-x-docker-entrypoint" ]

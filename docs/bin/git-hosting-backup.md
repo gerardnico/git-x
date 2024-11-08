@@ -176,12 +176,12 @@ https://user:$TOKEN/github.com/parent/repo
 
 # Kubernetes
 
-In the `command` property of a container, you should use the [entrypoint](../../resources/docker/git-multi-docker-entrypoint)
+In the `command` property of a container, you should use the [entrypoint](../../resources/docker/git-x-docker-entrypoint)
 to create the `host_known` file with GitHub SSH keys and avoid the error: `Host key verification failed`
 
 Example:
 ```yaml
-command: [ "git-multi-docker-entrypoint" ]
+command: [ "git-x-docker-entrypoint" ]
 args: [ "git-backup", "backup", "github", "s3", "--filter-exclude-pattern=site-com-datacadamia", "--restart" ]
 ```
 
