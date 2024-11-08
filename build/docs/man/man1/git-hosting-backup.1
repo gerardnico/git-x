@@ -35,14 +35,14 @@ docker run \[rs]
   --rm \[rs]
   --user 1000:1000 \[rs]
   -v \[ti]/.ssh:/home/me/.ssh \[rs]
-  -e GIT_X_BKP_GITHUB_TOKEN= \[rs]
-  -e GIT_X_BKP_S3_PLATFORM=rclone \[rs]
-  -e GIT_X_BKP_S3_RCLONE_BASE_PATH=git-backup \[rs]
+  -e GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN \[rs]
+  -e GIT_X_S3_PLATFORM=rclone \[rs]
+  -e GIT_X_S3_RCLONE_BASE_PATH=git-backup \[rs]
   -e RCLONE_CONFIG_S3_TYPE=s3 \[rs]
   -e RCLONE_CONFIG_S3_PROVIDER=IDrive \[rs]
   -e RCLONE_CONFIG_S3_ENDPOINT=h0k0.ca.idrivee2-22.com \[rs]
-  -e RCLONE_CONFIG_S3_SECRET_ACCESS_KEY= \[rs]
-  -e RCLONE_CONFIG_S3_ACCESS_KEY_ID= \[rs]
+  -e RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=$GIT_BACKUP_SECRET_KEY \[rs]
+  -e RCLONE_CONFIG_S3_ACCESS_KEY_ID=$GIT_BACKUP_ACCESS_KEY \[rs]
   -e RCLONE_CONFIG_S3_NO_CHECK_BUCKET=true \[rs]
   -e RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms \[rs]
   ghcr.io/gerardnico/git-x:latest \[rs]
@@ -62,15 +62,15 @@ docker run \[rs]
   --rm \[rs]
   --user 1000:1000 \[rs]
   -v \[ti]/.ssh:/home/me/.ssh \[rs]
-  -e GIT_X_BKP_GITHUB_TOKEN= \[rs]
-  -e GIT_X_BKP_BUNNY_PLATFORM=rclone \[rs]
+  -e GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN \[rs]
+  -e GIT_X_BUNNY_PLATFORM=rclone \[rs]
   -e RCLONE_INPLACE=1 \[rs]
   -e RCLONE_SIZE_ONLY=1 \[rs]
   -e RCLONE_CONFIG_BUNNY_TYPE=sftp \[rs]
   -e RCLONE_CONFIG_BUNNY_HOST=storage.bunnycdn.com \[rs]
   -e RCLONE_CONFIG_BUNNY_ENDPOINT=h0k0.ca.idrivee2-22.com \[rs]
   -e RCLONE_CONFIG_BUNNY_USER=git-backup \[rs]
-  -e RCLONE_CONFIG_BUNNY_PASS=GIT_BACKUP_BUNNY_PASS \[rs]
+  -e RCLONE_CONFIG_BUNNY_PASS=$GIT_BACKUP_BUNNY_PASS \[rs]
   ghcr.io/gerardnico/git-x:latest \[rs]
   git-hosting-backup github bunny --filter-exclude-pattern=site-com-datacadamia
 \f[R]
@@ -94,24 +94,23 @@ git-hosting-backup github s3 --filter-exclude-pattern=site-com-datacadamia
 .fi
 .PP
 where: * \f[V]backup\f[R] is the command * \f[V]github\f[R] is the
-service defined by the following \f[V]GIT_X_BKP_SERVICE_NAME_xxx\f[R]
-envs)
+service defined by the following \f[V]GIT_X_SERVICE_NAME_xxx\f[R] envs)
 .IP
 .nf
 \f[C]
-GIT_X_BKP_GITHUB_PLATFORM=github # platform type (optional as it defaults to the name)
-GIT_X_BKP_GITHUB_TOKEN=GITHUB_TOKEN # API Token 
+GIT_X_GITHUB_PLATFORM=github # platform type (optional as it defaults to the name)
+GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN # API Token 
 \f[R]
 .fi
 .IP \[bu] 2
 \f[V]s3\f[R] is the target defined by the following
-\f[V]GIT_X_BKP_PLATFORM_NAME_xxx\f[R] envs
+\f[V]GIT_X_PLATFORM_NAME_xxx\f[R] envs
 .IP
 .nf
 \f[C]
-GIT_X_BKP_S3_PLATFORM=rclone # rclone 
-GIT_X_BKP_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
-GIT_X_BKP_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
+GIT_X_S3_PLATFORM=rclone # rclone 
+GIT_X_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
+GIT_X_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
 \f[R]
 .fi
 .IP \[bu] 2
@@ -125,12 +124,12 @@ ie \f[V]RCLONE_CONFIG_REMOTE_NAME_XXX\f[R]
 .IP
 .nf
 \f[C]
-# in our case the GIT_BACKUP remote name was defined via the env \[ga]GIT_X_BKP_S3_RCLONE_REMOTE_NAME=git_backup\[ga]
+# in our case the GIT_BACKUP remote name was defined via the env \[ga]GIT_X_S3_RCLONE_REMOTE_NAME=git_backup\[ga]
 RCLONE_CONFIG_S3_TYPE=s3
 RCLONE_CONFIG_S3_PROVIDER=IDrive
 RCLONE_CONFIG_S3_ENDPOINT=h0k0.ca.idrivee2-22.com
-RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=GIT_BACKUP_SECRET_KEY
-RCLONE_CONFIG_S3_ACCESS_KEY_ID=GIT_BACKUP_ACCESS_KEY
+RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=$GIT_BACKUP_SECRET_KEY
+RCLONE_CONFIG_S3_ACCESS_KEY_ID=$GIT_BACKUP_ACCESS_KEY
 RCLONE_CONFIG_S3_NO_CHECK_BUCKET=true
 RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
 \f[R]
@@ -225,7 +224,7 @@ Auth URL as this URL is stored
 .IP
 .nf
 \f[C]
-https://user:/github.com/parent/repo
+https://user:$TOKEN/github.com/parent/repo
 \f[R]
 .fi
 .SH Kubernetes

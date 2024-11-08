@@ -23,9 +23,9 @@ docker run \
   --rm \
   --user 1000:1000 \
   -v ~/.ssh:/home/me/.ssh \
-  -e GIT_X_BKP_GITHUB_TOKEN=$GITHUB_TOKEN \
-  -e GIT_X_BKP_S3_PLATFORM=rclone \
-  -e GIT_X_BKP_S3_RCLONE_BASE_PATH=git-backup \
+  -e GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN \
+  -e GIT_X_S3_PLATFORM=rclone \
+  -e GIT_X_S3_RCLONE_BASE_PATH=git-backup \
   -e RCLONE_CONFIG_S3_TYPE=s3 \
   -e RCLONE_CONFIG_S3_PROVIDER=IDrive \
   -e RCLONE_CONFIG_S3_ENDPOINT=h0k0.ca.idrivee2-22.com \
@@ -50,15 +50,15 @@ docker run \
   --rm \
   --user 1000:1000 \
   -v ~/.ssh:/home/me/.ssh \
-  -e GIT_X_BKP_GITHUB_TOKEN=$GITHUB_TOKEN \
-  -e GIT_X_BKP_BUNNY_PLATFORM=rclone \
+  -e GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN \
+  -e GIT_X_BUNNY_PLATFORM=rclone \
   -e RCLONE_INPLACE=1 \
   -e RCLONE_SIZE_ONLY=1 \
   -e RCLONE_CONFIG_BUNNY_TYPE=sftp \
   -e RCLONE_CONFIG_BUNNY_HOST=storage.bunnycdn.com \
   -e RCLONE_CONFIG_BUNNY_ENDPOINT=h0k0.ca.idrivee2-22.com \
   -e RCLONE_CONFIG_BUNNY_USER=git-backup \
-  -e RCLONE_CONFIG_BUNNY_PASS=GIT_BACKUP_BUNNY_PASS \
+  -e RCLONE_CONFIG_BUNNY_PASS=$GIT_BACKUP_BUNNY_PASS \
   ghcr.io/gerardnico/git-x:latest \
   git-hosting-backup github bunny --filter-exclude-pattern=site-com-datacadamia
 ```
@@ -77,16 +77,16 @@ git-hosting-backup github s3 --filter-exclude-pattern=site-com-datacadamia
 ```
 where:
   * `backup` is the command
-  * `github` is the service defined by the following `GIT_X_BKP_SERVICE_NAME_xxx` envs)
+  * `github` is the service defined by the following `GIT_X_SERVICE_NAME_xxx` envs)
 ```bash
-GIT_X_BKP_GITHUB_PLATFORM=github # platform type (optional as it defaults to the name)
-GIT_X_BKP_GITHUB_TOKEN=GITHUB_TOKEN # API Token 
+GIT_X_GITHUB_PLATFORM=github # platform type (optional as it defaults to the name)
+GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN # API Token 
 ```
-  * `s3` is the target defined by the following `GIT_X_BKP_PLATFORM_NAME_xxx` envs
+  * `s3` is the target defined by the following `GIT_X_PLATFORM_NAME_xxx` envs
 ```bash
-GIT_X_BKP_S3_PLATFORM=rclone # rclone 
-GIT_X_BKP_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
-GIT_X_BKP_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
+GIT_X_S3_PLATFORM=rclone # rclone 
+GIT_X_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
+GIT_X_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
 ```
   * `--filter-exclude-pattern=xxx` is a regexp pattern that if the expression matches the full name repository (`workspace/name`) will exclude it from backup
 
@@ -94,12 +94,12 @@ GIT_X_BKP_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bu
 The rclone remote name is configured via [the native rclone environment variable](https://rclone.org/docs/#environment-variables). 
 ie `RCLONE_CONFIG_REMOTE_NAME_XXX` 
 ```bash
-# in our case the GIT_BACKUP remote name was defined via the env `GIT_X_BKP_S3_RCLONE_REMOTE_NAME=git_backup`
+# in our case the GIT_BACKUP remote name was defined via the env `GIT_X_S3_RCLONE_REMOTE_NAME=git_backup`
 RCLONE_CONFIG_S3_TYPE=s3
 RCLONE_CONFIG_S3_PROVIDER=IDrive
 RCLONE_CONFIG_S3_ENDPOINT=h0k0.ca.idrivee2-22.com
-RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=GIT_BACKUP_SECRET_KEY
-RCLONE_CONFIG_S3_ACCESS_KEY_ID=GIT_BACKUP_ACCESS_KEY
+RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=$GIT_BACKUP_SECRET_KEY
+RCLONE_CONFIG_S3_ACCESS_KEY_ID=$GIT_BACKUP_ACCESS_KEY
 RCLONE_CONFIG_S3_NO_CHECK_BUCKET=true
 RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
 ```
