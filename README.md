@@ -4,6 +4,12 @@
 
 `GitX` is a collection of Git command Extensions.
 
+## Git-Exec - Multiple-repository execution
+
+The most useful one is [git exec](build/docs/bin/git-exec.md) that permits to
+execute a git command against multiple repositories at once.
+
+This tool permits to manage a mono-repository where all subdirectories are an independent git repository.
 
 ## Command List
 
