@@ -23,6 +23,7 @@ EOF
 
 # The prefix for our env
 ENV_PREFIX="GIT_X"
+echo "ENV_PREFIX=$ENV_PREFIX"
 
 # The registry is an unique name
 # that identifies a Git Server instance
@@ -63,6 +64,7 @@ else
   GIT_PLATFORM=${!GIT_PLATFORM_ENV_NAME}
 fi
 echo::info  "  * Platform: $GIT_PLATFORM"
+echo "GIT_PLATFORM=$GIT_PLATFORM"
 
 # Domain
 GIT_DOMAIN=""
@@ -93,6 +95,6 @@ if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
   else
     GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
     echo::info  "  * Api Token: Found"
-    echo "export GIT_TOKEN=$GIT_TOKEN"
+    echo "GIT_TOKEN=$GIT_TOKEN"
 fi;
 

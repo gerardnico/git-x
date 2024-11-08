@@ -18,5 +18,10 @@ eval $(git-hosting-platform-env "platformName")
 ${SYNOPSIS}
 
 
+## ENV OUTPUT
 
+This script return the following env:
+* `GIT_PLAFORM`: the platform type
+* `GIT_TOKEN`: the API token
+* `ENV_PREFIX`: The env prefix (ie `GIT_X`)
 

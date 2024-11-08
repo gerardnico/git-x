@@ -8,24 +8,66 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-echo.sh"
 
+
+# Set the configuration via env
+# Conf via env variables
+# https://rclone.org/docs/#environment-variables
+function set_rclone_env(){
+
+
+    # to avoid: NOTICE: Config file "/home/me/.rclone.conf" not found - using defaults
+    touch "$HOME"/.rclone.conf
+
+
+    if [ "${1:-}" == "" ]; then
+      echo::err "The first argument should be not empty with the git instance name"
+      exit 1;
+    fi
+
+    GIT_HOSTING="${1^^}" # ^^ for uppercase
+
+    eval "$(git-hosting-env "$GIT_HOSTING")"
+
+    # Rclone specific
+    RCLONE_REMOTE_NAME_ENV_NAME="${ENV_PREFIX}_${GIT_HOSTING}_RCLONE_REMOTE_NAME"
+    if [ -z "${!RCLONE_REMOTE_NAME_ENV_NAME+x}" ]; then
+        RCLONE_REMOTE_NAME=${GIT_HOSTING}
+        echo::info  " * Env variable ($RCLONE_REMOTE_NAME_ENV_NAME) was not found. Setting Rclone remote name to the Git Registry: ${GIT_HOSTING}"
+      else
+        RCLONE_REMOTE_NAME=${!RCLONE_REMOTE_NAME_ENV_NAME}
+    fi;
+    echo::info  " * Rclone remote Name: $RCLONE_REMOTE_NAME"
+
+    RCLONE_BASE_PATH_ENV_NAME="${ENV_PREFIX}_${GIT_HOSTING}_RCLONE_BASE_PATH"
+    if [ -z "${!RCLONE_BASE_PATH_ENV_NAME+x}" ]; then
+        echo::info  " * Env variable ($RCLONE_BASE_PATH_ENV_NAME) was not found. Setting to empty string"
+        RCLONE_BASE_PATH=""
+      else
+        RCLONE_BASE_PATH=${!RCLONE_BASE_PATH_ENV_NAME}
+        echo::info  " * Rclone base path: $RCLONE_BASE_PATH"
+    fi;
+
+}
 
 
 function synopsis() {
 
+    cat <<EOF
+\`\`\`bash
+$(basename "$0") source target [...]
+\`\`\`
 
-    echo ""
-    echo "Usage of $(basename "$0")"
-    echo ""
-    echo "   $(basename "$0") source target [...]"
-    echo ""
-    echo "where:"
-    echo "     * source                       - a git hosting service name to read from"
-    echo "     * target                       - a target name to backup to"
-    echo "     * --restart                    - if a backup fail, it can be restarted with the restart flag"
-    echo "     * --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)"
-    echo "     * --filter-max-repo-count='x'  - the maximum number of repositories to backup"
+where:
 
+* source                       - a git hosting service name to read from
+* target                       - a target name to backup to
+* --restart                    - if a backup fail, it can be restarted with the restart flag
+* --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)
+* --filter-max-repo-count='x'  - the maximum number of repositories to backup
+EOF
 
 }
 
@@ -39,32 +81,43 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit
 fi
 
-FUNCTION_NAME="backup"
+args=$(getopt -l "restart,filter-max-repo-count:,filter-exclude-pattern:,jq-raw-output,jq-raw,help,report:" -o "r" -- "$@")
+eval set -- "$args"
+
 GIT_SOURCE=""
 GIT_TARGET=""
 RESTART=""
 FILTER_MAX_REPO_COUNT=""
 FILTER_EXCLUDE_PATTERN=""
-for arg in "$@"; do
-    case "$arg" in
-     "--restart")
+while [[ $# -gt 0 ]]
+do
+   case "$1" in
+     "--restart"|"-r")
         RESTART="true"
+        shift
         ;;
       "--filter-max-repo-count")
-        FILTER_MAX_REPO_COUNT=$(getOptionValue "$arg")
+        shift
+        FILTER_MAX_REPO_COUNT="$1"
+        shift
         ;;
-      --filter-exclude-pattern)
-        FILTER_EXCLUDE_PATTERN=$(getOptionValue "$arg")
+      "--filter-exclude-pattern")
+        shift
+        FILTER_EXCLUDE_PATTERN="$1"
+        shift
         ;;
-      "")
-      ;;
+      "--")
+        # The args separator of getopt
+        shift
+        ;;
       *)
         if [ "$GIT_SOURCE" == "" ]; then
-            GIT_SOURCE="${arg^^}" # ^^ for uppercase
+            GIT_SOURCE="${1^^}" # ^^ for uppercase
         elif [ "$GIT_TARGET" == "" ]; then
-            GIT_TARGET="${arg^^}" # ^^ for uppercase
+            GIT_TARGET="${1^^}" # ^^ for uppercase
         else
-            echo::err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only 2 arguments, the source and the target. ($arg) is the third argument"
+            doc::help synopsis
+            echo::err "Too much argument found: We except only 2 arguments, the source and the target. ($1) is the third argument"
             exit 1;
         fi
         shift
@@ -73,48 +126,48 @@ for arg in "$@"; do
 done
 
 ## Arg feedback
-echo::info "$FUNCTION_NAME: Arguments feedback"
+echo::info "Arguments feedback"
 if [ "$FILTER_EXCLUDE_PATTERN" != "" ]; then
-  echo::info "$FUNCTION_NAME:   * Exclude pattern: $FILTER_EXCLUDE_PATTERN"
+  echo::info "  * Exclude pattern: $FILTER_EXCLUDE_PATTERN"
 else
-  echo::info "$FUNCTION_NAME:   * No Exclude pattern"
+  echo::info "  * No Exclude pattern"
 fi
 if [ "$FILTER_MAX_REPO_COUNT" != "" ]; then
-  echo::info "$FUNCTION_NAME:   * Max repo count: $FILTER_MAX_REPO_COUNT"
+  echo::info "  * Max repo count: $FILTER_MAX_REPO_COUNT"
 else
-  echo::info "$FUNCTION_NAME:   * No Max repo count"
+  echo::info "  * No Max repo count"
 fi
 # Source
 if [ "$GIT_SOURCE" == "" ]; then
-  echo::err "$FUNCTION_NAME: A git source is excepted as first argument"
+  echo::err "A git source is excepted as first argument"
   exit 1;
 else
-  echo::info "$FUNCTION_NAME:   * Git source: $GIT_SOURCE"
+  echo::info "  * Git source: $GIT_SOURCE"
 fi
 # Target
 if [ "$GIT_TARGET" == "" ]; then
-  echo::err "$FUNCTION_NAME: A git target is excepted as second argument"
+  echo::err "A git target is excepted as second argument"
   exit 1;
 else
-  echo::info "$FUNCTION_NAME:   * Git target: $GIT_TARGET"
+  echo::info "  * Git target: $GIT_TARGET"
 fi
 
-set_env "$GIT_SOURCE"
+eval "$(git-hosting-env "$GIT_SOURCE")"
 GIT_PLATFORM_SOURCE=$GIT_PLATFORM
 
-set_env "$GIT_TARGET"
+eval "$(git-hosting-env "$GIT_TARGET")"
 GIT_PLATFORM_TARGET=$GIT_PLATFORM
 if [ "$GIT_PLATFORM_TARGET" != "rclone" ]; then
-  echo::err "$FUNCTION_NAME: Only a rclone git registry is supported as target"
+  echo::err "Only a rclone git registry is supported as target"
   exit 1
 fi
 set_rclone_env "$GIT_TARGET"
 
 # Get the Json as CSV and loop over it
-echo::info "$FUNCTION_NAME: Looping over the repo of the registry $GIT_SOURCE"
+echo::info "Looping over the repo of the registry $GIT_SOURCE"
 
 if [ "$GIT_PLATFORM_SOURCE" != "github" ]; then
-  echo::err "$FUNCTION_NAME: Only GitHub as registry source is supported for now, not $GIT_PLATFORM_SOURCE"
+  echo::err "Only GitHub as registry source is supported for now, not $GIT_PLATFORM_SOURCE"
   exit 1;
 fi
 
@@ -128,15 +181,15 @@ if ! LAST_BACKUP_TIME=$(rclone cat "$LAST_BACKUP_TIME_FILE_PATH" 2>/dev/null); t
 fi
 LAST_BACKUP_TIME_EPOCH=""
 if [ "$LAST_BACKUP_TIME" == "" ]; then
-  echo::info "$FUNCTION_NAME: No last backup time"
+  echo::info "No last backup time"
 else
-  echo::info "$FUNCTION_NAME: Last backup time: $LAST_BACKUP_TIME"
+  echo::info "Last backup time: $LAST_BACKUP_TIME"
   LAST_BACKUP_TIME_EPOCH=$(TZ=UTC date -d "$LAST_BACKUP_TIME" +%s)
 fi
 
 # Store the current date and time
 RCLONE_START_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/start-backup-time.dat"
-echo::info "$FUNCTION_NAME: Listing start backup time"
+echo::info "Listing start backup time"
 if ! START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" 2>/dev/null | wc -l); then
   # File does not exist
   # Rclone Sftp returns an error while s3 does not
@@ -144,17 +197,17 @@ if ! START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_P
 fi
 if [ "$START_BACKUP_TIME_FILE_COUNT" != "0" ]; then
   if [ "$RESTART" == "" ]; then
-    echo::err "$FUNCTION_NAME: Start backup time found, a backup may be running or was killed, add the --restart option to pass this check"
+    echo::err "Start backup time found, a backup may be running or was killed, add the --restart option to pass this check"
     exit 1
   else
-    echo::info "$FUNCTION_NAME: Restart used, using the stored start backup time. "
+    echo::info "Restart used, using the stored start backup time. "
     START_BACKUP_TIME=$(rclone cat "$RCLONE_START_BACKUP_TIME_FILE_PATH")
-    echo::info "$FUNCTION_NAME: Retrieved Start backup time: $START_BACKUP_TIME"
+    echo::info "Retrieved Start backup time: $START_BACKUP_TIME"
   fi
 else
   START_BACKUP_TIME=$(TZ=UTC date +"%Y-%m-%dT%H:%M:%SZ")
-  echo::info "$FUNCTION_NAME: Start backup time: $START_BACKUP_TIME"
-  echo::info "$FUNCTION_NAME: Writing Start backup time to $RCLONE_START_BACKUP_TIME_FILE_PATH"
+  echo::info "Start backup time: $START_BACKUP_TIME"
+  echo::info "Writing Start backup time to $RCLONE_START_BACKUP_TIME_FILE_PATH"
   echo "$START_BACKUP_TIME" | rclone rcat "$RCLONE_START_BACKUP_TIME_FILE_PATH"
 fi;
 
@@ -162,13 +215,13 @@ fi;
 
 # Github Api Call
 # Note: pushed_at represents the date and time of the last commit
-echo::info "$FUNCTION_NAME: Retrieving repos"
+echo::info "Retrieving repos"
 FILTER_MAX_REPO_COUNT_OPTION=""
 if [ "$FILTER_MAX_REPO_COUNT" != "" ]; then
   FILTER_MAX_REPO_COUNT_OPTION="--filter-max-repo-count=$FILTER_MAX_REPO_COUNT"
 fi
-REPOS_COMMAND="$CLI_NAME list_repo $GIT_SOURCE $FILTER_MAX_REPO_COUNT_OPTION --jq-expression='(.[] | [.full_name, .fork, .ssh_url, .pushed_at]) | @csv' '--jq-raw-output' '--silent'"
-echo::info "$FUNCTION_NAME: executing command: $REPOS_COMMAND"
+REPOS_COMMAND="git-hosting-list $GIT_SOURCE $FILTER_MAX_REPO_COUNT_OPTION --jq-expression='(.[] | [.full_name, .fork, .ssh_url, .pushed_at]) | @csv' --jq-raw-output"
+echo::info "executing command: $REPOS_COMMAND"
 API_REPOS=$(eval "$REPOS_COMMAND")
 
 ACTUAL_COUNT=0
@@ -180,15 +233,15 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   REPO_FULL_NAME=$(echo "$REPO_FULL_NAME" | tr -d '"')
   IFS='/' read -r REPO_PARENT REPO_NAME <<< "$REPO_FULL_NAME"
   echo::info " "
-  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Backup Repo: $REPO_FULL_NAME"
+  echo::info "Backup Repo: $REPO_FULL_NAME"
 
   if [ "$REPO_FORK" == true ]; then
-    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Skipped forked repo: $REPO_FULL_NAME";
+    echo::info "Skipped forked repo: $REPO_FULL_NAME";
     continue
   fi
 
   if [ "$FILTER_EXCLUDE_PATTERN" != "" ] && [[ "$REPO_FULL_NAME" =~ $FILTER_EXCLUDE_PATTERN ]]; then
-    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Skipped pattern exclude repo: $REPO_FULL_NAME";
+    echo::info "Skipped pattern exclude repo: $REPO_FULL_NAME";
     continue
   fi
 
@@ -201,31 +254,31 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
     TARGET_BUNDLE_PATH_COUNT="0"
   fi
   if [ "$TARGET_BUNDLE_PATH_COUNT" != "0" ]; then
-    echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Backup bundle already exist at $BUNDLE_TARGET_PATH";
+    echo::info "Backup bundle already exist at $BUNDLE_TARGET_PATH";
     # 2024-08-29T13:20:27Z
     PUSHED_AT_TRIMMED=$(echo "$PUSHED_AT" | tr -d '"')
     PUSHED_AT_EPOCH=$(TZ=UTC date -d"$PUSHED_AT_TRIMMED" +%s)
     if [ "$LAST_BACKUP_TIME" != "" ] && [ "$PUSHED_AT_EPOCH" -lt "$LAST_BACKUP_TIME_EPOCH" ]; then
-      echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Skipped backup repo: No push since last backup. Last Pushed Date ($PUSHED_AT) is less than the last backup time ($LAST_BACKUP_TIME)";
+      echo::info "Skipped backup repo: No push since last backup. Last Pushed Date ($PUSHED_AT) is less than the last backup time ($LAST_BACKUP_TIME)";
       continue
     fi
   fi
 
-  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Cloning Repo: $REPO_FULL_NAME"
+  echo::info "Cloning Repo: $REPO_FULL_NAME"
   CLONE_TARGET_DIR=/tmp/clone/$REPO_FULL_NAME
   if [ ! -d "$CLONE_TARGET_DIR" ]; then
     mkdir -p "$CLONE_TARGET_DIR"
     CLONE_COMMAND="git clone --mirror $REPO_SSH_URL $CLONE_TARGET_DIR --quiet"
-    echo::info "$FUNCTION_NAME: Executing : $CLONE_COMMAND"
+    echo::info "Executing : $CLONE_COMMAND"
     eval "$CLONE_COMMAND"
   else
-    echo::info "$FUNCTION_NAME: Clone already done"
+    echo::info "Clone already done"
   fi
 
   # Empty repo?
   OBJECT_COUNT=$(find "$CLONE_TARGET_DIR"/objects -type f | wc -l)
   if [ "$OBJECT_COUNT" == 0 ]; then
-    echo::info "$FUNCTION_NAME: Skipping backup - repo empty: $REPO_FULL_NAME"
+    echo::info "Skipping backup - repo empty: $REPO_FULL_NAME"
     continue
   fi
 
@@ -233,20 +286,20 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   BUNDLE_SOURCE_PATH="/tmp/$BUNDLE_RELATIVE_PATH"
   BUNDLE_SOURCE_PARENT_PATH="/tmp/$REPO_PARENT"
   mkdir -p "$BUNDLE_SOURCE_PARENT_PATH"
-  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Creating bundle: $BUNDLE_SOURCE_PATH"
+  echo::info "Creating bundle: $BUNDLE_SOURCE_PATH"
   BUNDLE_COMMAND="git -C $CLONE_TARGET_DIR -c 'pack.threads=1' bundle create $BUNDLE_SOURCE_PATH --all --quiet"
-  echo::info "$FUNCTION_NAME: Executing : $BUNDLE_COMMAND"
+  echo::info "Executing : $BUNDLE_COMMAND"
   eval "$BUNDLE_COMMAND"
 
-  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Uploading bundle: $BUNDLE_NAME"
+  echo::info "Uploading bundle: $BUNDLE_NAME"
   MOVE_COMMAND="rclone moveto $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH --progress"
-  echo::info "$FUNCTION_NAME: Executing : $MOVE_COMMAND"
+  echo::info "Executing : $MOVE_COMMAND"
   eval "$MOVE_COMMAND"
 
-  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Cleaning up"
-  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Deleting Git repo: $CLONE_TARGET_DIR"
+  echo::info "Cleaning up"
+  echo::info "Deleting Git repo: $CLONE_TARGET_DIR"
   rm -rf "$CLONE_TARGET_DIR"
-  echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Deleting Git repo: Done"
+  echo::info "Deleting Git repo: Done"
 
 
 done <<< "$API_REPOS" # needed to not run as pipeline and get ACTUAL_COUNT
@@ -255,4 +308,4 @@ done <<< "$API_REPOS" # needed to not run as pipeline and get ACTUAL_COUNT
 echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH"
 rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH"
 echo::info " "
-echo::info "$SILENT_OPTION" "$FUNCTION_NAME: Processed $ACTUAL_COUNT repositories";
+echo::info "Processed $ACTUAL_COUNT repositories";

@@ -128,111 +128,23 @@ function mount(){
 
 }
 
-
-# Set the configuration via env
-# Conf via env variables
-# https://rclone.org/docs/#environment-variables
-function set_rclone_env(){
-
-    local FUNCTION_NAME="set_rclone_env"
-
-    # to avoid: NOTICE: Config file "/home/me/.rclone.conf" not found - using defaults
-    touch "$HOME"/.rclone.conf
-
-    # The registry is an unique name
-    # that identifies a Git Server instance
-    GIT_HOSTING=""
-
-    local SILENT_OPTION=""
-
-    # This for loop should have no echo
-    # Why? We use this function to get the list of repo to handle
-    # We therefore need the raw output without any echo
-    for arg in "$@"; do
-        case "$arg" in
-        "")
-          # empty arg
-          ;;
-        "--silent")
-          SILENT_OPTION="--silent"
-          ;;
-        *)
-          # Command or arg
-          if [ "$GIT_HOSTING" == "" ]; then
-              GIT_HOSTING="${arg^^}" # ^^ for uppercase
-            else
-              echo::err "$FUNCTION_NAME: Too much argument found: $FUNCTION_NAME except only one argument, a git registry. ($arg) is the second argument"
-              exit 1;
-          fi
-          shift
-          ;;
-        esac
-    done
-
-    if [ "$GIT_HOSTING" == "" ]; then
-      echo::err "$FUNCTION_NAME: The first argument should be not empty with the git instance name"
-      exit 1;
-    fi
-
-    set_env  "$GIT_HOSTING"
-
-    # Rclone specific
-    RCLONE_REMOTE_NAME_ENV_NAME="${ENV_PREFIX}_${GIT_HOSTING}_RCLONE_REMOTE_NAME"
-    if [ -z "${!RCLONE_REMOTE_NAME_ENV_NAME+x}" ]; then
-        RCLONE_REMOTE_NAME=${GIT_HOSTING}
-        echo::info  "$FUNCTION_NAME:  * Env variable ($RCLONE_REMOTE_NAME_ENV_NAME) was not found. Setting Rclone remote name to the Git Registry: ${GIT_HOSTING}"
-      else
-        RCLONE_REMOTE_NAME=${!RCLONE_REMOTE_NAME_ENV_NAME}
-    fi;
-    echo::info  "$FUNCTION_NAME:  * Rclone remote Name: $RCLONE_REMOTE_NAME"
-
-    RCLONE_BASE_PATH_ENV_NAME="${ENV_PREFIX}_${GIT_HOSTING}_RCLONE_BASE_PATH"
-    if [ -z "${!RCLONE_BASE_PATH_ENV_NAME+x}" ]; then
-        echo::info  "$FUNCTION_NAME:  * Env variable ($RCLONE_BASE_PATH_ENV_NAME) was not found. Setting to empty string"
-        RCLONE_BASE_PATH=""
-      else
-        RCLONE_BASE_PATH=${!RCLONE_BASE_PATH_ENV_NAME}
-        echo::info  "$FUNCTION_NAME:  * Rclone base path: $RCLONE_BASE_PATH"
-    fi;
-
-}
-
-
-
-
-
+# Parsing
+# We can't parse with getopt because we don't know the options
 COMMAND=""
-
-args=$(getopt -l "silent" -o "s" -- "$@")
-eval set -- "$args"
-
-# Parsing only the command
-# Options are command related and are parsed
-# in each function
-while [[ $# -gt 0 ]]
-do
-   case "$1" in
-  "--silent"|"-s")
-    # error only
-    # shellcheck disable=SC2034
-    BASHLIB_ECHO_LEVEL=1
-    shift
+for arg in "$@"; do
+  case $arg in
+    --*|-*)
+    ARGUMENTS+=("$arg")
     ;;
-  "--")
-    # the arg separator
-    shift
-    ;;
-  *)
-    # Command or arg
+    *)
     if [ "$COMMAND" == "" ]; then
-        COMMAND="$1"
+        COMMAND=$1
       else
-        ARGUMENTS+=("$1")
+        ARGUMENTS+=("$arg")
     fi
-    shift
-    ;;
   esac
 done
+
 
 if [ "$COMMAND" == "" ]; then
   doc::help synopsis
@@ -240,10 +152,6 @@ if [ "$COMMAND" == "" ]; then
   exit 1
 fi
 
-echo::echo ""
-echo::echo "${CLI_NAME^} ${COMMAND^}"
-echo::echo "-------------------------------------------"
-echo::echo ""
 case ${COMMAND} in
   "help")
     doc::help synopsis
@@ -255,7 +163,7 @@ case ${COMMAND} in
     git-hosting-list "${ARGUMENTS[@]}" || error::exit $?
     ;;
   "backup")
-    backup "${ARGUMENTS[@]}"
+    git-hosting-backup "${ARGUMENTS[@]}" || error::exit $?
     ;;
   "mount")
     mount "${ARGUMENTS[@]}"

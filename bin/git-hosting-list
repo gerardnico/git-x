@@ -94,7 +94,8 @@ do
           ;;
         *)
           if [ "$GIT_HOSTING" == "" ]; then
-              GIT_HOSTING="$1"
+              # ,, for lowercase
+              GIT_HOSTING="${1,,}"
               shift
               continue
           fi
