@@ -138,8 +138,6 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
     popd >/dev/null
     continue
   fi
-  # The format for branch and upstream comes from `git status --branch`
-  HEAD="$HEAD (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
 
   # If a batch exec, skip the non-dirty repo
   if ! git::is_dirty && [ "$MODE" == "$MODE_DIRTY" ]; then
@@ -147,18 +145,20 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
       continue
   fi
 
+  # We echo the head before the execution
+  # because we may have warning/error that goes to tty
+  # We need to be able to connect them to the good repo
+  echo::echo ""
+  echo::echo "$HEAD (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
+
   # 2>&1 because git output all to 2
   if ! OUTPUT=$(eval "$COMMAND" 2>&1); then
-    echo::err "$HEAD"
     echo::err "The command (${COMMAND}) has errors:"
     echo::err "$OUTPUT"
     popd > /dev/null
     continue
   fi
 
-  # remove the space and test if not of length zero
-  echo::echo ""
-  echo::echo "$HEAD"
   # one echo to be able to capture the output
   echo "$OUTPUT"
 
