@@ -41,6 +41,16 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
+# Nothing to commit but push
+if ! git::is_dirty_index ; then
+  echo::warn "Nothing to commit"
+  if git::is_dirty_commit; then
+    echo::warn "Dirty commit: pushing"
+    git push
+  fi
+  exit
+fi
+
 # Commit Message
 COMMIT_MESSAGE=${1:-}
 if [ "$COMMIT_MESSAGE" = "" ]; then
