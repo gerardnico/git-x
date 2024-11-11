@@ -56,7 +56,7 @@ fi
 GIT_X_REPOS_PATH=${GIT_X_REPOS_PATH:-}
 if [ "$GIT_X_REPOS_PATH" != "" ]; then
 {
-  IFS="::" # Set the internal field separator to double colon, but only for the code inside the braces
+  IFS=":" # Set the internal field separator to a colon, but only for the code inside the braces
   for REPO_PATH in $GIT_X_REPOS_PATH
   do
     REPO_DIRS=()
