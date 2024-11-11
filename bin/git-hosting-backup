@@ -376,7 +376,8 @@ case $OUTPUT_FORMAT in
 EOF
   ;;
   "$OUTPUT_FORMAT_PROM")
-  PREFIX=$(basename "$0" | tr "-" "_")
+  # We make it short. The prefix has no space or separator.
+  PREFIX="gitbackup"
   cat <<EOF
 # TYPE ${PREFIX}_${METRIC_TOTAL_COUNT_NAME} counter
 # HELP the total of repos processed
