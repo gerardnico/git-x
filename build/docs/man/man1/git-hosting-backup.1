@@ -167,6 +167,78 @@ with the scope \f[V]repo\f[R] for public and private repo
 A Rclone destination (https://rclone.org/overview/)
 .IP \[bu] 2
 The dependencies
+.SH SYNOPSIS
+.IP
+.nf
+\f[C]
+git-hosting-backup source target [...]
+\f[R]
+.fi
+.PP
+where:
+.IP \[bu] 2
+source - a git hosting service name to read from
+.IP \[bu] 2
+target - a target name to backup to
+.IP \[bu] 2
+\[en]restart - if a backup fail, it can be restarted with the restart
+flag
+.IP \[bu] 2
+\[en]filter-exclude-pattern=xxx - a regexp pattern to exclude from
+applied on the repository full name (ie parent/name)
+.IP \[bu] 2
+\[en]filter-max-repo-count=`x' - the maximum number of repositories to
+process
+.PP
+This scripts return the following json:
+.IP
+.nf
+\f[C]
+{
+    \[dq]total_count\[dq]: \[dq]x\[dq],
+    \[dq]bundle_count\[dq]: \[dq]x\[dq],
+    \[dq]skipped_no_change_count\[dq]: \[dq]x\[dq],
+    \[dq]skipped_empty_count\[dq]: \[dq]x\[dq],
+    \[dq]skipped_fork_count\[dq]: \[dq]x\[dq],
+    \[dq]skipped_pattern_count\[dq]: \[dq]x\[dq]
+}
+\f[R]
+.fi
+.PP
+where:
+.IP \[bu] 2
+\f[V]total_count\f[R] is the number of repositories processed (up to
+max-repo-count option)
+.IP \[bu] 2
+\f[V]bundle_count\f[R] is the number of repositories bundled (ie dumped)
+.IP \[bu] 2
+\f[V]skipped_no_change_count\f[R] is the number of repositories skipped
+because of no changes since the last dump
+.IP \[bu] 2
+\f[V]skipped_pattern_count\f[R] is the number of repositories skipped
+due to pattern matching
+.IP \[bu] 2
+\f[V]skipped_empty_count\f[R] is the number of repositories skipped due
+to being empty
+.IP \[bu] 2
+\f[V]skipped_fork_count\f[R] is the number of repositories skipped due
+to being a fork
+.PP
+Note:
+.IP
+.nf
+\f[C]
+total_count = bundle_count + skipped_no_change_count + skipped_pattern_count + skipped_empty_count + skipped_fork_count
+\f[R]
+.fi
+.PP
+Tip: You can process it further with \f[V]jq\f[R]
+.IP
+.nf
+\f[C]
+git-hosting-backup source target | jq \[aq].total_count, .bundle_count\[aq]
+\f[R]
+.fi
 .SH How to restore
 .PP
 A bundle (https://git-scm.com/book/en/v2/Git-Tools-Bundling) can be

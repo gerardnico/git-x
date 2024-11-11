@@ -8,6 +8,7 @@ This `git-hosting-backup` command back up Git repositories:
 
 
 
+
 # Example
 
 ## Backup Github Repos to S3
@@ -119,6 +120,10 @@ RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
   * with the scope `repo` for public and private repo 
 * A [Rclone destination](https://rclone.org/overview/)
 * The [dependencies](#dependencies)
+
+# SYNOPSIS
+
+${SYNOPSIS}
 
 # How to restore
 

@@ -66,7 +66,39 @@ where:
 * target                       - a target name to backup to
 * --restart                    - if a backup fail, it can be restarted with the restart flag
 * --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)
-* --filter-max-repo-count='x'  - the maximum number of repositories to backup
+* --filter-max-repo-count='x'  - the maximum number of repositories to process
+
+This scripts return the following json:
+\`\`\`json
+{
+    "total_count": "x",
+    "bundle_count": "x",
+    "skipped_no_change_count": "x",
+    "skipped_empty_count": "x",
+    "skipped_fork_count": "x",
+    "skipped_pattern_count": "x"
+}
+\`\`\`
+
+where:
+
+* \`total_count\` is the number of repositories processed (up to max-repo-count option)
+* \`bundle_count\` is the number of repositories bundled (ie dumped)
+* \`skipped_no_change_count\` is the number of repositories skipped because of no changes since the last dump
+* \`skipped_pattern_count\` is the number of repositories skipped due to pattern matching
+* \`skipped_empty_count\` is the number of repositories skipped due to being empty
+* \`skipped_fork_count\` is the number of repositories skipped due to being a fork
+
+
+Note:
+\`\`\`bash
+total_count = bundle_count + skipped_no_change_count + skipped_pattern_count + skipped_empty_count + skipped_fork_count
+\`\`\`
+
+Tip: You can process it further with \`jq\`
+\`\`\`bash
+$(basename "$0") source target | jq -r '.total_count .bundle_count'
+\`\`\`
 EOF
 
 }
@@ -224,11 +256,16 @@ REPOS_COMMAND="git-hosting-list $GIT_SOURCE $FILTER_MAX_REPO_COUNT_OPTION --jq-e
 echo::info "executing command: $REPOS_COMMAND"
 API_REPOS=$(eval "$REPOS_COMMAND")
 
-ACTUAL_COUNT=0
+TOTAL_COUNT=0
+SKIPPED_FORK=0
+SKIPPED_NO_CHANGE=0
+SKIPPED_EMPTY=0
+SKIPPED_PATTERN=0
+BUNDLE_COUNT=0
 while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
 
   # Analytics
-  ACTUAL_COUNT=$((ACTUAL_COUNT + 1))
+  TOTAL_COUNT=$((TOTAL_COUNT + 1))
 
   REPO_FULL_NAME=$(echo "$REPO_FULL_NAME" | tr -d '"')
   IFS='/' read -r REPO_PARENT REPO_NAME <<< "$REPO_FULL_NAME"
@@ -237,11 +274,13 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
 
   if [ "$REPO_FORK" == true ]; then
     echo::info "Skipped forked repo: $REPO_FULL_NAME";
+    SKIPPED_FORK=$((SKIPPED_FORK + 1))
     continue
   fi
 
   if [ "$FILTER_EXCLUDE_PATTERN" != "" ] && [[ "$REPO_FULL_NAME" =~ $FILTER_EXCLUDE_PATTERN ]]; then
-    echo::info "Skipped pattern exclude repo: $REPO_FULL_NAME";
+    echo::info "Excluded due to pattern matching: $REPO_FULL_NAME";
+    SKIPPED_PATTERN=$((SKIPPED_PATTERN + 1))
     continue
   fi
 
@@ -260,6 +299,7 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
     PUSHED_AT_EPOCH=$(TZ=UTC date -d"$PUSHED_AT_TRIMMED" +%s)
     if [ "$LAST_BACKUP_TIME" != "" ] && [ "$PUSHED_AT_EPOCH" -lt "$LAST_BACKUP_TIME_EPOCH" ]; then
       echo::info "Skipped backup repo: No push since last backup. Last Pushed Date ($PUSHED_AT) is less than the last backup time ($LAST_BACKUP_TIME)";
+      SKIPPED_NO_CHANGE=$((SKIPPED_NO_CHANGE + 1))
       continue
     fi
   fi
@@ -279,6 +319,7 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   OBJECT_COUNT=$(find "$CLONE_TARGET_DIR"/objects -type f | wc -l)
   if [ "$OBJECT_COUNT" == 0 ]; then
     echo::info "Skipping backup - repo empty: $REPO_FULL_NAME"
+    SKIPPED_EMPTY=$((SKIPPED_EMPTY + 1))
     continue
   fi
 
@@ -289,6 +330,7 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   echo::info "Creating bundle: $BUNDLE_SOURCE_PATH"
   BUNDLE_COMMAND="git -C $CLONE_TARGET_DIR -c 'pack.threads=1' bundle create $BUNDLE_SOURCE_PATH --all --quiet"
   echo::info "Executing : $BUNDLE_COMMAND"
+  BUNDLE_COUNT=$((BUNDLE_COUNT + 1))
   eval "$BUNDLE_COMMAND"
 
   echo::info "Uploading bundle: $BUNDLE_NAME"
@@ -302,10 +344,21 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   echo::info "Deleting Git repo: Done"
 
 
-done <<< "$API_REPOS" # needed to not run as pipeline and get ACTUAL_COUNT
+done <<< "$API_REPOS" # needed to not run as pipeline and get TOTAL_COUNT
 
 
 echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH"
 rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH"
 echo::info " "
-echo::info "Processed $ACTUAL_COUNT repositories";
+echo::info "Processed $TOTAL_COUNT repositories";
+
+cat << EOF
+{
+    "total_count": "$TOTAL_COUNT",
+    "bundle_count": "$BUNDLE_COUNT",
+    "skipped_no_change_count": "$SKIPPED_NO_CHANGE",
+    "skipped_empty_count": "$SKIPPED_EMPTY",
+    "skipped_fork_count": "$SKIPPED_FORK",
+    "skipped_pattern_count": "$SKIPPED_PATTERN"
+}
+EOF

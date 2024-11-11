@@ -8,6 +8,7 @@ This `git-hosting-backup` command back up Git repositories:
 
 
 
+
 # Example
 
 ## Backup Github Repos to S3
@@ -119,6 +120,52 @@ RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
   * with the scope `repo` for public and private repo 
 * A [Rclone destination](https://rclone.org/overview/)
 * The [dependencies](#dependencies)
+
+# SYNOPSIS
+
+```bash
+git-hosting-backup source target [...]
+```
+
+where:
+
+* source                       - a git hosting service name to read from
+* target                       - a target name to backup to
+* --restart                    - if a backup fail, it can be restarted with the restart flag
+* --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)
+* --filter-max-repo-count='x'  - the maximum number of repositories to process
+
+This scripts return the following json:
+```json
+{
+    "total_count": "x",
+    "bundle_count": "x",
+    "skipped_no_change_count": "x",
+    "skipped_empty_count": "x",
+    "skipped_fork_count": "x",
+    "skipped_pattern_count": "x"
+}
+```
+
+where:
+
+* `total_count` is the number of repositories processed (up to max-repo-count option)
+* `bundle_count` is the number of repositories bundled (ie dumped)
+* `skipped_no_change_count` is the number of repositories skipped because of no changes since the last dump
+* `skipped_pattern_count` is the number of repositories skipped due to pattern matching
+* `skipped_empty_count` is the number of repositories skipped due to being empty
+* `skipped_fork_count` is the number of repositories skipped due to being a fork
+
+
+Note:
+```bash
+total_count = bundle_count + skipped_no_change_count + skipped_pattern_count + skipped_empty_count + skipped_fork_count
+```
+
+Tip: You can process it further with `jq`
+```bash
+git-hosting-backup source target | jq '.total_count, .bundle_count'
+```
 
 # How to restore
 

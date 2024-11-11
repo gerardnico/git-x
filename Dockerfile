@@ -23,7 +23,7 @@ RUN apk update \
 # * connect the repo
 LABEL org.opencontainers.image.source="https://github.com/gerardnico/git-x"
 # * set a description
-LABEL org.opencontainers.image.description="Git X (Git Command for everyday use against multiple repo)"
+LABEL org.opencontainers.image.description="Git X - Git commands for everyday use (Multiple repos command execution, Hosting Backup, ...)"
 
 
 ####################################
