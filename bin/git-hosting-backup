@@ -52,6 +52,12 @@ function set_rclone_env(){
 
 }
 
+METRIC_TOTAL_COUNT_NAME="total_count"
+METRIC_BUNDLE_COUNT_NAME="bundle_count"
+METRIC_SKIPPED_NO_CHANGE_COUNT_NAME="skipped_no_change_count"
+METRIC_SKIPPED_PATTERN_COUNT_NAME="skipped_pattern_count"
+METRIC_SKIPPED_EMPTY_COUNT_NAME="skipped_empty_count"
+METRIC_SKIPPED_FORK_COUNT_NAME="skipped_fork_count"
 
 function synopsis() {
 
@@ -64,38 +70,27 @@ where:
 
 * source                       - a git hosting service name to read from
 * target                       - a target name to backup to
+* --output                     - the statistics output format (json or prometheus). Default to json
 * --restart                    - if a backup fail, it can be restarted with the restart flag
 * --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)
 * --filter-max-repo-count='x'  - the maximum number of repositories to process
 
-This scripts return the following json:
-\`\`\`json
-{
-    "total_count": "x",
-    "bundle_count": "x",
-    "skipped_no_change_count": "x",
-    "skipped_empty_count": "x",
-    "skipped_fork_count": "x",
-    "skipped_pattern_count": "x"
-}
-\`\`\`
+This script returns the following statistiques:
 
-where:
-
-* \`total_count\` is the number of repositories processed (up to max-repo-count option)
-* \`bundle_count\` is the number of repositories bundled (ie dumped)
-* \`skipped_no_change_count\` is the number of repositories skipped because of no changes since the last dump
-* \`skipped_pattern_count\` is the number of repositories skipped due to pattern matching
-* \`skipped_empty_count\` is the number of repositories skipped due to being empty
-* \`skipped_fork_count\` is the number of repositories skipped due to being a fork
+* \`$METRIC_TOTAL_COUNT_NAME\` is the number of repositories processed (up to max-repo-count option)
+* \`$METRIC_BUNDLE_COUNT_NAME\` is the number of repositories bundled (ie dumped)
+* \`$METRIC_SKIPPED_NO_CHANGE_COUNT_NAME\` is the number of repositories skipped because of no changes since the last dump
+* \`$METRIC_SKIPPED_PATTERN_COUNT_NAME\` is the number of repositories skipped due to pattern matching
+* \`$METRIC_SKIPPED_EMPTY_COUNT_NAME\` is the number of repositories skipped due to being empty
+* \`$METRIC_SKIPPED_FORK_COUNT_NAME\` is the number of repositories skipped due to being a fork
 
 
 Note:
 \`\`\`bash
-total_count = bundle_count + skipped_no_change_count + skipped_pattern_count + skipped_empty_count + skipped_fork_count
+$METRIC_TOTAL_COUNT_NAME = $METRIC_BUNDLE_COUNT_NAME + $METRIC_SKIPPED_NO_CHANGE_COUNT_NAME + $METRIC_SKIPPED_PATTERN_COUNT_NAME + $METRIC_SKIPPED_EMPTY_COUNT_NAME + $METRIC_SKIPPED_FORK_COUNT_NAME
 \`\`\`
 
-Tip: You can process it further with \`jq\`
+Tip: You can process the json format further with \`jq\`
 \`\`\`bash
 $(basename "$0") source target | jq -r '.total_count .bundle_count'
 \`\`\`
@@ -113,7 +108,7 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit
 fi
 
-args=$(getopt -l "restart,filter-max-repo-count:,filter-exclude-pattern:,jq-raw-output,jq-raw,help,report:" -o "r" -- "$@")
+args=$(getopt -l "restart,filter-max-repo-count:,filter-exclude-pattern:,jq-raw-output,jq-raw,help,report:,output:" -o "ro:" -- "$@")
 eval set -- "$args"
 
 GIT_SOURCE=""
@@ -121,6 +116,9 @@ GIT_TARGET=""
 RESTART=""
 FILTER_MAX_REPO_COUNT=""
 FILTER_EXCLUDE_PATTERN=""
+OUTPUT_FORMAT_JSON="json"
+OUTPUT_FORMAT_PROM="prometheus"
+OUTPUT_FORMAT=$OUTPUT_FORMAT_JSON
 while [[ $# -gt 0 ]]
 do
    case "$1" in
@@ -128,6 +126,16 @@ do
         RESTART="true"
         shift
         ;;
+      "--output"|"-o")
+        shift
+        OUTPUT_FORMAT="$1"
+        if [[ ! $OUTPUT_FORMAT =~ "$OUTPUT_FORMAT_JSON"|"$OUTPUT_FORMAT_PROM" ]]; then
+          doc::help synopsis
+          echo::err "The output format option should be $OUTPUT_FORMAT_JSON or $OUTPUT_FORMAT_PROM"
+          exit 1
+        fi
+        shift
+      ;;
       "--filter-max-repo-count")
         shift
         FILTER_MAX_REPO_COUNT="$1"
@@ -144,9 +152,9 @@ do
         ;;
       *)
         if [ "$GIT_SOURCE" == "" ]; then
-            GIT_SOURCE="${1^^}" # ^^ for uppercase
+            GIT_SOURCE="${1,,}" # ,, for lowercase
         elif [ "$GIT_TARGET" == "" ]; then
-            GIT_TARGET="${1^^}" # ^^ for uppercase
+            GIT_TARGET="${1,,}" # ,, for lowercase
         else
             doc::help synopsis
             echo::err "Too much argument found: We except only 2 arguments, the source and the target. ($1) is the third argument"
@@ -352,13 +360,49 @@ rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH"
 echo::info " "
 echo::info "Processed $TOTAL_COUNT repositories";
 
-cat << EOF
+
+
+case $OUTPUT_FORMAT in
+  "$OUTPUT_FORMAT_JSON")
+  cat << EOF
 {
-    "total_count": "$TOTAL_COUNT",
-    "bundle_count": "$BUNDLE_COUNT",
-    "skipped_no_change_count": "$SKIPPED_NO_CHANGE",
-    "skipped_empty_count": "$SKIPPED_EMPTY",
-    "skipped_fork_count": "$SKIPPED_FORK",
-    "skipped_pattern_count": "$SKIPPED_PATTERN"
+    "$METRIC_TOTAL_COUNT_NAME": "$TOTAL_COUNT",
+    "$METRIC_BUNDLE_COUNT_NAME": "$BUNDLE_COUNT",
+    "$METRIC_SKIPPED_NO_CHANGE_COUNT_NAME": "$SKIPPED_NO_CHANGE",
+    "$METRIC_SKIPPED_EMPTY_COUNT_NAME": "$SKIPPED_EMPTY",
+    "$METRIC_SKIPPED_FORK_COUNT_NAME": "$SKIPPED_FORK",
+    "$METRIC_SKIPPED_PATTERN_COUNT_NAME": "$SKIPPED_PATTERN"
 }
 EOF
+  ;;
+  "$OUTPUT_FORMAT_PROM")
+  PREFIX=$(basename "$0" | tr "-" "_")
+  cat <<EOF
+# TYPE ${PREFIX}_${METRIC_TOTAL_COUNT_NAME} counter
+# HELP the total of repos processed
+${PREFIX}_${METRIC_TOTAL_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $TOTAL_COUNT
+# TYPE ${PREFIX}_${METRIC_BUNDLE_COUNT_NAME} counter
+# HELP the total number of repos bundled
+${PREFIX}_${METRIC_BUNDLE_COUNT_NAME} {source="$GIT_SOURCE",target="$GIT_TARGET"} $BUNDLE_COUNT
+# TYPE ${PREFIX}_${METRIC_SKIPPED_NO_CHANGE_COUNT_NAME} counter
+# HELP the total number of repos skipped due to no changes since last backup
+${PREFIX}_${METRIC_SKIPPED_NO_CHANGE_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $SKIPPED_NO_CHANGE
+# TYPE ${PREFIX}_${METRIC_SKIPPED_EMPTY_COUNT_NAME} counter
+# HELP the total number of repos skipped because they were empty
+${PREFIX}_${METRIC_SKIPPED_EMPTY_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $SKIPPED_EMPTY
+# TYPE ${PREFIX}_${METRIC_SKIPPED_FORK_COUNT_NAME} counter
+# HELP the total number of repos skipped because they were a fork
+${PREFIX}_${METRIC_SKIPPED_FORK_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $SKIPPED_FORK
+# TYPE ${PREFIX}_${METRIC_SKIPPED_PATTERN_COUNT_NAME} counter
+# HELP the total number of repos skipped because they were excluded by pattern matching
+${PREFIX}_${METRIC_SKIPPED_PATTERN_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $SKIPPED_PATTERN
+EOF
+  ;;
+  *)
+    # We check at argument parsing
+    # therefore we should never hit this point
+    # but we never know
+    echo::err "Output Format $OUTPUT_FORMAT not supported"
+    exit 1
+    ;;
+esac

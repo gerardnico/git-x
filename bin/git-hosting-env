@@ -30,7 +30,7 @@ echo "ENV_PREFIX=$ENV_PREFIX"
 PLATFORM_NAME=""
 
 # Command or arg
-FIRST_ARG=${1:--}
+FIRST_ARG=${1:-}
 if [ "$FIRST_ARG" == "" ]; then
   doc::help synopsis
   echo::err "The Platform Name should be not empty"
@@ -42,7 +42,7 @@ if [ "$FIRST_ARG" == "synopsis" ]; then
   exit;
 fi
 
-PLATFORM_NAME="${FIRST_ARG^^}" # ^^ for uppercase
+PLATFORM_NAME="${FIRST_ARG,,}" # ^^ for lowercase
 echo::info  "Setting env for Platform: $PLATFORM_NAME"
 
 
@@ -52,7 +52,7 @@ if [ -z "${!GIT_PLATFORM_ENV_NAME+x}" ]; then
   # PLATFORM/Registry Type type not found
   # Well-Known registry
   case $PLATFORM_NAME in
-    "GITHUB")
+    "github")
       GIT_PLATFORM="github"
       ;;
     *)
