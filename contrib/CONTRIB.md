@@ -11,6 +11,6 @@ How to build?
 
 ## Hosting Backup Dev Note
 
-For [git-hosting-backup](../build/docs/bin/git-hosting-backup.md)
+For [git-hosting-backup](../docs/bin-generated/git-hosting-backup.md)
 See [git-hosting-backup-dev](git-hosting-backup-dev.md)
 
