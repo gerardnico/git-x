@@ -75,22 +75,42 @@ fi
 # we need to add it twice
 git add .
 
-# Check if there is commit to integrate
-# `Updates were rejected because the tip of your current branch is behind`
-# ! [rejected]        master -> master (non-fast-forward)
-#error: failed to push some refs to 'https://gerardnico:ghp_glKrr7@github.com/ComboStrap/website'
-#hint: Updates were rejected because the tip of your current branch is behind
-#hint: its remote counterpart. Merge the remote changes (e.g. 'git pull')
-#hint: before pushing again.
-#hint: See the 'Note about fast-forwards' in 'git push --help' for details.
-git fetch
-# rev-list provides the ability to build and traverse commit ancestry graphs.
-UPSTREAM_COMMIT_TO_MERGE=$(git rev-list HEAD...'@{u}' --count)
-if [ "$UPSTREAM_COMMIT_TO_MERGE" != 0 ]; then
-  echo::warn "$DIRECTORY_NAME - $UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
-  git auto-pull
+# Is there an upstream
+if CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2>/dev/null); then
+  # Check if there is commit to integrate
+  # `Updates were rejected because the tip of your current branch is behind`
+  # ! [rejected]        master -> master (non-fast-forward)
+  #error: failed to push some refs to 'https://gerardnico:ghp_glKrr7@github.com/ComboStrap/website'
+  #hint: Updates were rejected because the tip of your current branch is behind
+  #hint: its remote counterpart. Merge the remote changes (e.g. 'git pull')
+  #hint: before pushing again.
+  #hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+  git fetch
+  # rev-list provides the ability to build and traverse commit ancestry graphs.
+  UPSTREAM_COMMIT_TO_MERGE=$(git rev-list HEAD...'@{u}' --count)
+  if [ "$UPSTREAM_COMMIT_TO_MERGE" != 0 ]; then
+    echo::warn "$DIRECTORY_NAME - $UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
+    git auto-pull
+  fi
 fi
 
 # Commit safely
 git commit -v -a -m "$COMMIT_MESSAGE"
-git push
+
+if [ "$CURRENT_BRANCH_UPSTREAM" != "" ]; then
+  git push
+else
+  IFS=" " read -r -a remotes <<< "$(git remote)"
+  if [ ${#remotes[@]} -ne 1 ]; then
+    echo::warn "The repository has ${#remotes[@]} remotes, we can't set an upstream"
+    echo::warn "Add a remote with"
+    echo::warn ""
+    echo::warn "   git remote add origin git@hosting.com:namespace/name.git"
+    echo::warn "or"
+    echo::warn "   git remote add origin https://hosting.com:namespace/name.git"
+    echo::warn ""
+    exit 1
+  fi
+  echo::warn "Adding an upstream on the push"
+  command::echo_eval "git push -u ${remotes[0]} $(git::get_current_branch)"
+fi

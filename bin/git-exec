@@ -2,10 +2,9 @@
 # @name Git Exec
 # @brief Execute a git command against multiple local repositories at once
 
-
-set -Eeuo pipefail
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+error::set_strict_mode
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
@@ -125,22 +124,29 @@ COMMAND=$(git::get_eval_string "$@")
 
 for REPO_DIR in "${REPO_DIRS[@]}"; do
 
+  # We use strict mode but shellcheck does not see it
+  # shellcheck disable=SC2164
   pushd "$REPO_DIR" >/dev/null
 
   # Header for each repo
   DIRECTORY_NAME=$(path::get_current_directory_name) # the directory name is the DIRECTORY_NAME
   HEAD=$(string::set_color "yellow" "${DIRECTORY_NAME}")
   CURRENT_BRANCH=$(git::get_current_branch)
-  if ! CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch &>/dev/null); then
-    echo::echo ""
-    echo::echo "$HEAD"
-    echo::warn "The branch $CURRENT_BRANCH has no upstream. Skipping"
-    popd >/dev/null
-    continue
+  if ! CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2>/dev/null); then
+
+    # No-op, we warn later with a warning message
+    :
+    # We can't set a upstream with
+    # git branch --set-upstream-to=origin/main main
+    # because we would get
+    # fatal: No commit on branch 'main' yet.
+
   fi
 
   # If a batch exec, skip the non-dirty repo
   if ! git::is_dirty && [ "$MODE" == "$MODE_DIRTY" ]; then
+      # We use strict mode but shellcheck does not see it
+      # shellcheck disable=SC2164
       popd > /dev/null
       continue
   fi
@@ -149,12 +155,16 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   # because we may have warning/error that goes to tty
   # We need to be able to connect them to the good repo
   echo::echo ""
-  echo::echo "$HEAD (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM})"
-
+  echo::echo "$HEAD (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM:-"None"})"
+  if [ "${CURRENT_BRANCH_UPSTREAM:-}" == "" ];then
+    echo::warn "The branch $CURRENT_BRANCH has no upstream."
+  fi
   # 2>&1 because git output all to 2
   if ! OUTPUT=$(eval "$COMMAND" 2>&1); then
     echo::err "The command (${COMMAND}) has errors:"
     echo::err "$OUTPUT"
+    # We use strict mode but shellcheck does not see it
+    # shellcheck disable=SC2164
     popd > /dev/null
     continue
   fi
@@ -162,6 +172,8 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   # one echo to be able to capture the output
   echo "$OUTPUT"
 
+  # We use strict mode but shellcheck does not see it
+  # shellcheck disable=SC2164
   popd >/dev/null
 
 done
