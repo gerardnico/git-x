@@ -380,10 +380,10 @@ EOF
   PREFIX="gitbackup"
   cat <<EOF
 # TYPE ${PREFIX}_${METRIC_TOTAL_COUNT_NAME} counter
-# HELP the total of repos processed
+# HELP ${PREFIX}_${METRIC_TOTAL_COUNT_NAME} the total of repos processed
 ${PREFIX}_${METRIC_TOTAL_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $TOTAL_COUNT
 # TYPE ${PREFIX}_${METRIC_BUNDLE_COUNT_NAME} counter
-# HELP the total number of repos bundled
+# HELP ${PREFIX}_${METRIC_BUNDLE_COUNT_NAME} the total number of repos bundled
 ${PREFIX}_${METRIC_BUNDLE_COUNT_NAME} {source="$GIT_SOURCE",target="$GIT_TARGET"} $BUNDLE_COUNT
 # TYPE ${PREFIX}_${METRIC_SKIPPED_NO_CHANGE_COUNT_NAME} counter
 # HELP the total number of repos skipped due to no changes since last backup
