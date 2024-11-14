@@ -52,12 +52,19 @@ function set_rclone_env(){
 
 }
 
-METRIC_TOTAL_COUNT_NAME="total_count"
-METRIC_BUNDLE_COUNT_NAME="bundle_count"
-METRIC_SKIPPED_NO_CHANGE_COUNT_NAME="skipped_no_change_count"
-METRIC_SKIPPED_PATTERN_COUNT_NAME="skipped_pattern_count"
-METRIC_SKIPPED_EMPTY_COUNT_NAME="skipped_empty_count"
-METRIC_SKIPPED_FORK_COUNT_NAME="skipped_fork_count"
+# Metrics Label used to create Metrics name
+
+METRIC_NAME="repo_count"
+METRIC_TOTAL_LABEL="total"
+
+# Type of repos processing
+METRIC_REPO_DUMPED_STATED="dumped"
+METRIC_REPO_SKIPPED_STATE="skipped"
+
+METRIC_NO_CHANGE_SKIPPED_REASON="unchanged"
+METRIC_PATTERN_SKIPPED_REASON="pattern"
+METRIC_EMPTY_SKIPPED_REASON="empty"
+METRIC_FORK_SKIPPED_REASON="fork"
 
 function synopsis() {
 
@@ -77,22 +84,22 @@ where:
 
 This script returns the following statistiques:
 
-* \`$METRIC_TOTAL_COUNT_NAME\` is the number of repositories processed (up to max-repo-count option)
-* \`$METRIC_BUNDLE_COUNT_NAME\` is the number of repositories bundled (ie dumped)
-* \`$METRIC_SKIPPED_NO_CHANGE_COUNT_NAME\` is the number of repositories skipped because of no changes since the last dump
-* \`$METRIC_SKIPPED_PATTERN_COUNT_NAME\` is the number of repositories skipped due to pattern matching
-* \`$METRIC_SKIPPED_EMPTY_COUNT_NAME\` is the number of repositories skipped due to being empty
-* \`$METRIC_SKIPPED_FORK_COUNT_NAME\` is the number of repositories skipped due to being a fork
+* \`${METRIC_TOTAL_LABEL}_${METRIC_NAME}\` is the number of repositories processed (up to max-repo-count option)
+* \`${METRIC_REPO_DUMPED_STATED}_${METRIC_NAME}\` is the number of repositories bundled (ie dumped)
+* \`${METRIC_NO_CHANGE_SKIPPED_REASON}_${METRIC_NAME}\` is the number of repositories skipped because of no changes since the last dump
+* \`${METRIC_PATTERN_SKIPPED_REASON}_${METRIC_NAME}\` is the number of repositories skipped due to pattern matching
+* \`${METRIC_EMPTY_SKIPPED_REASON}_${METRIC_NAME}\` is the number of repositories skipped due to being empty
+* \`${METRIC_FORK_SKIPPED_REASON}_${METRIC_NAME}\` is the number of repositories skipped due to being a fork
 
 
 Note:
 \`\`\`bash
-$METRIC_TOTAL_COUNT_NAME = $METRIC_BUNDLE_COUNT_NAME + $METRIC_SKIPPED_NO_CHANGE_COUNT_NAME + $METRIC_SKIPPED_PATTERN_COUNT_NAME + $METRIC_SKIPPED_EMPTY_COUNT_NAME + $METRIC_SKIPPED_FORK_COUNT_NAME
+$METRIC_TOTAL_LABEL = $METRIC_REPO_DUMPED_STATED + $METRIC_NO_CHANGE_SKIPPED_REASON + $METRIC_PATTERN_SKIPPED_REASON + $METRIC_EMPTY_SKIPPED_REASON + $METRIC_FORK_SKIPPED_REASON
 \`\`\`
 
 Tip: You can process the json format further with \`jq\`
 \`\`\`bash
-$(basename "$0") source target | jq -r '.total_count .bundle_count'
+$(basename "$0") source target | jq -r '.${METRIC_TOTAL_LABEL}_${METRIC_NAME} .${METRIC_REPO_DUMPED_STATED}_${METRIC_NAME}'
 \`\`\`
 EOF
 
@@ -269,7 +276,8 @@ SKIPPED_FORK=0
 SKIPPED_NO_CHANGE=0
 SKIPPED_EMPTY=0
 SKIPPED_PATTERN=0
-BUNDLE_COUNT=0
+# Dumped and not bundled as name to not tie the type of file to the backup
+DUMPED_COUNT=0
 while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
 
   # Analytics
@@ -338,7 +346,7 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   echo::info "Creating bundle: $BUNDLE_SOURCE_PATH"
   BUNDLE_COMMAND="git -C $CLONE_TARGET_DIR -c 'pack.threads=1' bundle create $BUNDLE_SOURCE_PATH --all --quiet"
   echo::info "Executing : $BUNDLE_COMMAND"
-  BUNDLE_COUNT=$((BUNDLE_COUNT + 1))
+  DUMPED_COUNT=$((DUMPED_COUNT + 1))
   eval "$BUNDLE_COMMAND"
 
   echo::info "Uploading bundle: $BUNDLE_NAME"
@@ -366,12 +374,12 @@ case $OUTPUT_FORMAT in
   "$OUTPUT_FORMAT_JSON")
   cat << EOF
 {
-    "$METRIC_TOTAL_COUNT_NAME": "$TOTAL_COUNT",
-    "$METRIC_BUNDLE_COUNT_NAME": "$BUNDLE_COUNT",
-    "$METRIC_SKIPPED_NO_CHANGE_COUNT_NAME": "$SKIPPED_NO_CHANGE",
-    "$METRIC_SKIPPED_EMPTY_COUNT_NAME": "$SKIPPED_EMPTY",
-    "$METRIC_SKIPPED_FORK_COUNT_NAME": "$SKIPPED_FORK",
-    "$METRIC_SKIPPED_PATTERN_COUNT_NAME": "$SKIPPED_PATTERN"
+    "${METRIC_TOTAL_LABEL}_${METRIC_NAME}": "$TOTAL_COUNT",
+    "${METRIC_REPO_DUMPED_STATED}_${METRIC_NAME}": "$DUMPED_COUNT",
+    "${METRIC_NO_CHANGE_SKIPPED_REASON}_${METRIC_NAME}": "$SKIPPED_NO_CHANGE",
+    "${METRIC_EMPTY_SKIPPED_REASON}_${METRIC_NAME}": "$SKIPPED_EMPTY",
+    "${METRIC_FORK_SKIPPED_REASON}_${METRIC_NAME}": "$SKIPPED_FORK",
+    "${METRIC_PATTERN_SKIPPED_REASON}_${METRIC_NAME}": "$SKIPPED_PATTERN"
 }
 EOF
   ;;
@@ -379,24 +387,13 @@ EOF
   # We make it short. The prefix has no space or separator.
   PREFIX="gitbackup"
   cat <<EOF
-# TYPE ${PREFIX}_${METRIC_TOTAL_COUNT_NAME} counter
-# HELP ${PREFIX}_${METRIC_TOTAL_COUNT_NAME} the total of repos processed
-${PREFIX}_${METRIC_TOTAL_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $TOTAL_COUNT
-# TYPE ${PREFIX}_${METRIC_BUNDLE_COUNT_NAME} counter
-# HELP ${PREFIX}_${METRIC_BUNDLE_COUNT_NAME} the total number of repos bundled
-${PREFIX}_${METRIC_BUNDLE_COUNT_NAME} {source="$GIT_SOURCE",target="$GIT_TARGET"} $BUNDLE_COUNT
-# TYPE ${PREFIX}_${METRIC_SKIPPED_NO_CHANGE_COUNT_NAME} counter
-# HELP the total number of repos skipped due to no changes since last backup
-${PREFIX}_${METRIC_SKIPPED_NO_CHANGE_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $SKIPPED_NO_CHANGE
-# TYPE ${PREFIX}_${METRIC_SKIPPED_EMPTY_COUNT_NAME} counter
-# HELP the total number of repos skipped because they were empty
-${PREFIX}_${METRIC_SKIPPED_EMPTY_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $SKIPPED_EMPTY
-# TYPE ${PREFIX}_${METRIC_SKIPPED_FORK_COUNT_NAME} counter
-# HELP the total number of repos skipped because they were a fork
-${PREFIX}_${METRIC_SKIPPED_FORK_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $SKIPPED_FORK
-# TYPE ${PREFIX}_${METRIC_SKIPPED_PATTERN_COUNT_NAME} counter
-# HELP the total number of repos skipped because they were excluded by pattern matching
-${PREFIX}_${METRIC_SKIPPED_PATTERN_COUNT_NAME}{source="$GIT_SOURCE",target="$GIT_TARGET"} $SKIPPED_PATTERN
+# TYPE ${PREFIX}_${METRIC_NAME} counter
+# HELP ${PREFIX}_${METRIC_NAME} the repos processed
+${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_DUMPED_STATED", reason="changed"} $DUMPED_COUNT
+${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_SKIPPED_STATE", reason="$METRIC_NO_CHANGE_SKIPPED_REASON"} $SKIPPED_NO_CHANGE
+${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_SKIPPED_STATE", reason="$METRIC_EMPTY_SKIPPED_REASON"} $SKIPPED_EMPTY
+${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_SKIPPED_STATE", reason="$METRIC_FORK_SKIPPED_REASON"} $SKIPPED_FORK
+${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_SKIPPED_STATE", reason="$METRIC_PATTERN_SKIPPED_REASON"} $SKIPPED_PATTERN
 EOF
   ;;
   *)

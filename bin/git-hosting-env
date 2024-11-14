@@ -47,7 +47,7 @@ echo::info  "Setting env for Platform: $PLATFORM_NAME"
 
 
 # Target
-GIT_PLATFORM_ENV_NAME="${ENV_PREFIX}_${PLATFORM_NAME}_PLATFORM"
+GIT_PLATFORM_ENV_NAME="${ENV_PREFIX}_${PLATFORM_NAME^^}_PLATFORM"
 if [ -z "${!GIT_PLATFORM_ENV_NAME+x}" ]; then
   # PLATFORM/Registry Type type not found
   # Well-Known registry
@@ -88,7 +88,7 @@ fi
 echo::info  "  * Domain: $GIT_DOMAIN"
 
 # API Access Token
-GIT_TOKEN_ENV_NAME="${ENV_PREFIX}_${PLATFORM_NAME}_TOKEN"
+GIT_TOKEN_ENV_NAME="${ENV_PREFIX}_${PLATFORM_NAME^^}_TOKEN"
 if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
     unset GIT_TOKEN;
     echo::warn  "  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
