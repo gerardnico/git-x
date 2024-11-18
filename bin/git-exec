@@ -26,6 +26,7 @@ where:
 * \`-f\` or \`--force\` will force the execution against all repositories (not only the dirty ones)
 * \`repo name\`, optional when specified the command will execute only against this repository (the \`repo name\` is the name of the directory)
 * \`git sub-command\` is any git sub-command such as \`clone\`, \`push\`, ...
+* \`-h|--help\` to show this help
 EOF
 
 }
