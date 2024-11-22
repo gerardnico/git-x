@@ -114,7 +114,11 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit
 fi
 
-args=$(getopt -l "restart,filter-max-repo-count:,filter-exclude-pattern:,jq-raw-output,jq-raw,help,report:,output:" -o "ro:" -- "$@")
+if ! args=$(getopt -l "restart,filter-max-repo-count:,filter-exclude-pattern:,jq-raw-output,jq-raw,help,report:,output:" -o "ro:" -- "$@"); then
+  echo::err "An error has occurred while parsing the command arguments"
+  doc::help synopsis
+  exit 1
+fi
 eval set -- "$args"
 
 GIT_SOURCE=""
