@@ -54,7 +54,7 @@ RUN addgroup -g 1000 megroup && \
 ####################################
 RUN mkdir -p "/opt/bash-lib/lib"
 COPY bash-lib/lib /opt/bash-lib/lib
-ENV BASHLIB_LIBRARY_PATH="/opt/bash-lib/lib"
+ENV PATH="/opt/bash-lib/lib:${PATH}"
 
 ####################################
 # App Install
