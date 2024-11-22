@@ -104,6 +104,11 @@ EOF
 
 }
 
+# Redirect stdout to stderr
+# As we output stats data, we don't want to
+# have the output of a command to mess it up
+exec > /dev/stderr
+
 if [ "${1:-}" == "synopsis" ]; then
   synopsis
   exit
@@ -355,24 +360,29 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   echo::info "Uploading bundle: $BUNDLE_NAME"
   MOVE_COMMAND="rclone moveto $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH --progress"
   echo::info "Executing : $MOVE_COMMAND"
-  eval "$MOVE_COMMAND"
+  eval "$MOVE_COMMAND" >/dev/stderr
 
   echo::info "Cleaning up"
   echo::info "Deleting Git repo: $CLONE_TARGET_DIR"
-  rm -rf "$CLONE_TARGET_DIR"
+  rm -rf "$CLONE_TARGET_DIR" >/dev/stderr
   echo::info "Deleting Git repo: Done"
 
 
 done <<< "$API_REPOS" # needed to not run as pipeline and get TOTAL_COUNT
 
 
-echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH"
-rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH"
+echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH" >/dev/stderr
+rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH" >/dev/stderr
 echo::info " "
 echo::info "Processed $TOTAL_COUNT repositories";
 
 
+# Reset > to /dev/stdout
+# At the beginning we set it to /dev/stderr
+# so that no command will messed up with /dev/stdout
+exec > /dev/stdout
 
+# Output
 case $OUTPUT_FORMAT in
   "$OUTPUT_FORMAT_JSON")
   cat << EOF
