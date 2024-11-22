@@ -3,10 +3,10 @@
 
 ## DESCRIPTION
 
-A commit utility function for `Git Add, Commit and Push`
+A commit utility function for `Git Add, Commit` and `Push`
 
 Before the commit, these command checks if there is no remote commit
-to integrate. If this is the case, it will execute a `git auto-pull`
+to integrate. If this is the case, it will execute a [git auto-pull](git-auto-pull.md)
 
 # EXAMPLE
 
@@ -16,7 +16,7 @@ to integrate. If this is the case, it will execute a `git auto-pull`
 git auto-commit
 ```
 
-* For all repositories under the repo home directory with `git exec`
+* For all repositories under the [repo home directory with git exec](git-exec.md)
 
 ```bash
 git exec auto-commit "My Commit Message"

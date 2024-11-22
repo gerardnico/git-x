@@ -22,7 +22,7 @@ function synopsis(){
 
   cat <<EOF
 \`\`\`bash
-$(basename "$0") [Commit Message]
+$(basename "$0")  [Commit Message]
 \`\`\`
 If the commit message is not given, it will be generated with the files in the commit.
 EOF
