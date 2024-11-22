@@ -52,8 +52,6 @@ Mac / Linux / Windows WSL with HomeBrew
 
 ```bash
 brew install --HEAD gerardnico/tap/gitx
-# Set the path to the bash libraries
-export BASHLIB_LIBRARY_PATH=$(brew --prefix bashlib)/lib
 ```
 
 
