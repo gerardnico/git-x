@@ -55,18 +55,16 @@ fi
 # Path
 GIT_X_REPOS_PATH=${GIT_X_REPOS_PATH:-}
 if [ "$GIT_X_REPOS_PATH" != "" ]; then
-{
-  IFS=":" # Set the internal field separator to a colon, but only for the code inside the braces
-  for REPO_PATH in $GIT_X_REPOS_PATH
-  do
-    REPO_DIRS=()
+
+  # Set the internal field separator to a colon, but only for the command
+  while IFS=':' read -r REPO_PATH; do
     if [ -d "$REPO_PATH/.git" ]; then
-      REPO_DIRS+=("$REPO_PATH")
+       REPO_DIRS+=("$REPO_PATH")
     else
-      echo::warn "The path $REPO_PATH defined in GIT_X_REPOS_PATH is not a git repository"
+       echo::warn "The path $REPO_PATH defined in GIT_X_REPOS_PATH is not a git repository"
     fi
-  done
-}
+  done <<< "$GIT_X_REPOS_PATH"
+
 fi
 
 
