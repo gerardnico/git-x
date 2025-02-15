@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 # @name Git Exec
 # @brief Execute a git command against multiple local repositories at once
 
@@ -101,9 +102,16 @@ if [ -d "$REPO_DIR/.git" ]; then
     MODE=$MODE_FORCE
     shift
 else
+  # The *, expanded by the shell, is what results in the loop iterating over a list of files
   for GITX_REPO_DIR in "$GIT_X_REPOS_DIR"/*; do
     if [ -d "$GITX_REPO_DIR/.git" ]; then
       REPO_DIRS+=("$GITX_REPO_DIR")
+      continue
+    fi
+    if [ "${GITX_REPO_DIR:0-1}" == '*' ]; then
+      echo::warn "No file or directory found at $GIT_X_REPOS_DIR"
+      # Env is not the same
+      echo::warn "If you are running this script through git. Try: $(basename "$0") $*"
     fi
   done
 fi
