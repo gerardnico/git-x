@@ -35,4 +35,10 @@ fi
 
 # Push with lease generally when git-undo was used
 # to not create commit just for backup
+MESSAGE=${1:-};
+if [ "$MESSAGE" == "" ]; then
+  MESSAGE=$(git log -1 --pretty=%B)
+fi
+command::echo_eval "git reset --soft HEAD^"
+command::echo_eval "git commit -am \"$MESSAGE\""
 command::echo_eval "git push --force-with-lease"
