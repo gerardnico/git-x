@@ -71,8 +71,9 @@ fi
 
 
 
-# The root directory where all repository may be the children
-GIT_X_REPOS_DIR=${GIT_X_REPOS_DIR:-}
+# One or more root directory where all repository may be the children
+# one or more path separated by :
+GIT_X_REPOS_DIRS=${GIT_X_REPOS_DIRS:-}
 
 
 # Execution mode
@@ -96,34 +97,40 @@ fi
 
 # Perform only on one repo
 FIRST_ARG=$1
-REPO_DIR="$GIT_X_REPOS_DIR/$FIRST_ARG"
+REPO_DIR="$GIT_X_REPOS_DIRS/$FIRST_ARG"
 if [ -d "$REPO_DIR/.git" ]; then
+
     REPO_DIRS+=("$REPO_DIR")
     MODE=$MODE_FORCE
     shift
 else
+
   # The *, expanded by the shell, is what results in the loop iterating over a list of files
-  for GITX_REPO_DIR in "$GIT_X_REPOS_DIR"/*; do
-    if [ -d "$GITX_REPO_DIR/.git" ]; then
-      REPO_DIRS+=("$GITX_REPO_DIR")
-      continue
-    fi
-    if [ "${GITX_REPO_DIR:0-1}" == '*' ]; then
-      echo::warn "No file or directory found at $GIT_X_REPOS_DIR"
-      # Env is not the same
-      echo::warn "If you are running this script through git. Try: $(basename "$0") $*"
-    fi
+  for GIT_X_REPO_DIR in $(echo "$GIT_X_REPOS_DIRS" | tr ":" " "); do
+
+    for GITX_REPO_DIR in "$GIT_X_REPO_DIR"/*; do
+      if [ -d "$GITX_REPO_DIR/.git" ]; then
+        REPO_DIRS+=("$GITX_REPO_DIR")
+        continue
+      fi
+      if [ "${GITX_REPO_DIR:0-1}" == '*' ]; then
+        echo::warn "No file or directory found at $GIT_X_REPOS_DIRS"
+        # Env is not the same
+        echo::warn "If you are running this script through git. Try: $(basename "$0") $*"
+      fi
+    done
+
   done
 fi
 
 if [ ${#REPO_DIRS[*]} == 0 ]; then
   echo::err "No Git repositories found with the following env:";
   echo::err ""
-  echo::err "     GIT_X_REPOS_DIR=${GIT_X_REPOS_DIR:-}"
+  echo::err "     GIT_X_REPOS_DIRS=${GIT_X_REPOS_DIRS:-}"
   echo::err "     GIT_X_REPOS_FILE=${GIT_X_REPOS_FILE:-}"
   echo::err ""
   echo::err "GIT_X_REPOS_FILE is the path of a file that contains a list of directories containing git repositories"
-  echo::err "GIT_X_REPOS_DIR is the path of a home directory where all your git repositories are located"
+  echo::err "GIT_X_REPOS_DIRS is the path of a home directory where all your git repositories are located"
   exit 1
 fi
 
@@ -138,7 +145,8 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
 
   # Header for each repo
   DIRECTORY_NAME=$(path::get_current_directory_name) # the directory name is the DIRECTORY_NAME
-  HEAD=$(string::set_color "yellow" "${DIRECTORY_NAME}")
+  PARENT_DIRECTORY_NAME=$(cd "$REPO_DIR"/.. && pwd | xargs basename)
+  HEAD=$(string::set_color "yellow" "${PARENT_DIRECTORY_NAME}/${DIRECTORY_NAME}")
   CURRENT_BRANCH=$(git::get_current_branch)
   if ! CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2>/dev/null); then
 
