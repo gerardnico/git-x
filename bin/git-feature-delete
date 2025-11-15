@@ -1,0 +1,64 @@
+#!/bin/bash
+# Delete a feature branch
+
+
+set -Eeuo pipefail
+# shellcheck source=../..//bash-lib/lib/bashlib-error.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+error::set_trap
+# shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-string.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-command.sh"
+# shellcheck source=../..//bash-lib/lib/bashlib-git.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
+
+function synopsis(){
+
+  cat <<EOF
+\`\`\`bash
+Delete a feature branch
+
+$(basename "$0") branch-name
+\`\`\`
+EOF
+
+}
+
+# Doc Synopsis
+if [ "${1:-}" = "synopsis" ]; then
+  synopsis
+  exit 0
+fi
+
+# Help
+if [[ "${1:-}" =~ -h|--help|help ]]; then
+  doc::help synopsis
+  exit 0
+fi
+
+BRANCH_NAME="${1:-}"
+
+if [[ "${BRANCH_NAME}" == "" ]]; then
+  echo:error "Branch name should be not empty"
+  exit 1
+fi
+
+
+echo::info "Check if branch $BRANCH_NAME is dirty"
+command::echo_eval "git checkout $BRANCH_NAME"
+if git::is_dirty_index ; then
+  echo::error "The branch is dirty, stash or rollback your changes"
+  exit 1
+fi
+DEFAULT_BRANCH=$(git::get_default_branch)
+echo::info "Checkout to the default branch $DEFAULT_BRANCH"
+command::echo_eval "git checkout $DEFAULT_BRANCH"
+echo::info "Pull the merged commit from $DEFAULT_BRANCH"
+command::echo_eval "git pull origin $DEFAULT_BRANCH"
+echo::info "Delete branch $BRANCH_NAME locally"
+command::echo_eval "git branch -D $BRANCH_NAME"
+echo::info "Delete branch $BRANCH_NAME Remotely"
+command::echo_eval "git push origin --delete  $BRANCH_NAME"
+echo::success "Done"
+
