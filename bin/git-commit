@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Create and add a commit to the log
+# If you don't want to create a commit, uses git-backup
+# It will add the actual working files in the last commit
 
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"

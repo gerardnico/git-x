@@ -1,5 +1,12 @@
 #!/bin/bash
-# Delete the last commit
+# Simple way to add actual files to the last commit
+#
+# Reset the last commit (delete it and put the files in the index)
+# Recreate a commit with all files
+#
+# Warning: This script deletes the last commit so be sure that it's not tagged
+# or force the creation of a new one
+#
 
 
 set -Eeuo pipefail
@@ -17,8 +24,10 @@ function synopsis(){
 
   cat <<EOF
 \`\`\`bash
-$(basename "$0")
+Add files to the last commit
+$(basename "$0")  [Commit Message]
 \`\`\`
+If the commit message is not given, it will take the message of the last commit.
 EOF
 
 }
@@ -34,6 +43,7 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   doc::help synopsis
   exit 0
 fi
+
 
 # First submodule
 if [ ! -f .git ]; then
