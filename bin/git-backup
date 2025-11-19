@@ -53,5 +53,7 @@ if [ "$MESSAGE" == "" ]; then
   MESSAGE=$(git log -1 --pretty=%B)
 fi
 command::echo_eval "git reset --soft HEAD^"
-command::echo_eval "git commit -am \"$MESSAGE\""
+# we push first so that with git-hooks we are in sync
 command::echo_eval "git push --force-with-lease"
+# commit after
+command::echo_eval "git commit -am \"$MESSAGE\""
