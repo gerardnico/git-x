@@ -17,9 +17,9 @@ function synopsis(){
 
   cat <<EOF
 \`\`\`bash
-Delete a feature branch
+Shows the logs of commit in the a feature branch
 
-$(basename "$0") branch-name
+$(basename "$0")
 \`\`\`
 EOF
 
@@ -37,33 +37,17 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-BRANCH_NAME="${1:-}"
-if [[ "${BRANCH_NAME}" == "" ]]; then
-  BRANCH_NAME=$(git::get_current_branch)
-fi
 
-# branch protection
+
+BRANCH_NAME=$(git::get_current_branch)
 DEFAULT_BRANCH=$(git::get_default_branch)
 if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
-  echo::error "You can't delete the default branch ($DEFAULT_BRANCH)"
+  echo::error "Nothing to show, it's the default branch ($DEFAULT_BRANCH)"
   exit 1
 fi
 
-
-echo::info "Check if branch $BRANCH_NAME is dirty"
-command::echo_eval "git checkout $BRANCH_NAME"
-if git::is_dirty_index ; then
-  echo::error "The branch is dirty, stash or rollback your changes"
-  exit 1
-fi
-DEFAULT_BRANCH=$(git::get_default_branch)
-echo::info "Checkout to the default branch $DEFAULT_BRANCH"
-command::echo_eval "git checkout $DEFAULT_BRANCH"
-echo::info "Pull the merged commit from $DEFAULT_BRANCH"
-command::echo_eval "git pull origin $DEFAULT_BRANCH"
-echo::info "Delete branch $BRANCH_NAME locally"
-command::echo_eval "git branch -D $BRANCH_NAME"
-echo::info "Delete branch $BRANCH_NAME Remotely"
-command::echo_eval "git push origin --delete  $BRANCH_NAME"
+echo::info "Logs"
+# in git log, branch name value could be also HEAD as we are on the branch
+command::echo_eval "git log --pretty=format:%s $DEFAULT_BRANCH..$BRANCH_NAME"
 echo::success "Done"
 

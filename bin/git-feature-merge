@@ -1,5 +1,5 @@
 #!/bin/bash
-# Delete a feature branch
+# Merge a feature branch
 
 
 set -Eeuo pipefail
@@ -17,9 +17,9 @@ function synopsis(){
 
   cat <<EOF
 \`\`\`bash
-Delete a feature branch
+Merge a feature branch
 
-$(basename "$0") branch-name
+$(basename "$0") commit message
 \`\`\`
 EOF
 
@@ -37,18 +37,14 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-BRANCH_NAME="${1:-}"
-if [[ "${BRANCH_NAME}" == "" ]]; then
-  BRANCH_NAME=$(git::get_current_branch)
-fi
 
-# branch protection
+BRANCH_NAME=$(git::get_current_branch)
 DEFAULT_BRANCH=$(git::get_default_branch)
 if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
-  echo::error "You can't delete the default branch ($DEFAULT_BRANCH)"
+  echo::error "It's not a feature branch, it's the default branch ($DEFAULT_BRANCH)"
+  echo::error "You can't merge the default branch"
   exit 1
 fi
-
 
 echo::info "Check if branch $BRANCH_NAME is dirty"
 command::echo_eval "git checkout $BRANCH_NAME"
@@ -56,14 +52,30 @@ if git::is_dirty_index ; then
   echo::error "The branch is dirty, stash or rollback your changes"
   exit 1
 fi
-DEFAULT_BRANCH=$(git::get_default_branch)
 echo::info "Checkout to the default branch $DEFAULT_BRANCH"
 command::echo_eval "git checkout $DEFAULT_BRANCH"
-echo::info "Pull the merged commit from $DEFAULT_BRANCH"
+echo::info "Pull from $DEFAULT_BRANCH"
 command::echo_eval "git pull origin $DEFAULT_BRANCH"
-echo::info "Delete branch $BRANCH_NAME locally"
-command::echo_eval "git branch -D $BRANCH_NAME"
-echo::info "Delete branch $BRANCH_NAME Remotely"
-command::echo_eval "git push origin --delete  $BRANCH_NAME"
+# The --squash option takes all the commits and condenses them into one WIP index on main
+echo::info "Merge squash the $BRANCH_NAME"
+command::echo_eval "git merge --squash $BRANCH_NAME"
+if ! git-prepare; then
+  echo::warning "Commit hooks have failed"
+  echo::warning "Check the error and commit against $DEFAULT_BRANCH"
+  exit 1
+fi
+COMMIT_MESSAGE=${1:-"Merge feature branch $BRANCH_NAME"}
+echo::info "Commit"
+BODY=$(git log --pretty=format:%s "$DEFAULT_BRANCH".."$BRANCH_NAME")
+MESSAGE=$(cat <<-HereDoc
+$COMMIT_MESSAGE
+
+$BODY
+HereDoc
+)
+git-commit "$MESSAGE"
 echo::success "Done"
+echo::success "Created commit with the following message:\n$MESSAGE"
+echo::tip "Delete branch with:"
+echo::tip "   git-feature-delete $BRANCH_NAME"
 

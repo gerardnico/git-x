@@ -97,7 +97,7 @@ if CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2>/dev/null); then
   fi
 fi
 
-# Commit safely
+echo::info "Committing"
 git commit -v -a -m "$COMMIT_MESSAGE"
 
 if [ "$CURRENT_BRANCH_UPSTREAM" != "" ]; then
