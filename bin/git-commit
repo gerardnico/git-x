@@ -68,11 +68,11 @@ fi
 # D docs/lib/bashlib-crypto.md
 #RM lib/bashlib-function.sh -> lib/bashlib-bash.sh
 #?? docs/lib/bashlib-bash.md
-if MODIFIED_FILE=$(git status --porcelain | grep -v '^ D\|^D' | awk '{print $NF}' | tr "\n" " "); then
-  # Shell check because we want the modified files to split
-  # shellcheck disable=SC2086
-  git add --renormalize $MODIFIED_FILE
-fi
+# We read line by line to be able to hand
+# jinja file name such as {% if package_manager == 'maven' %}.mvn{% endif %}/wrapper/maven-wrapper.properties
+git diff --cached --name-only --diff-filter=d | while read -r MODIFIED_FILE; do
+  git add --renormalize "$MODIFIED_FILE"
+done
 
 # renormalize does not add any file into the index
 # we need to add it twice
