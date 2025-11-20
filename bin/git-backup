@@ -56,6 +56,19 @@ if ! git::is_dirty_index ; then
   exit
 fi
 
+# Get the last commit hash
+# Get the last commit hash
+last_commit=$(git rev-parse HEAD)
+tags=$(git tag --points-at "$last_commit")
+if [ "$tags" != "" ]; then
+    echo "Tags found on the last commit, deleting them"
+    git-tag-delete "$tags"
+fi
+
+# Check the actual files before the reset
+# so that we can run git-backup twice
+command::echo_eval "git-prepare"
+
 # Push with lease generally when git-undo was used
 # to not create commit just for backup
 MESSAGE=${1:-};
@@ -65,5 +78,7 @@ fi
 command::echo_eval "git reset --soft HEAD^"
 # we push first so that with git-hooks we are in sync
 command::echo_eval "git push --force-with-lease"
-# commit after
-command::echo_eval "git commit -am \"$MESSAGE\""
+# commit after / no verify to disable git-hooks has we have done it earlier with git-prepare
+command::echo_eval "git commit --no-verify -am \"$MESSAGE\""
+# push
+command::echo_eval "git push"
