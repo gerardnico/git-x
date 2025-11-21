@@ -16,8 +16,7 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-string.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-path.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-path.sh"
 
-
-function synopsis(){
+function synopsis() {
 
   cat <<EOF
 \`\`\`bash
@@ -42,17 +41,21 @@ fi
 
 tags=${1}
 for tag in $tags; do
-    echo "Deleting tag: $tag"
-    echo "  * locally"
-    git tag -d "$tag"
-    echo "  * remotely"
-    git push origin --delete "$tag"
+  echo "Deleting tag: $tag"
+  echo "  * locally"
+  git tag -d "$tag"
+  echo "  * remotely"
+  git push origin --delete "$tag"
 done
 # Delete GitHub release if gh CLI is available
-if command -v gh &> /dev/null; then
-    echo "Checking for GitHub release: $tag"
-    if gh release view "$tag" &> /dev/null; then
-        echo "Deleting GitHub release: $tag"
-        gh release delete "$tag" --yes
-    fi
+if command -v gh &>/dev/null; then
+  echo "Checking for GitHub release: $tag"
+  if gh release view "$tag" &>/dev/null; then
+    echo "Deleting GitHub release: $tag"
+    gh release delete "$tag" --yes
+  else
+    echo "No GitHub Release $tag found"
+  fi
+else
+  echo "gh command not found, could not check and delete GitHub Release"
 fi

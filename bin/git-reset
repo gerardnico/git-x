@@ -35,4 +35,9 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
+# reset all tracked file
 git reset --hard
+
+# delete untracked file
+# force and d means recurse
+git clean --force -d
