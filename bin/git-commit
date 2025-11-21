@@ -76,7 +76,7 @@ done
 
 # renormalize does not add any file into the index
 # we need to add it twice
-git add .
+git add -A
 
 # Is there an upstream
 if CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2>/dev/null); then
@@ -98,6 +98,7 @@ if CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2>/dev/null); then
 fi
 
 echo::info "Committing"
+# We can't use echo::eval because the message may be on multiple lines
 git commit -v -a -m "$COMMIT_MESSAGE"
 
 if [ "$CURRENT_BRANCH_UPSTREAM" != "" ]; then
@@ -115,5 +116,5 @@ else
     exit 1
   fi
   echo::warn "Adding an upstream on the push"
-  command::echo_eval "git push -u ${remotes[0]} $(git::get_current_branch)"
+  echo::eval "git push -u ${remotes[0]} $(git::get_current_branch)"
 fi
