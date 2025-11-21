@@ -49,7 +49,7 @@ fi
 echo::info "Check if branch $BRANCH_NAME is dirty"
 command::echo_eval "git checkout $BRANCH_NAME"
 if git::is_dirty_index ; then
-  echo::error "The branch is dirty, stash or rollback your changes"
+  echo::err "The branch is dirty, commit, stash or rollback your changes"
   exit 1
 fi
 echo::info "Checkout to the default branch $DEFAULT_BRANCH"
@@ -60,8 +60,8 @@ command::echo_eval "git pull origin $DEFAULT_BRANCH"
 echo::info "Merge squash the $BRANCH_NAME"
 command::echo_eval "git merge --squash $BRANCH_NAME"
 if ! git-prepare; then
-  echo::warning "Commit hooks have failed"
-  echo::warning "Check the error and commit against $DEFAULT_BRANCH"
+  echo::warn "Commit hooks have failed"
+  echo::warn "Check the error and commit against $DEFAULT_BRANCH"
   exit 1
 fi
 COMMIT_MESSAGE=${1:-"Merge feature branch $BRANCH_NAME"}
