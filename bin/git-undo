@@ -1,6 +1,28 @@
 #!/bin/bash
-# Delete the last commit
 
+# @name git-undo
+# @description
+# Delete the last commit locally and remotely
+# and put the files of the deleted commit back into the staging area.
+#
+# If the commit is
+# * tagged, the tags will also be deleted
+# * released, the release will also be deleted
+#
+# ## SYNOPSIS
+# ```bash
+# git-undo
+# ```
+#
+# ## TIP
+#
+# You can add it as alias in your `~.gitconfig`
+# Example with `gu` that stands for `git-undo`
+# ```ini
+# [alias]
+#    gu = "git-undo"
+# ```
+#
 
 set -Eeuo pipefail
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
@@ -11,9 +33,12 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-string.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-command.sh"
 
-function synopsis(){
+function synopsis() {
 
   cat <<EOF
+Delete the last commit locally and remotely
+and put the files of the deleted commit back into the staging area.
+
 \`\`\`bash
 $(basename "$0")
 \`\`\`
@@ -33,7 +58,17 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-# A Hard delete will delete the commit and the files
-# A Soft delete will delete the commit put the commited file back in the working directory
-command::echo_eval "git reset --soft HEAD^"
+TAGS=$(git tag --points-at HEAD)
+if [ "$TAGS" != "" ]; then
+  echo "Tags found for the last commit."
+  read -r -p "Delete tags $TAGS? [y/N]: " ans
+  [[ "$ans" == "y" || "$ans" == "Y" ]] && git-delete-tag "$TAGS"
+fi
 
+# A Hard delete will delete the commit and the files
+# A Soft delete will delete the commit, put the commited file back in the working directory
+command::echo_eval "git reset --soft HEAD^"
+# we push first so that we are in sync with the remote branch
+# ie we don't need to pull change from the remote
+# git hooks may fail if the remote is not in sync with the local branch
+command::echo_eval "git push --force-with-lease"

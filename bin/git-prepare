@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -TCEeuo pipefail # Strict Bash
+
+# Prepare is a Node.js convention command name to lint and correct file
+git add -A && pre-commit run

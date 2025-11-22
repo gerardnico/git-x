@@ -1,13 +1,26 @@
 #!/bin/bash
+# @name git-amend
+# @description
 # Simple way to add actual files to the last commit
 #
 # Reset the last commit (delete it and put the files in the index)
 # Recreate a commit with all files
 #
-# Warning: This script deletes the last commit so be sure that it's not tagged
-# or force the creation of a new one
+# If the last commit is tagged or have a release, it will ask
 #
-
+# ## SYNOPSIS
+# ```bash
+# git-amend
+# ```
+#
+# ## TIP
+#
+# You can add it as alias in your `~.gitconfig`
+# ```ini
+# [alias]
+#    am = "!git-amend"
+# ```
+#
 
 set -Eeuo pipefail
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
@@ -48,11 +61,11 @@ fi
 # First submodule
 if [ ! -f .git ]; then
   # Not in a submodule (or not in a git repo)
-  git submodule foreach 'git-backup'
+  git submodule foreach 'git-amend'
 fi
 
 if ! git::is_dirty_index ; then
-  echo::warn "Nothing to backup"
+  echo::warn "Nothing to amend"
   exit
 fi
 
@@ -65,19 +78,22 @@ if [ "$tags" != "" ]; then
     git-tag-delete "$tags"
 fi
 
-# Check the actual files before the reset
-# so that we can run git-backup twice
-command::echo_eval "git-prepare"
 
-# Push with lease generally when git-undo was used
-# to not create commit just for backup
+
 MESSAGE=${1:-};
 if [ "$MESSAGE" == "" ]; then
   MESSAGE=$(git log -1 --pretty=%B)
 fi
-command::echo_eval "git reset --soft HEAD^"
-# we push first so that with git-hooks we are in sync
-command::echo_eval "git push --force-with-lease"
+# Check the actual files before the undo (delete of the last commit)
+# If there is an error in the actual files, the commit command will fail
+# and the user don't know where he is (ie is the commit deleted ???)
+# With this check, the user can run this command until no error occurs and be sure that
+# there was only one undo
+# By checking the file first, git-backup will not fail
+# knowing that it will not delete another commit
+command::echo_eval "git-prepare"
+# delete the last commit
+git-undo
 # commit after / no verify to disable git-hooks has we have done it earlier with git-prepare
 command::echo_eval "git commit --no-verify -am \"$MESSAGE\""
 # push

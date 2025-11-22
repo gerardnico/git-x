@@ -64,7 +64,7 @@ if ! git-prepare; then
   echo::warn "Check the error and commit against $DEFAULT_BRANCH"
   exit 1
 fi
-COMMIT_MESSAGE=${1:-"Merge feature branch $BRANCH_NAME"}
+COMMIT_MESSAGE=${1:-"feat: merge feature branch $BRANCH_NAME"}
 echo::info "Commit"
 BODY=$(git log --pretty=format:%s "$DEFAULT_BRANCH".."$BRANCH_NAME")
 MESSAGE=$(cat <<-HereDoc
@@ -78,4 +78,3 @@ echo::success "Done"
 echo::success "Created commit with the following message:\n$MESSAGE"
 echo::tip "Delete branch with:"
 echo::tip "   git-feature-delete $BRANCH_NAME"
-

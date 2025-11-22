@@ -8,16 +8,16 @@
 #
 # ## SYNOPSIS
 # ```bash
-# git restart
+# git-restart
 # ```
 #
 # ## TIP
 #
 # You can add it as alias in your `~.gitconfig`
-# Example with `rc` that stands for `reset, clean`
+# Example with `gr` that stands for `git-restart`
 # ```ini
 # [alias]
-#    sp = "!git-auto-pull"
+#    gr = "git-restart"
 # ```
 #
 
@@ -52,5 +52,7 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
 fi
 
 # Code
-git reset --hard
-git clean -f
+command::echo_eval "git reset --hard HEAD"
+# delete untracked file
+# force and d means recurse
+command::echo_eval "git clean --force -d"

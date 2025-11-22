@@ -49,9 +49,16 @@ if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
   exit 1
 fi
 
+if ! git::branch_exists "$BRANCH_NAME"; then
+  echo::warn "The branch $BRANCH_NAME was not found"
+  exit 1
+fi
+
+command::echo_eval "git checkout $BRANCH_NAME"
 
 echo::info "Check if branch $BRANCH_NAME is dirty"
 command::echo_eval "git checkout $BRANCH_NAME"
+
 if git::is_dirty_index ; then
   echo::error "The branch is dirty, stash or rollback your changes"
   exit 1
@@ -66,4 +73,3 @@ command::echo_eval "git branch -D $BRANCH_NAME"
 echo::info "Delete branch $BRANCH_NAME Remotely"
 command::echo_eval "git push origin --delete  $BRANCH_NAME"
 echo::success "Done"
-

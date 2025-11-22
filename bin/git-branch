@@ -44,8 +44,9 @@ fi
 
 BRANCH_NAME=${1:-}
 if [ "$BRANCH_NAME" = "" ]; then
-  echo::error "Branch name is mandatory"
-  exit 1
+  # list remote and local branch
+  git branch --all --column=never
+  exit 0
 fi
 
 # Nothing to commit but push
@@ -71,3 +72,4 @@ if [ $DIRTY_INDEX == "yes" ]; then
   git stash pop
 fi
 
+echo::success "Switched to the branch $BRANCH_NAME"

@@ -93,13 +93,16 @@ if CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2>/dev/null); then
   UPSTREAM_COMMIT_TO_MERGE=$(git rev-list HEAD...'@{u}' --count)
   if [ "$UPSTREAM_COMMIT_TO_MERGE" != 0 ]; then
     echo::warn "$DIRECTORY_NAME - $UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
-    git auto-pull
+    git-pull
   fi
 fi
 
 echo::info "Committing"
 # We can't use echo::eval because the message may be on multiple lines
-git commit -v -a -m "$COMMIT_MESSAGE"
+# Note: multiline is possible with
+# * multiple -m: git commit -m "First line" -m "Second line" --edit
+# * or a file: git commit -F message.txt --edit
+git commit -v -a -m "$COMMIT_MESSAGE" --edit
 
 if [ "$CURRENT_BRANCH_UPSTREAM" != "" ]; then
   git push

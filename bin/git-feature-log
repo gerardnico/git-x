@@ -46,8 +46,19 @@ if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
   exit 1
 fi
 
-echo::info "Logs"
-# in git log, branch name value could be also HEAD as we are on the branch
-command::echo_eval "git log --pretty=format:%s $DEFAULT_BRANCH..$BRANCH_NAME"
-echo::success "Done"
+echo::info "Logs:"
+HASH="%C(always,yellow)%h%C(always,reset)"
+RELATIVE_TIME="%C(always,green)%ar%C(always,reset)"
+AUTHOR="%C(always,bold blue)%an%C(always,reset)"
+REFS="%C(always,red)%d%C(always,reset)"
+SUBJECT="%s"
+FORMAT="$HASH $RELATIVE_TIME{$AUTHOR{$REFS $SUBJECT"
 
+pretty_git_logs() {
+  # in git log, branch name value could be also HEAD as we are on the branch
+  git log --graph --pretty="tformat:$FORMAT" "$@" |
+  column -t -s '{' |
+  less -XRS --quit-if-one-screen
+}
+pretty_git_logs "$DEFAULT_BRANCH..$BRANCH_NAME"
+echo::success "Done"
