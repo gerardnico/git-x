@@ -1,26 +1,5 @@
 #!/usr/bin/env bash
-# @name git-amend
-# @description
-# Simple way to add actual files to the last commit
-#
-# Reset the last commit (delete it and put the files in the index)
-# Recreate a commit with all files
-#
-# If the last commit is tagged or have a release, it will ask
-#
-# ## SYNOPSIS
-# ```bash
-# git-amend
-# ```
-#
-# ## TIP
-#
-# You can add it as alias in your `~.gitconfig`
-# ```ini
-# [alias]
-#    am = "!git-amend"
-# ```
-#
+# for doc, see md file
 
 set -Eeuo pipefail
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh

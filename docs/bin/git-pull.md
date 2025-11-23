@@ -12,10 +12,7 @@ The `AutoPull` name is to stay in the same fashion as `AutoCommit`
 
 ## SYNOPSIS
 
-Easy AutoPull
-```bash
-git-auto-pull
-```
+${SYNOPSIS}
 
 ## TIP
 
@@ -39,5 +36,3 @@ You can also automate your `git pull` as `--rebase --autostash` via configuratio
 git config [--global] pull.rebase true
 git config [--global] rebase.autoStash true
 ```
-
-

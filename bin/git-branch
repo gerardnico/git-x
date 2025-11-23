@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# A branch checkout that will always work
-# * Create the branch name if it does not exists
-# * Stash and pop work in progress
+# for docs, see md file
 
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
