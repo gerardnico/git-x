@@ -75,6 +75,5 @@ HereDoc
 )
 git-commit "$MESSAGE"
 echo::success "Done"
-echo::success "Created commit with the following message:\n$MESSAGE"
 echo::tip "Delete branch with:"
-echo::tip "   git-feature-delete $BRANCH_NAME"
+echo::tip "   git-branch-delete $BRANCH_NAME"
