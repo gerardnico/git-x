@@ -1,24 +1,18 @@
 #!/bin/bash
-# @name git-restart
+# @name git-reset
 # @description
 # Reset as if it was a clean `git clone`.
 # Cancel all modifications and start fresh
 #
-# This function performs a reset hard and clean
+# This function performs:
+# * a reset hard
+# * and a clean
 #
 # ## SYNOPSIS
 # ```bash
-# git-restart
+# git-reset
 # ```
 #
-# ## TIP
-#
-# You can add it as alias in your `~.gitconfig`
-# Example with `gr` that stands for `git-restart`
-# ```ini
-# [alias]
-#    gr = "git-restart"
-# ```
 #
 
 set -Eeuo pipefail
@@ -31,7 +25,8 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
 function synopsis(){
 
   cat <<EOF
-Reset Hard and Clean
+Reset as if it was a clean: git clone
+  (git reset Hard and git clean)
 \`\`\`bash
 $(basename "$0")
 \`\`\`
