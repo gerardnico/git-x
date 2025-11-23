@@ -1,19 +1,5 @@
 #!/bin/bash
-# @name git-reset
-# @description
-# Reset as if it was a clean `git clone`.
-# Cancel all modifications and start fresh
-#
-# This function performs:
-# * a reset hard
-# * and a clean
-#
-# ## SYNOPSIS
-# ```bash
-# git-reset
-# ```
-#
-#
+# for doc, see md file
 
 set -Eeuo pipefail
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh

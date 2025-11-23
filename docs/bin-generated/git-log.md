@@ -1,4 +1,4 @@
-% git-last(1) Version Latest | git-last
+% git-log(1) Version Latest | git-log
 # NAME
 
 Shows the last commit
@@ -9,5 +9,6 @@ An improved version of `last = log -1 HEAD`
 
 ## SYNOPSIS
 
-${SYNOPSIS}
-
+```bash
+git-log
+```

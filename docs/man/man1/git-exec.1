@@ -73,9 +73,9 @@ Example in \f[V].bashrc\f[R]
 .IP
 .nf
 \f[C]
-# All repositories are cloned in $HOME/code 
+# All repositories are cloned in $HOME/code
 export GIT_X_REPOS_DIR=$HOME/code
-# Add an extra repo such as the Homebrew tap repo and another 
+# Add an extra repo such as the Homebrew tap repo and another
 export GIT_X_REPOS_PATH=/home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/gerardnico/homebrew-tap:/path/to/another-repo
 # Define the paths in a file (one path by line)
 export GIT_X_REPOS_DIR=$HOME/conf/git-x-repo.txt
@@ -105,6 +105,7 @@ against all repositories (not only the dirty ones) *
 only against this repository (the \f[V]repo name\f[R] is the name of the
 directory) * \f[V]git sub-command\f[R] is any git sub-command such as
 \f[V]clone\f[R], \f[V]push\f[R], \&...
+* \f[V]-h|--help\f[R] to show this help
 .SH TIP
 .PP
 You can add it as alias in your \f[V]\[ti].gitconfig\f[R]

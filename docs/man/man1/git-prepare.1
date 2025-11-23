@@ -14,18 +14,21 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "git-last" "1" "" "Version Latest" "git-last"
+.TH "git-prepare" "1" "" "Version Latest" "git-prepare"
 .hy
 .SH NAME
 .PP
-Shows the last commit
-.SH DESCRIPTION
+Lint, check and prepare the next commit
+.SS HOW
 .PP
-An improved version of \f[V]last = log -1 HEAD\f[R]
+It: * adds all index files in the next commit (stage) * Run
+\f[V]pre-commit\f[R] to execute all \f[V]git hooks\f[R]
 .SS SYNOPSIS
+.PP
+Prepare the next commit
 .IP
 .nf
 \f[C]
-git-last
+git-prepare
 \f[R]
 .fi

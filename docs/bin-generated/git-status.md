@@ -1,4 +1,4 @@
-% git-status-human(1) Version Latest | git-status-human
+% git-status(1) Version Latest | git-status
 # Git Status Human
 
 ## DESCRIPTION
@@ -9,7 +9,5 @@ output the status with a human description
 ## SYNOPSIS
 
 ```bash
-git status-human
+git status
 ```
-
-

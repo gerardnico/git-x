@@ -14,16 +14,13 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "git-auto-commit" "1" "" "Version Latest" "git-auto-commit"
+.TH "git-commit" "1" "" "Version Latest" "git-commit"
 .hy
-.SH git-auto-commit
+.SH git-commit
 .SS DESCRIPTION
 .PP
-A commit utility function for \f[V]Git Add, Commit and Push\f[R]
-.PP
-Before the commit, these command checks if there is no remote commit to
-integrate.
-If this is the case, it will execute a \f[V]git auto-pull\f[R]
+A commit utility function for \f[V]Git Add, Commit\f[R] and
+\f[V]Push\f[R]
 .SH EXAMPLE
 .IP \[bu] 2
 For one repository with an automatically generated message from the
@@ -31,23 +28,22 @@ files in the commit
 .IP
 .nf
 \f[C]
-git auto-commit
+git-commit
 \f[R]
 .fi
 .IP \[bu] 2
-For all repositories under the repo home directory with
-\f[V]git exec\f[R]
+For all repositories under the repo home directory with git exec
 .IP
 .nf
 \f[C]
-git exec auto-commit \[dq]My Commit Message\[dq]
+git exec git-commit \[dq]My Commit Message\[dq]
 \f[R]
 .fi
 .SH SYNOPSIS
 .IP
 .nf
 \f[C]
-git-auto-commit [Commit Message]
+git-commit  [Commit Message]
 \f[R]
 .fi
 .PP
@@ -61,6 +57,6 @@ You can add it as alias in your \f[V]\[ti].gitconfig\f[R] Example with
 .nf
 \f[C]
 [alias]
-acp = \[dq]!git-auto-commit\[dq]
+  acp = \[dq]!git-commit\[dq]
 \f[R]
 .fi

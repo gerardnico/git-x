@@ -34,6 +34,7 @@ fi
 
 # https://git-scm.com/docs/git-config#Documentation/git-config.txt-color
 # https://git-scm.com/docs/git-log#_pretty_formats
+# https://git-scm.com/docs/git-log#_diff_formatting
 
 HEAD_COLOR="green"
 colored_header(){

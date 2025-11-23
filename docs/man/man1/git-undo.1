@@ -14,16 +14,18 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "git-commit-status" "1" "" "Version Latest" "git-commit-status"
+.TH "git-undo" "1" "" "Version Latest" "git-undo"
 .hy
-.SH git-commit-status
-.SS DESCRIPTION
+.SH NAME
 .PP
-Shows the commit integration status (ie to push or to merge)
+Delete the last commit
 .SS SYNOPSIS
+.PP
+Delete the last commit locally and remotely and put the files of the
+deleted commit back into the staging area.
 .IP
 .nf
 \f[C]
-git-commit-status
+git-undo
 \f[R]
 .fi

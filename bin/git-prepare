@@ -1,5 +1,28 @@
 #!/usr/bin/env bash
 set -TCEeuo pipefail # Strict Bash
 
+function synopsis(){
+
+  cat <<EOF
+Prepare the next commit
+\`\`\`bash
+$(basename "$0")
+\`\`\`
+EOF
+
+}
+
+# Doc Synopsis
+if [ "${1:-}" = "synopsis" ]; then
+  synopsis
+  exit 0
+fi
+
+# Help
+if [[ "${1:-}" =~ -h|--help|help ]]; then
+  doc::help synopsis
+  exit 0
+fi
+
 # Prepare is a Node.js convention command name to lint and correct file
 git add -A && pre-commit run

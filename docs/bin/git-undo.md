@@ -1,4 +1,4 @@
-% git-last-delete(1) Version Latest | git-last-delete
+% git-undo(1) Version Latest | git-undo
 # NAME
 
 Delete the last commit
@@ -6,4 +6,3 @@ Delete the last commit
 ## SYNOPSIS
 
 ${SYNOPSIS}
-
