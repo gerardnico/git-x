@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # @name git-amend
 # @description
 # Simple way to add actual files to the last commit

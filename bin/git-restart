@@ -52,7 +52,7 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
 fi
 
 # Code
-command::echo_eval "git reset --hard HEAD"
+echo::eval "git reset --hard HEAD"
 # delete untracked file
 # force and d means recurse
-command::echo_eval "git clean --force -d"
+echo::eval "git clean --force -d"

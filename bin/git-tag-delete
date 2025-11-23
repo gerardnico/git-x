@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # @name git-tag-delete
 # @brief Delete a tag and release locally, remotely
 # @description

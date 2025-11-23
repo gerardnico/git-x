@@ -1,9 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # @name Git Status Human
 # @description
 #
-# If you don't recall the one letter status meaning, this command will
-# output the status with a human description
+# The status of your local working directory
+#
+# The original git status is better
 #
 # ## SYNOPSIS
 #
@@ -19,19 +20,51 @@ error::set_trap
 function git_working_status() {
   modified=$(git ls-files -m)
   if [[ -n $modified ]]; then
-    echo "Modified not in commit: $modified"
+    echo -e "Modified not staged:\n$modified"
   fi
   deleted=$(git ls-files -d)
   if [[ -n $deleted ]]; then
-    echo "Deleted: $deleted"
+    echo ""
+    echo -e "Deleted:\n$deleted"
   fi
   untracked=$(git ls-files -o)
   if [[ -n $untracked ]]; then
-    echo "Untracked/Added: $untracked"
+    echo ""
+    echo -e "Not tracked (may be ignored):\n$untracked"
   fi
   if [[ -z $modified && -z $deleted && -z $untracked ]]; then
     echo "No modifications"
   fi
 }
 
+function git_status() {
+  # for scripting: git status --porcelain
+  # porcelain means give the output in an easy-to-parse format for scripts
+  local vPorcelain
+  vPorcelain=$(git status --porcelain)
+  echo ""
+  echo "Git Status:"
+  if [[ -z $vPorcelain ]]; then
+    echo "  No modifications"
+    return
+  fi
+  # output:
+  # for an unstaged file: `status space path`
+  # for a staged file: `status space space path`
+  echo "$vPorcelain" | while read -r fileStatusLine; do
+    # fileStatus=${fileStatusLine:0:1} # not yet used
+    fileStatusStaged=${fileStatusLine:1:2}
+    if [ "${fileStatusStaged}" == '  ' ]; then
+      inNextCommit=' (staged)'
+      # filePath=${fileStatusLine:3} # not yet used
+    else
+      inNextCommit=' (unstaged)'
+      # filePath=${fileStatusLine:2} # not yet used
+    fi
+    echo "$fileStatusLine$inNextCommit"
+  done
+
+}
+
 git_working_status
+git_status
