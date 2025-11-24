@@ -22,7 +22,13 @@ if ! git-prepare; then
   echo "Error found while preparing the release commit"
 fi
 
+# Jreleaser
+export JRELEASER_PROJECT_VERSION="$next_version"
+# Clean otherwise the archive is not good
+rm -rf "$PROJECT_ROOT/out/jreleaser"
+# Create the archive
+jreleaser assemble
 # Release
-JRELEASER_PROJECT_VERSION="$next_version" jreleaser release
+jreleaser release
 
 echo "Version release of $next_version done"
