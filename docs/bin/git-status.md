@@ -1,4 +1,4 @@
-% git-status(1) Version Latest | git-status
+% git-status(1) Version ${VERSION} | git-status
 # Git Status Human
 
 ## DESCRIPTION

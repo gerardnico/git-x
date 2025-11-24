@@ -20,10 +20,16 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
 function synopsis(){
 
   cat <<EOF
-Switch to another branch with WIP work (ie stash)
+List, switch to or create a branch
 \`\`\`bash
-$(basename "$0")  branch_name
+$(basename "$0")  [branch_name]
 \`\`\`
+* without branch name, the local and remotes branches are list
+* with a branch name
+  * the branch is created if it does not exist
+  * the work is stashed
+  * the working branch is changed
+  * the optional stashed work is popped
 EOF
 
 }

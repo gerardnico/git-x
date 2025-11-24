@@ -181,7 +181,7 @@ https://user:$TOKEN/github.com/parent/repo
 
 # Kubernetes
 
-In the `command` property of a container, you should use the [entrypoint](../../resources/docker/git-x-docker-entrypoint)
+In the `command` property of a container, you should use the [entrypoint](../../release/docker/git-x-docker-entrypoint)
 to create the `host_known` file with GitHub SSH keys and avoid the error: `Host key verification failed`
 
 Example:

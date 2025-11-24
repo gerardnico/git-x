@@ -1,4 +1,4 @@
-% git-prepare(1) Version Latest | git-prepare
+% git-prepare(1) Version ${VERSION} | git-prepare
 # NAME
 
 Lint, check and prepare the next commit

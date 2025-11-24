@@ -1,4 +1,4 @@
-% git-branch(1) Version Latest | git-branch
+% git-branch(1) Version ${VERSION} | git-branch
 # git-branch
 
 ## DESCRIPTION

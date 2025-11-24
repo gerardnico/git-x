@@ -1,4 +1,4 @@
-% git-hosting-platform-env(1) Version Latest | Get and set the platform env
+% git-hosting-platform-env(1) Version ${VERSION} | Get and set the platform env
 ## DESCRIPTION
 
 Get and set the platform environment
@@ -24,4 +24,3 @@ This script return the following env:
 * `GIT_PLAFORM`: the platform type
 * `GIT_TOKEN`: the API token
 * `ENV_PREFIX`: The env prefix (ie `GIT_X`)
-

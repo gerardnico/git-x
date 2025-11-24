@@ -18,16 +18,14 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-path.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
 
+function synopsis() {
 
-DIRECTORY_NAME=$(path::get_current_directory_name)
-
-function synopsis(){
-
-  cat <<EOF
+  cat << EOF
 \`\`\`bash
-$(basename "$0")  [Commit Message]
+$(basename "$0") [--edit|-e] [Optional Commit Message]
 \`\`\`
-If the commit message is not given, it will be generated with the files in the commit.
+* if the commit message is not given, it will be generated with the files in the commit.
+* \`--edit\` or \`-e\` will let you edit the message
 EOF
 
 }
@@ -45,7 +43,7 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
 fi
 
 # Nothing to commit but push
-if ! git::is_dirty_index ; then
+if ! git::is_dirty_index; then
   echo::warn "Nothing to commit"
   if git::is_dirty_commit; then
     echo::warn "Dirty commit: pushing"
@@ -54,8 +52,24 @@ if ! git::is_dirty_index ; then
   exit
 fi
 
+# Args parsing
+COMMIT_MESSAGE=""
+MESSAGE_EDIT=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -e | --edit)
+      MESSAGE_EDIT=true
+      ;;
+    *)
+      COMMIT_MESSAGE=${1}
+      shift
+      break
+      ;;
+  esac
+  shift
+done
+
 # Commit Message
-COMMIT_MESSAGE=${1:-}
 if [ "$COMMIT_MESSAGE" = "" ]; then
   COMMIT_MESSAGE=$(git::get_auto_commit_message)
   echo::info "DIRECTORY_NAME - Commit message generated: $COMMIT_MESSAGE"
@@ -78,46 +92,34 @@ done
 # we need to add it twice
 git add -A
 
-# Is there an upstream
-if CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2>/dev/null); then
-  # Check if there is commit to integrate
-  # `Updates were rejected because the tip of your current branch is behind`
-  # ! [rejected]        master -> master (non-fast-forward)
-  #error: failed to push some refs to 'https://gerardnico:ghp_glKrr7@github.com/ComboStrap/website'
-  #hint: Updates were rejected because the tip of your current branch is behind
-  #hint: its remote counterpart. Merge the remote changes (e.g. 'git pull')
-  #hint: before pushing again.
-  #hint: See the 'Note about fast-forwards' in 'git push --help' for details.
-  git fetch
-  # rev-list provides the ability to build and traverse commit ancestry graphs.
-  UPSTREAM_COMMIT_TO_MERGE=$(git rev-list HEAD...'@{u}' --count)
-  if [ "$UPSTREAM_COMMIT_TO_MERGE" != 0 ]; then
-    echo::warn "$DIRECTORY_NAME - $UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
-    git-pull
-  fi
-fi
-
 echo::info "Committing"
 # We can't use echo::eval because the message may be on multiple lines
 # Note: multiline is possible with
 # * multiple -m: git commit -m "First line" -m "Second line" --edit
 # * or a file: git commit -F message.txt --edit
-git commit -v -a -m "$COMMIT_MESSAGE" --edit
+COMMIT_ARGS=(commit -v -m "$COMMIT_MESSAGE")
+if [ $MESSAGE_EDIT == true ]; then
+  COMMIT_ARGS+=(--edit)
+fi
+git "${COMMIT_ARGS[@]}"
 
+CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2> /dev/null)
 if [ "$CURRENT_BRANCH_UPSTREAM" != "" ]; then
   git push
-else
-  IFS=" " read -r -a remotes <<< "$(git remote)"
-  if [ ${#remotes[@]} -ne 1 ]; then
-    echo::warn "The repository has ${#remotes[@]} remotes, we can't set an upstream"
-    echo::warn "Add a remote with"
-    echo::warn ""
-    echo::warn "   git remote add origin git@hosting.com:namespace/name.git"
-    echo::warn "or"
-    echo::warn "   git remote add origin https://hosting.com:namespace/name.git"
-    echo::warn ""
-    exit 1
-  fi
-  echo::warn "Adding an upstream on the push"
-  echo::eval "git push -u ${remotes[0]} $(git::get_current_branch)"
+  exit
 fi
+
+# No upstream yet
+IFS=" " read -r -a remotes <<< "$(git remote)"
+if [ ${#remotes[@]} -ne 1 ]; then
+  echo::warn "The repository has ${#remotes[@]} remotes, we can't set an upstream"
+  echo::warn "Add a remote with"
+  echo::warn ""
+  echo::warn "   git remote add origin git@hosting.com:namespace/name.git"
+  echo::warn "or"
+  echo::warn "   git remote add origin https://hosting.com:namespace/name.git"
+  echo::warn ""
+  exit 1
+fi
+echo::warn "Adding an upstream on the push"
+echo::eval "git push -u ${remotes[0]} $(git::get_current_branch)"

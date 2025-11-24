@@ -1,4 +1,4 @@
-% git-hosting(1) Version Latest | Execute a command against a Git Hosting Service
+% git-hosting(1) Version ${VERSION} | Execute a command against a Git Hosting Service
 # Git Hosting
 
 Execute a command against a Git Hosting Service
@@ -16,5 +16,3 @@ To get the help on one command
 ```bash
 git hosting command --help
 ```
-
-

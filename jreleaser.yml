@@ -1,0 +1,55 @@
+
+# https://jreleaser.org/guide/latest/reference/project.html
+project:
+  name: git-x
+  description: Collections of git extension
+  longDescription: |
+    Cli to enhance your git flow, multi-repository and backup management
+  authors:
+    - Nicolas GERARD
+  copyright: '2025 gerardnico.com'
+  license: Apache-2.0
+  inceptionYear: '2024'
+  vendor: gerardnico.com
+  tags:
+    - git
+  stereotype: NONE
+  links:
+    homepage: https://github.com/gerardnico/git-x
+    documentation: https://github.com/gerardnico/git-x
+
+assemble:
+  # Create an archives
+  # https://jreleaser.org/guide/latest/reference/assemble/archive.html
+  archive:
+    git-x:
+      active: ALWAYS
+      fileSets:
+        - input: bin # relative path
+          output: bin # path in the archive
+          failOnMissingInput: true
+        - input: out/man1
+          output: man1 # path in the archive
+          includes:
+            - '*.1' # glob (not regexp)
+
+# Create a GitHub release
+# https://jreleaser.org/guide/latest/reference/release/github.html
+release:
+  github:
+    owner: gerardnico
+    releaseName: "Release {{projectEffectiveVersion}}"
+    # https://jreleaser.org/guide/latest/reference/release/changelog.html
+    changelog:
+      formatted: ALWAYS
+      format: '- {{commitShortHash}} {{commitTitle}}'
+      preset: 'conventional-commits'
+      content: |
+        # Changelog Version {{projectEffectiveVersion}}
+
+        {{changelogChanges}}
+
+# Create signatures files for the distributions files and the checksum files
+signing:
+  active: ALWAYS
+  mode: COMMAND

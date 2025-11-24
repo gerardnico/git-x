@@ -16,9 +16,8 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
 function synopsis(){
 
   cat <<EOF
+Shows the logs of commit in the feature branch (until the common ancestor with the default branch)
 \`\`\`bash
-Shows the logs of commit in the a feature branch
-
 $(basename "$0")
 \`\`\`
 EOF

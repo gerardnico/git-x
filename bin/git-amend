@@ -12,7 +12,7 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-command.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-git.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
 
-function synopsis(){
+function synopsis() {
 
   cat <<EOF
 \`\`\`bash
@@ -21,7 +21,6 @@ $(basename "$0")  [Commit Message]
 \`\`\`
 If the commit message is not given, it will take the message of the last commit.
 EOF
-
 }
 
 # Doc Synopsis
@@ -36,14 +35,13 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-
 # First submodule
 if [ ! -f .git ]; then
   # Not in a submodule (or not in a git repo)
   git submodule foreach 'git-amend'
 fi
 
-if ! git::is_dirty_index ; then
+if ! git::is_dirty_index; then
   echo::warn "Nothing to amend"
   exit
 fi
@@ -53,13 +51,11 @@ fi
 last_commit=$(git rev-parse HEAD)
 tags=$(git tag --points-at "$last_commit")
 if [ "$tags" != "" ]; then
-    echo "Tags found on the last commit, deleting them"
-    git-tag-delete "$tags"
+  echo "Tags found on the last commit, deleting them"
+  git-tag-delete "$tags"
 fi
 
-
-
-MESSAGE=${1:-};
+MESSAGE=${1:-}
 if [ "$MESSAGE" == "" ]; then
   MESSAGE=$(git log -1 --pretty=%B)
 fi

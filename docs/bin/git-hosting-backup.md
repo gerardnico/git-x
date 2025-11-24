@@ -1,4 +1,4 @@
-% git-hosting-backup(1) Version Latest | Backing up Git Hosted Repo 
+% git-hosting-backup(1) Version ${VERSION} | Backing up Git Hosted Repo
 # DESCRIPTION
 
 This `git-hosting-backup` command back up Git repositories:
@@ -14,8 +14,8 @@ This `git-hosting-backup` command back up Git repositories:
 ## Backup Github Repos to S3
 
 To back up your repositories:
-* from github 
-* to s3 
+* from github
+* to s3
 * excluding the repo `site-com-datacadamia`
 you would execute:
 ```bash
@@ -81,19 +81,19 @@ where:
   * `github` is the service defined by the following `GIT_X_SERVICE_NAME_xxx` envs)
 ```bash
 GIT_X_GITHUB_PLATFORM=github # platform type (optional as it defaults to the name)
-GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN # API Token 
+GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN # API Token
 ```
   * `s3` is the target defined by the following `GIT_X_PLATFORM_NAME_xxx` envs
 ```bash
-GIT_X_S3_PLATFORM=rclone # rclone 
-GIT_X_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env), 
+GIT_X_S3_PLATFORM=rclone # rclone
+GIT_X_S3_RCLONE_REMOTE_NAME=s3 # optional remote name, by default, the target registry name (only characters and _ as this an env),
 GIT_X_S3_RCLONE_BASE_PATH=git-backup # the base path (in our s3 case, the bucket name)
 ```
   * `--filter-exclude-pattern=xxx` is a regexp pattern that if the expression matches the full name repository (`workspace/name`) will exclude it from backup
 
 
-The rclone remote name is configured via [the native rclone environment variable](https://rclone.org/docs/#environment-variables). 
-ie `RCLONE_CONFIG_REMOTE_NAME_XXX` 
+The rclone remote name is configured via [the native rclone environment variable](https://rclone.org/docs/#environment-variables).
+ie `RCLONE_CONFIG_REMOTE_NAME_XXX`
 ```bash
 # in our case the GIT_BACKUP remote name was defined via the env `GIT_X_S3_RCLONE_REMOTE_NAME=git_backup`
 RCLONE_CONFIG_S3_TYPE=s3
@@ -116,8 +116,8 @@ RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
 * SSH Authentication:
   * An SSH private key in your `~/.ssh` directory. ie [Generate a key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
   * With [the corresponding public key added to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
-* [A GitHub API Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) known as Personal Access Token or PAT 
-  * with the scope `repo` for public and private repo 
+* [A GitHub API Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) known as Personal Access Token or PAT
+  * with the scope `repo` for public and private repo
 * A [Rclone destination](https://rclone.org/overview/)
 * The [dependencies](#dependencies)
 
@@ -140,7 +140,7 @@ git clone https://host/path/to/repo.bundle
 The backup processing implemented in the `backup` function of the [git-backup script](../../bin/git-hosting) is:
 * Store the start time and get the last backup time
 * Get the repos via API and loop over them
-  * Skip the backup if: 
+  * Skip the backup if:
     * the last pushed time of the repo is earlier than the last backup (and if a backup exist)
     * the repository is empty
     * the repository is a fork
@@ -181,7 +181,7 @@ https://user:$TOKEN/github.com/parent/repo
 
 # Kubernetes
 
-In the `command` property of a container, you should use the [entrypoint](../../resources/docker/git-x-docker-entrypoint)
+In the `command` property of a container, you should use the [entrypoint](../../release/docker/git-x-docker-entrypoint)
 to create the `host_known` file with GitHub SSH keys and avoid the error: `Host key verification failed`
 
 Example:

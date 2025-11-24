@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
 error::set_strict_mode
@@ -10,44 +9,41 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-echo.sh"
 
-
 # Set the configuration via env
 # Conf via env variables
 # https://rclone.org/docs/#environment-variables
-function set_rclone_env(){
+function set_rclone_env() {
 
+  # to avoid: NOTICE: Config file "/home/me/.rclone.conf" not found - using defaults
+  touch "$HOME"/.rclone.conf
 
-    # to avoid: NOTICE: Config file "/home/me/.rclone.conf" not found - using defaults
-    touch "$HOME"/.rclone.conf
+  if [ "${1:-}" == "" ]; then
+    echo::err "The first argument should be not empty with the git instance name"
+    exit 1
+  fi
 
+  GIT_HOSTING="${1^^}" # ^^ for uppercase
 
-    if [ "${1:-}" == "" ]; then
-      echo::err "The first argument should be not empty with the git instance name"
-      exit 1;
-    fi
+  eval "$(git-hosting-env "$GIT_HOSTING")"
 
-    GIT_HOSTING="${1^^}" # ^^ for uppercase
+  # Rclone specific
+  RCLONE_REMOTE_NAME_ENV_NAME="${ENV_PREFIX}_${GIT_HOSTING}_RCLONE_REMOTE_NAME"
+  if [ -z "${!RCLONE_REMOTE_NAME_ENV_NAME+x}" ]; then
+    RCLONE_REMOTE_NAME=${GIT_HOSTING}
+    echo::info " * Env variable ($RCLONE_REMOTE_NAME_ENV_NAME) was not found. Setting Rclone remote name to the Git Registry: ${GIT_HOSTING}"
+  else
+    RCLONE_REMOTE_NAME=${!RCLONE_REMOTE_NAME_ENV_NAME}
+  fi
+  echo::info " * Rclone remote Name: $RCLONE_REMOTE_NAME"
 
-    eval "$(git-hosting-env "$GIT_HOSTING")"
-
-    # Rclone specific
-    RCLONE_REMOTE_NAME_ENV_NAME="${ENV_PREFIX}_${GIT_HOSTING}_RCLONE_REMOTE_NAME"
-    if [ -z "${!RCLONE_REMOTE_NAME_ENV_NAME+x}" ]; then
-        RCLONE_REMOTE_NAME=${GIT_HOSTING}
-        echo::info  " * Env variable ($RCLONE_REMOTE_NAME_ENV_NAME) was not found. Setting Rclone remote name to the Git Registry: ${GIT_HOSTING}"
-      else
-        RCLONE_REMOTE_NAME=${!RCLONE_REMOTE_NAME_ENV_NAME}
-    fi;
-    echo::info  " * Rclone remote Name: $RCLONE_REMOTE_NAME"
-
-    RCLONE_BASE_PATH_ENV_NAME="${ENV_PREFIX}_${GIT_HOSTING}_RCLONE_BASE_PATH"
-    if [ -z "${!RCLONE_BASE_PATH_ENV_NAME+x}" ]; then
-        echo::info  " * Env variable ($RCLONE_BASE_PATH_ENV_NAME) was not found. Setting to empty string"
-        RCLONE_BASE_PATH=""
-      else
-        RCLONE_BASE_PATH=${!RCLONE_BASE_PATH_ENV_NAME}
-        echo::info  " * Rclone base path: $RCLONE_BASE_PATH"
-    fi;
+  RCLONE_BASE_PATH_ENV_NAME="${ENV_PREFIX}_${GIT_HOSTING}_RCLONE_BASE_PATH"
+  if [ -z "${!RCLONE_BASE_PATH_ENV_NAME+x}" ]; then
+    echo::info " * Env variable ($RCLONE_BASE_PATH_ENV_NAME) was not found. Setting to empty string"
+    RCLONE_BASE_PATH=""
+  else
+    RCLONE_BASE_PATH=${!RCLONE_BASE_PATH_ENV_NAME}
+    echo::info " * Rclone base path: $RCLONE_BASE_PATH"
+  fi
 
 }
 
@@ -67,7 +63,7 @@ METRIC_FORK_SKIPPED_REASON="fork"
 
 function synopsis() {
 
-    cat <<EOF
+  cat <<EOF
 \`\`\`bash
 $(basename "$0") source target [...]
 \`\`\`
@@ -104,11 +100,6 @@ EOF
 
 }
 
-# Redirect stdout to stderr
-# As we output stats data, we don't want to
-# have the output of a command to mess it up
-exec > /dev/stderr
-
 if [ "${1:-}" == "synopsis" ]; then
   synopsis
   exit
@@ -118,6 +109,12 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   doc::help synopsis
   exit
 fi
+
+# Redirect stdout to stderr
+# As we output stats data, we don't want to
+# have the output of a command to mess it up
+# should be after synopsis and help otherwise we see them in the doc generation
+exec >/dev/stderr
 
 if ! args=$(getopt -l "restart,filter-max-repo-count:,filter-exclude-pattern:,jq-raw-output,jq-raw,help,report:,output:" -o "ro:" -- "$@"); then
   echo::err "An error has occurred while parsing the command arguments"
@@ -134,50 +131,49 @@ FILTER_EXCLUDE_PATTERN=""
 OUTPUT_FORMAT_JSON="json"
 OUTPUT_FORMAT_PROM="prometheus"
 OUTPUT_FORMAT=$OUTPUT_FORMAT_JSON
-while [[ $# -gt 0 ]]
-do
-   case "$1" in
-     "--restart"|"-r")
-        RESTART="true"
-        shift
-        ;;
-      "--output"|"-o")
-        shift
-        OUTPUT_FORMAT="$1"
-        if [[ ! $OUTPUT_FORMAT =~ "$OUTPUT_FORMAT_JSON"|"$OUTPUT_FORMAT_PROM" ]]; then
-          doc::help synopsis
-          echo::err "The output format option should be $OUTPUT_FORMAT_JSON or $OUTPUT_FORMAT_PROM"
-          exit 1
-        fi
-        shift
-      ;;
-      "--filter-max-repo-count")
-        shift
-        FILTER_MAX_REPO_COUNT="$1"
-        shift
-        ;;
-      "--filter-exclude-pattern")
-        shift
-        FILTER_EXCLUDE_PATTERN="$1"
-        shift
-        ;;
-      "--")
-        # The args separator of getopt
-        shift
-        ;;
-      *)
-        if [ "$GIT_SOURCE" == "" ]; then
-            GIT_SOURCE="${1,,}" # ,, for lowercase
-        elif [ "$GIT_TARGET" == "" ]; then
-            GIT_TARGET="${1,,}" # ,, for lowercase
-        else
-            doc::help synopsis
-            echo::err "Too much argument found: We except only 2 arguments, the source and the target. ($1) is the third argument"
-            exit 1;
-        fi
-        shift
-        ;;
-    esac
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  "--restart" | "-r")
+    RESTART="true"
+    shift
+    ;;
+  "--output" | "-o")
+    shift
+    OUTPUT_FORMAT="$1"
+    if [[ ! $OUTPUT_FORMAT =~ "$OUTPUT_FORMAT_JSON"|"$OUTPUT_FORMAT_PROM" ]]; then
+      doc::help synopsis
+      echo::err "The output format option should be $OUTPUT_FORMAT_JSON or $OUTPUT_FORMAT_PROM"
+      exit 1
+    fi
+    shift
+    ;;
+  "--filter-max-repo-count")
+    shift
+    FILTER_MAX_REPO_COUNT="$1"
+    shift
+    ;;
+  "--filter-exclude-pattern")
+    shift
+    FILTER_EXCLUDE_PATTERN="$1"
+    shift
+    ;;
+  "--")
+    # The args separator of getopt
+    shift
+    ;;
+  *)
+    if [ "$GIT_SOURCE" == "" ]; then
+      GIT_SOURCE="${1,,}" # ,, for lowercase
+    elif [ "$GIT_TARGET" == "" ]; then
+      GIT_TARGET="${1,,}" # ,, for lowercase
+    else
+      doc::help synopsis
+      echo::err "Too much argument found: We except only 2 arguments, the source and the target. ($1) is the third argument"
+      exit 1
+    fi
+    shift
+    ;;
+  esac
 done
 
 ## Arg feedback
@@ -195,14 +191,14 @@ fi
 # Source
 if [ "$GIT_SOURCE" == "" ]; then
   echo::err "A git source is excepted as first argument"
-  exit 1;
+  exit 1
 else
   echo::info "  * Git source: $GIT_SOURCE"
 fi
 # Target
 if [ "$GIT_TARGET" == "" ]; then
   echo::err "A git target is excepted as second argument"
-  exit 1;
+  exit 1
 else
   echo::info "  * Git target: $GIT_TARGET"
 fi
@@ -223,7 +219,7 @@ echo::info "Looping over the repo of the registry $GIT_SOURCE"
 
 if [ "$GIT_PLATFORM_SOURCE" != "github" ]; then
   echo::err "Only GitHub as registry source is supported for now, not $GIT_PLATFORM_SOURCE"
-  exit 1;
+  exit 1
 fi
 
 # Backup Start
@@ -264,9 +260,7 @@ else
   echo::info "Start backup time: $START_BACKUP_TIME"
   echo::info "Writing Start backup time to $RCLONE_START_BACKUP_TIME_FILE_PATH"
   echo "$START_BACKUP_TIME" | rclone rcat "$RCLONE_START_BACKUP_TIME_FILE_PATH"
-fi;
-
-
+fi
 
 # Github Api Call
 # Note: pushed_at represents the date and time of the last commit
@@ -292,18 +286,18 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   TOTAL_COUNT=$((TOTAL_COUNT + 1))
 
   REPO_FULL_NAME=$(echo "$REPO_FULL_NAME" | tr -d '"')
-  IFS='/' read -r REPO_PARENT REPO_NAME <<< "$REPO_FULL_NAME"
+  IFS='/' read -r REPO_PARENT REPO_NAME <<<"$REPO_FULL_NAME"
   echo::info " "
   echo::info "Backup Repo: $REPO_FULL_NAME"
 
   if [ "$REPO_FORK" == true ]; then
-    echo::info "Skipped forked repo: $REPO_FULL_NAME";
+    echo::info "Skipped forked repo: $REPO_FULL_NAME"
     SKIPPED_FORK=$((SKIPPED_FORK + 1))
     continue
   fi
 
   if [ "$FILTER_EXCLUDE_PATTERN" != "" ] && [[ "$REPO_FULL_NAME" =~ $FILTER_EXCLUDE_PATTERN ]]; then
-    echo::info "Excluded due to pattern matching: $REPO_FULL_NAME";
+    echo::info "Excluded due to pattern matching: $REPO_FULL_NAME"
     SKIPPED_PATTERN=$((SKIPPED_PATTERN + 1))
     continue
   fi
@@ -317,12 +311,12 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
     TARGET_BUNDLE_PATH_COUNT="0"
   fi
   if [ "$TARGET_BUNDLE_PATH_COUNT" != "0" ]; then
-    echo::info "Backup bundle already exist at $BUNDLE_TARGET_PATH";
+    echo::info "Backup bundle already exist at $BUNDLE_TARGET_PATH"
     # 2024-08-29T13:20:27Z
     PUSHED_AT_TRIMMED=$(echo "$PUSHED_AT" | tr -d '"')
     PUSHED_AT_EPOCH=$(TZ=UTC date -d"$PUSHED_AT_TRIMMED" +%s)
     if [ "$LAST_BACKUP_TIME" != "" ] && [ "$PUSHED_AT_EPOCH" -lt "$LAST_BACKUP_TIME_EPOCH" ]; then
-      echo::info "Skipped backup repo: No push since last backup. Last Pushed Date ($PUSHED_AT) is less than the last backup time ($LAST_BACKUP_TIME)";
+      echo::info "Skipped backup repo: No push since last backup. Last Pushed Date ($PUSHED_AT) is less than the last backup time ($LAST_BACKUP_TIME)"
       SKIPPED_NO_CHANGE=$((SKIPPED_NO_CHANGE + 1))
       continue
     fi
@@ -347,7 +341,6 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
     continue
   fi
 
-
   BUNDLE_SOURCE_PATH="/tmp/$BUNDLE_RELATIVE_PATH"
   BUNDLE_SOURCE_PARENT_PATH="/tmp/$REPO_PARENT"
   mkdir -p "$BUNDLE_SOURCE_PARENT_PATH"
@@ -367,25 +360,23 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   rm -rf "$CLONE_TARGET_DIR" >/dev/stderr
   echo::info "Deleting Git repo: Done"
 
-
-done <<< "$API_REPOS" # needed to not run as pipeline and get TOTAL_COUNT
-
+done \
+  <<<"$API_REPOS" # needed to not run as pipeline and get TOTAL_COUNT
 
 echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH" >/dev/stderr
 rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH" >/dev/stderr
 echo::info " "
-echo::info "Processed $TOTAL_COUNT repositories";
-
+echo::info "Processed $TOTAL_COUNT repositories"
 
 # Reset > to /dev/stdout
 # At the beginning we set it to /dev/stderr
 # so that no command will messed up with /dev/stdout
-exec > /dev/stdout
+exec >/dev/stdout
 
 # Output
 case $OUTPUT_FORMAT in
-  "$OUTPUT_FORMAT_JSON")
-  cat << EOF
+"$OUTPUT_FORMAT_JSON")
+  cat <<EOF
 {
     "${METRIC_TOTAL_LABEL}_${METRIC_NAME}": "$TOTAL_COUNT",
     "${METRIC_REPO_DUMPED_STATED}_${METRIC_NAME}": "$DUMPED_COUNT",
@@ -396,7 +387,7 @@ case $OUTPUT_FORMAT in
 }
 EOF
   ;;
-  "$OUTPUT_FORMAT_PROM")
+"$OUTPUT_FORMAT_PROM")
   # We make it short. The prefix has no space or separator.
   PREFIX="gitbackup"
   cat <<EOF
@@ -409,11 +400,11 @@ ${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_SKIPPED_STATE", reason="$METRIC_FO
 ${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_SKIPPED_STATE", reason="$METRIC_PATTERN_SKIPPED_REASON"} $SKIPPED_PATTERN
 EOF
   ;;
-  *)
-    # We check at argument parsing
-    # therefore we should never hit this point
-    # but we never know
-    echo::err "Output Format $OUTPUT_FORMAT not supported"
-    exit 1
-    ;;
+*)
+  # We check at argument parsing
+  # therefore we should never hit this point
+  # but we never know
+  echo::err "Output Format $OUTPUT_FORMAT not supported"
+  exit 1
+  ;;
 esac

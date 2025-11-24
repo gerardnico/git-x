@@ -1,7 +1,6 @@
 #!/bin/bash
 # Merge a feature branch
 
-
 set -Eeuo pipefail
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
@@ -13,12 +12,11 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-command.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-git.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
 
-function synopsis(){
+function synopsis() {
 
-  cat <<EOF
-\`\`\`bash
+  cat << EOF
 Merge a feature branch
-
+\`\`\`bash
 $(basename "$0") commit message
 \`\`\`
 EOF
@@ -37,7 +35,6 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-
 BRANCH_NAME=$(git::get_current_branch)
 DEFAULT_BRANCH=$(git::get_default_branch)
 if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
@@ -48,14 +45,28 @@ fi
 
 echo::info "Check if branch $BRANCH_NAME is dirty"
 command::echo_eval "git checkout $BRANCH_NAME"
-if git::is_dirty_index ; then
+if git::is_dirty_index; then
   echo::err "The branch is dirty, commit, stash or rollback your changes"
   exit 1
 fi
+
+# Go to the default branch
 echo::info "Checkout to the default branch $DEFAULT_BRANCH"
 command::echo_eval "git checkout $DEFAULT_BRANCH"
-echo::info "Pull from $DEFAULT_BRANCH"
-command::echo_eval "git pull origin $DEFAULT_BRANCH"
+
+#echo::info "Pull from $DEFAULT_BRANCH"
+#command::echo_eval "git pull origin $DEFAULT_BRANCH"
+
+COMMIT_COUNT=$(git rev-list --count "$DEFAULT_BRANCH".."$BRANCH_NAME")
+if [ "$COMMIT_COUNT" == "1" ]; then
+  # Only one commit to merge
+  command::echo_eval "git merge $BRANCH_NAME"
+  echo::success "Done"
+  echo::tip "Delete branch with:"
+  echo::tip "   git-branch-delete $BRANCH_NAME"
+  exit
+fi
+
 # The --squash option takes all the commits and condenses them into one WIP index on main
 echo::info "Merge squash the $BRANCH_NAME"
 command::echo_eval "git merge --squash $BRANCH_NAME"
@@ -67,7 +78,8 @@ fi
 COMMIT_MESSAGE=${1:-"feat: merge feature branch $BRANCH_NAME"}
 echo::info "Commit"
 BODY=$(git log --pretty=format:%s "$DEFAULT_BRANCH".."$BRANCH_NAME")
-MESSAGE=$(cat <<-HereDoc
+MESSAGE=$(
+  cat <<- HereDoc
 $COMMIT_MESSAGE
 
 $BODY

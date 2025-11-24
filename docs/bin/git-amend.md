@@ -1,13 +1,13 @@
-% git-amend(1) Version Latest | git-amend
+% git-amend(1) Version ${VERSION} | git-amend
 
 # git-amend
 
 ## DESCRIPTION
 
-Add actual modified and added files to the last commit.
+Recreate the last commit with the actual modified and added files.
 
-[git commit amend](https://git-scm.com/book/id/v2/Git-Tools-Rewriting-History#_git_amend)
-that always work (even if it was pushed to the remote)
+It's a [git commit amend](https://git-scm.com/book/id/v2/Git-Tools-Rewriting-History#_git_amend)
+that always work (even if the commit was pushed to the remote)
 
 ## How?
 

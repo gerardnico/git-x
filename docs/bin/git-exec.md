@@ -1,11 +1,11 @@
-% git-exec(1) Version Latest | git-exec
+% git-exec(1) Version ${VERSION} | git-exec
 # NAME
 
 Execute a git command against multiple local repositories at once
 
 # DESCRIPTION
 
-Execute a git command against local repositories 
+Execute a git command against local repositories
 
 # EXAMPLE
 
@@ -44,9 +44,9 @@ You can define the location of the Git repositories with the following environme
 
 Example in `.bashrc`
 ```bash
-# All repositories are cloned in $HOME/code 
+# All repositories are cloned in $HOME/code
 export GIT_X_REPOS_DIR=$HOME/code
-# Add an extra repo such as the Homebrew tap repo and another 
+# Add an extra repo such as the Homebrew tap repo and another
 export GIT_X_REPOS_PATH=/home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/gerardnico/homebrew-tap:/path/to/another-repo
 # Define the paths in a file (one path by line)
 export GIT_X_REPOS_DIR=$HOME/conf/git-x-repo.txt
@@ -80,5 +80,3 @@ A dirty repository is a repository that has:
 To execute the git command against:
 * all repositories, you need to force it with the `-f` or `--force` option
 * one repository, you need to pass the repository as first argument.
-
-

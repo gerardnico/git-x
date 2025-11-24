@@ -1,7 +1,25 @@
-% git-tag-delete(1) Version Latest | git-tag-delete
+% git-tag-delete(1) Version ${VERSION} | git-tag-delete
+
 # NAME
 
-Delete a tag and any GitHub release if any
+Delete a tag (locally and remotely) and any GitHub release if any
+
+## TIP
+
+You can add it as alias
+
+* in your `~/.gitconfig`
+
+```ini
+[alias]
+    td = "git-tag-delete"
+```
+
+* in your `~/.bashrc`
+
+```bash
+alias gtd = "git-tag-delete"
+```
 
 ## SYNOPSIS
 

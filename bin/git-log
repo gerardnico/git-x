@@ -54,9 +54,10 @@ AUTHOR_DATE="$(padded_header 'AuthorDate'): %ai"
 COMMITTER="$(padded_header 'Committer'): %cn <%ce>"
 COMMITTER_DATE="$(padded_header 'Committer Date'): %ci"
 BRANCH="$(padded_header 'Branch'): %D%n"
-MESSAGE="$(padded_header 'Message'): %s"
+SUBJECT="$(padded_header 'Subject'): %s" # s means subject,
+BODY="$(colored_header 'Body'):%n%b" # b = body
 FILES="$(colored_header 'Files'):"
 
 git show --name-status \
-    --pretty=format:"${COMMIT_HASH}%n${AUTHOR}%n${AUTHOR_DATE}%n${COMMITTER}%n${COMMITTER_DATE}%n${BRANCH}%n${MESSAGE}%n%n${FILES}" \
+    --pretty=format:"${COMMIT_HASH}%n${AUTHOR}%n${AUTHOR_DATE}%n${COMMITTER}%n${COMMITTER_DATE}%n${BRANCH}%n${SUBJECT}%n${BODY}%n${FILES}" \
     HEAD

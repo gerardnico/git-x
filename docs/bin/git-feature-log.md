@@ -1,4 +1,4 @@
-% git-feature-log(1) Version Latest | git-feature-log
+% git-feature-log(1) Version ${VERSION} | git-feature-log
 # NAME
 
 Shows all commits performed on this branch since it was created.

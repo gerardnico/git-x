@@ -1,23 +1,5 @@
 #!/usr/bin/env bash
-# @name git-tag-delete
-# @brief Delete a tag and release locally, remotely
-# @description
-# Delete a tag locally, remotely
-# and the GitHub release
-#
-# ## SYNOPSIS
-# ```bash
-# git-tag-delete tag
-# ```
-#
-# ## TIP
-#
-# You can add it as alias in your `~.gitconfig`
-# ```ini
-# [alias]
-#    gtd = "git-tag-delete"
-# ```
-#
+# see mardkown file
 
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"

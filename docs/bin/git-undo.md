@@ -1,4 +1,4 @@
-% git-undo(1) Version Latest | git-undo
+% git-undo(1) Version ${VERSION} | git-undo
 # NAME
 
 Delete the last commit

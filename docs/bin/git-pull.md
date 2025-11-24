@@ -1,4 +1,4 @@
-% git-auto-pull(1) Version Latest | git-auto-pull
+% git-auto-pull(1) Version ${VERSION} | git-auto-pull
 # git-auto-pull
 
 ## DESCRIPTION

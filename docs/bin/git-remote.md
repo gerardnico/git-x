@@ -1,4 +1,4 @@
-% git-remote(1) Version Latest | git-remote
+% git-remote(1) Version ${VERSION} | git-remote
 # git-remote
 
 ## DESCRIPTION
