@@ -1,4 +1,4 @@
-% git-hosting-list(1) Version Latest | List hosted git repositories
+% git-hosting-list(1) Version 0.1.0 | List hosted git repositories
 ## DESCRIPTION
 
 List hosted git repositories

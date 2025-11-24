@@ -10,8 +10,8 @@ next_version=$(git cliff --unreleased --bump "$bump_type" --context --tag-patter
 
 # Generate the doc
 bashlib-docgen \
-  --doc-version "$next_version" \
-  --output-dir "docs/released"
+  --output-dir "docs/released" \
+  --doc-version "$next_version"
 
 # Generate the main page
 bashlib-mangen \

@@ -1,4 +1,4 @@
-% git-log(1) Version Latest | git-log
+% git-log(1) Version 0.1.0 | git-log
 # NAME
 
 Shows the last commit

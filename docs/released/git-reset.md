@@ -1,4 +1,4 @@
-% git-reset(1) Version Latest | git-reset
+% git-reset(1) Version 0.1.0 | git-reset
 
 # NAME
 

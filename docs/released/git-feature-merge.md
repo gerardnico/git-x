@@ -1,4 +1,4 @@
-% git-feature-merge(1) Version Latest | git-feature-merge
+% git-feature-merge(1) Version 0.1.0 | git-feature-merge
 # NAME
 
 Merge all commits of a branch into the default branch
@@ -6,8 +6,7 @@ Merge all commits of a branch into the default branch
 
 ## SYNOPSIS
 
-```bash
 Merge a feature branch
-
+```bash
 git-feature-merge commit message
 ```

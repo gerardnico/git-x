@@ -81,22 +81,24 @@ alias ga='git-amend'
 
 List:
 
-| 2 letters alias | Command                                                 | Description                                                                       |
-|-----------------|---------------------------------------------------------|-----------------------------------------------------------------------------------|
-| `ga`            | [git-amend](docs/released/git-amend.md)                 | Recreate the last commit with the actual modified files                           |
-| `gb`            | [git-branch](docs/released/git-branch.md)               | Branch listing, switching and creation                                            |
-| `gc`            | [git-commit](docs/released/git-commit.md)               | Pull, add, commit and push in one command, no argument needed                     |
-| `gfl`           | [git-feature-log](docs/released/git-feature-log.md)     | Shows the commits of the feature branch since the branching                       |
-| `gfm`           | [git-feature-merge](docs/released/git-feature-merge.md) | Merge a feature branch to the default branch                                      |
-| `gl`            | [git-log](docs/released/git-log.md)                     | Shows the last commit                                                             |
-| `gll`           | [git-log-all](docs/released/git-log-all.md)             | Shows all commits                                                                 |
-|                 | [git-pull](docs/released/git-pull.md)                   | Stash, Pull, un-stash in one command                                              |
-| `gp`            | [git-prepare](docs/released/git-prepare.md)             | Check the files against git-hooks with pre-commit                                 |
-|                 | [git-remote](docs/bin/git-remote.md)                    | Shows remote status information (commit sync, GitHub actions runner)              |
-| `gr`            | [git-reset](docs/bin/git-reset.md)                      | Restart with a clean state (as a `git clone`)                                     |
-| `gs`            | [git-status](docs/released/git-status.md)               | Shows the working area status                                                     |
-| `gtd`           | [git-tag-delete](docs/released/git-tag-delete.md)       | Delete a tag                                                                      |
-| `gu`            | [git-undo](docs/released/git-undo.md)                   | Delete the last commit (tagged or not) and put the files back in the working area |
+| 2 letters alias | Command                                                   | Description                                                                       |
+|-----------------|-----------------------------------------------------------|-----------------------------------------------------------------------------------|
+| `ga`            | [git-amend](docs/released/git-amend.md)                   | Recreate the last commit with the actual modified files                           |
+| `gb`            | [git-branch](docs/released/git-branch.md)                 | Branch listing, switching and creation                                            |
+| `gc`            | [git-commit](docs/released/git-commit.md)                 | Pull, add, commit and push in one command, no argument needed                     |
+| `gfd`           | [git-feature-delete](docs/released/git-feature-delete.md) | Delete a feature branch                                                           |
+| `gfl`           | [git-feature-log](docs/released/git-feature-log.md)       | Shows the commits of the feature branch since the branching                       |
+| `gfm`           | [git-feature-merge](docs/released/git-feature-merge.md)   | Merge a feature branch to the default branch                                      |
+| `gfs`           | [git-feature-squash](docs/released/git-feature-squash.md) | Merge a feature branch to the default branch                                      |
+| `gl`            | [git-log](docs/released/git-log.md)                       | Shows the last commit                                                             |
+| `gll`           | [git-log-all](docs/released/git-log-all.md)               | Shows all commits                                                                 |
+|                 | [git-pull](docs/released/git-pull.md)                     | Stash, Pull, un-stash in one command                                              |
+| `gp`            | [git-prepare](docs/released/git-prepare.md)               | Check the files against git-hooks with pre-commit                                 |
+|                 | [git-remote](docs/bin/git-remote.md)                      | Shows remote status information (commit sync, GitHub actions runner)              |
+| `gr`            | [git-reset](docs/bin/git-reset.md)                        | Restart with a clean state (as a `git clone`)                                     |
+| `gs`            | [git-status](docs/released/git-status.md)                 | Shows the working area status                                                     |
+| `gtd`           | [git-tag-delete](docs/released/git-tag-delete.md)         | Delete a tag                                                                      |
+| `gu`            | [git-undo](docs/released/git-undo.md)                     | Delete the last commit (tagged or not) and put the files back in the working area |
 
 ### Multiple-repository execution
 

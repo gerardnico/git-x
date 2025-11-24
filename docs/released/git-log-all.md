@@ -1,4 +1,4 @@
-% git-log-all(1) Version Latest | git-log-all
+% git-log-all(1) Version 0.1.0 | git-log-all
 # NAME
 
 Shows all log with a [pretty format](https://git-scm.com/docs/git-log#Documentation/git-log.txt-formatpretty)

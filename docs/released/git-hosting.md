@@ -1,4 +1,4 @@
-% git-hosting(1) Version Latest | Execute a command against a Git Hosting Service
+% git-hosting(1) Version 0.1.0 | Execute a command against a Git Hosting Service
 # Git Hosting
 
 Execute a command against a Git Hosting Service

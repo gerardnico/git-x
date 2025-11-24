@@ -1,4 +1,4 @@
-% git-hosting-backup(1) Version Latest | Backing up Git Hosted Repo
+% git-hosting-backup(1) Version 0.1.0 | Backing up Git Hosted Repo
 # DESCRIPTION
 
 This `git-hosting-backup` command back up Git repositories:
@@ -123,7 +123,38 @@ RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION=aws:kms
 
 # SYNOPSIS
 
+```bash
+git-hosting-backup source target [...]
+```
 
+where:
+
+* source                       - a git hosting service name to read from
+* target                       - a target name to backup to
+* --output                     - the statistics output format (json or prometheus). Default to json
+* --restart                    - if a backup fail, it can be restarted with the restart flag
+* --filter-exclude-pattern=xxx - a regexp pattern to exclude from applied on the repository full name (ie parent/name)
+* --filter-max-repo-count='x'  - the maximum number of repositories to process
+
+This script returns the following statistiques:
+
+* `total_repo_count` is the number of repositories processed (up to max-repo-count option)
+* `dumped_repo_count` is the number of repositories bundled (ie dumped)
+* `unchanged_repo_count` is the number of repositories skipped because of no changes since the last dump
+* `pattern_repo_count` is the number of repositories skipped due to pattern matching
+* `empty_repo_count` is the number of repositories skipped due to being empty
+* `fork_repo_count` is the number of repositories skipped due to being a fork
+
+
+Note:
+```bash
+total = dumped + unchanged + pattern + empty + fork
+```
+
+Tip: You can process the json format further with `jq`
+```bash
+git-hosting-backup source target | jq -r '.total_repo_count .dumped_repo_count'
+```
 
 # How to restore
 

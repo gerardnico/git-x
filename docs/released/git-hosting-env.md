@@ -1,4 +1,4 @@
-% git-hosting-platform-env(1) Version Latest | Get and set the platform env
+% git-hosting-platform-env(1) Version 0.1.0 | Get and set the platform env
 ## DESCRIPTION
 
 Get and set the platform environment

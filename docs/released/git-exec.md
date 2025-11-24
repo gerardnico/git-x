@@ -1,4 +1,4 @@
-% git-exec(1) Version Latest | git-exec
+% git-exec(1) Version 0.1.0 | git-exec
 # NAME
 
 Execute a git command against multiple local repositories at once

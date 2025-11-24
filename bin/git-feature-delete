@@ -1,6 +1,5 @@
 #!/bin/bash
-# Delete a feature branch
-
+# Delete a feature branch, see md file for documentation
 
 set -Eeuo pipefail
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
@@ -13,16 +12,14 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-command.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-git.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
 
-function synopsis(){
+function synopsis() {
 
-  cat <<EOF
-\`\`\`bash
+  cat << EOF
 Delete a feature branch
-
+\`\`\`bash
 $(basename "$0") branch-name
 \`\`\`
 EOF
-
 }
 
 # Doc Synopsis
@@ -59,15 +56,25 @@ command::echo_eval "git checkout $BRANCH_NAME"
 echo::info "Check if branch $BRANCH_NAME is dirty"
 command::echo_eval "git checkout $BRANCH_NAME"
 
-if git::is_dirty_index ; then
+if git::is_dirty_index; then
   echo::error "The branch is dirty, stash or rollback your changes"
   exit 1
 fi
+
+# Checkout to the default branch
 DEFAULT_BRANCH=$(git::get_default_branch)
 echo::info "Checkout to the default branch $DEFAULT_BRANCH"
 command::echo_eval "git checkout $DEFAULT_BRANCH"
-echo::info "Pull the merged commit from $DEFAULT_BRANCH"
-command::echo_eval "git pull origin $DEFAULT_BRANCH"
+
+# Before deletion, check that all feature commits are in the main branch
+COMMIT_DIFF=$(git log "$DEFAULT_BRANCH".."$BRANCH_NAME")
+if [ "$COMMIT_DIFF" != "" ]; then
+  echo::err "Not all commits from $BRANCH_NAME are in the default branch $DEFAULT_BRANCH"
+  echo::err "$COMMIT_DIFF"
+  exit 1
+fi
+
+# Delete
 echo::info "Delete branch $BRANCH_NAME locally"
 command::echo_eval "git branch -D $BRANCH_NAME"
 echo::info "Delete branch $BRANCH_NAME Remotely"

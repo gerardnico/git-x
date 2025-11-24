@@ -61,9 +61,10 @@ COMMIT_COUNT=$(git rev-list --count "$DEFAULT_BRANCH".."$BRANCH_NAME")
 if [ "$COMMIT_COUNT" == "1" ]; then
   # Only one commit to merge
   command::echo_eval "git merge $BRANCH_NAME"
+  command::echo_eval "git push"
   echo::success "Done"
-  echo::tip "Delete branch with:"
-  echo::tip "   git-branch-delete $BRANCH_NAME"
+  echo::tip "Delete feature with:"
+  echo::tip "   git-feature-delete $BRANCH_NAME"
   exit
 fi
 
