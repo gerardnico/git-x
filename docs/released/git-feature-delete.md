@@ -9,8 +9,7 @@ This command will check that all commits are in the default branch.
 
 ## SYNOPSIS
 
-```bash
 Delete a feature branch
-
+```bash
 git-feature-delete branch-name
 ```

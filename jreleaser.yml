@@ -2,7 +2,8 @@
 # https://jreleaser.org/guide/latest/reference/project.html
 project:
   name: git-x
-  description: Collections of git extension
+  description: |
+    Git commands for everyday use (Git Flow, Multiple repos command execution, Hosting Backup, ...)
   longDescription: |
     Cli to enhance your git flow, multi-repository and backup management
   authors:
@@ -17,6 +18,15 @@ project:
   links:
     homepage: https://github.com/gerardnico/git-x
     documentation: https://github.com/gerardnico/git-x
+  languages:
+    # It's not java but
+    # as JReleaser does not support an archive with a bunch of script
+    # we took JAVA_ARCHIVE that requires Java coordinates
+    java:
+      groupId: com.gerardnico
+      artifactId: git-x
+      version: "11"
+
 
 assemble:
   # Create an archives
@@ -24,6 +34,16 @@ assemble:
   archive:
     git-x:
       active: ALWAYS
+      formats:
+        - ZIP
+        - TAR_GZ
+      # JReleaser does not have the notion of an archive with a bunch of script
+      # We use JAVA_BINARY because we don't need to specify the platform
+      # https://jreleaser.org/guide/latest/concepts/distributions/java-binary.html
+      distributionType: JAVA_BINARY
+      artifacts:
+        - path: LICENSE
+        - path: README.md
       fileSets:
         - input: bin # relative path
           output: bin # path in the archive
@@ -32,6 +52,8 @@ assemble:
           output: man1 # path in the archive
           includes:
             - '*.1' # glob (not regexp)
+        - input: ../bash-lib/lib
+          output: lib # path in the archive
 
 # Create a GitHub release
 # https://jreleaser.org/guide/latest/reference/release/github.html
@@ -53,3 +75,36 @@ release:
 signing:
   active: ALWAYS
   mode: COMMAND
+
+distributions:
+  git-x:
+    active: NEVER
+    # Run it with
+    # Create the assembly
+    #    jreleaser assemble --debug --assembler=archive
+    # Create the Dockerfile
+    #    jreleaser prepare --debug -p=docker
+    # Create the image
+    #    jreleaser package --debug -p=docker
+    # Push to the registry
+    #    jreleaser publish --debug -p=docker
+    docker:
+      active: ALWAYS
+      templateDirectory: release/docker
+      useLocalArtifact: true # remote vs locale
+      repository: # Wild ! This repository will contain the Dockerfile and the distribution
+        active: NEVER
+      registries:
+        - serverName: ghcr.io
+      # https://docs.docker.com/reference/dockerfile/#label
+      labels: # Labels are in the specs otherwise image title is not taken into account
+        org.opencontainers.image.source: "https://{{repoHost}}/{{repoOwner}}/{{repoName}}" # bug repo-name was git-x-docker
+        org.opencontainers.image.title: "{{projectName}}"
+      cmd: "git"
+      specs:
+        git-x: # dockerSpecName
+          matchers:
+            platform: 'linux_musl-x86_64'
+          imageNames:
+            - "ghcr.io/combostrap/{{dockerSpecName}}:{{tagName}}"
+            - "ghcr.io/combostrap/{{dockerSpecName}}:latest"

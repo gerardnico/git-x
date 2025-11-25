@@ -89,7 +89,7 @@ List:
 | `gfd`           | [git-feature-delete](docs/released/git-feature-delete.md) | Delete a feature branch                                                           |
 | `gfl`           | [git-feature-log](docs/released/git-feature-log.md)       | Shows the commits of the feature branch since the branching                       |
 | `gfm`           | [git-feature-merge](docs/released/git-feature-merge.md)   | Merge a feature branch to the default branch                                      |
-| `gfs`           | [git-feature-squash](docs/released/git-feature-squash.md) | Merge a feature branch to the default branch                                      |
+| `gfs`           | [git-feature-squash](docs/released/git-feature-squash.md) | Squash all commits of a feature branch                                            |
 | `gl`            | [git-log](docs/released/git-log.md)                       | Shows the last commit                                                             |
 | `gll`           | [git-log-all](docs/released/git-log-all.md)               | Shows all commits                                                                 |
 |                 | [git-pull](docs/released/git-pull.md)                     | Stash, Pull, un-stash in one command                                              |
@@ -136,8 +136,9 @@ so that you are always in control.
 
 ```bash
 docker run \
-  --rm \
-  ghcr.io/gerardnico/git-x:latest
+  --rm
+  ghcr.io/gerardnico/git-x:v0.1.0 \
+  git-log --help
 ```
 
 ### HomeBrew

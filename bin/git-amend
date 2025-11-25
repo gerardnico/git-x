@@ -15,8 +15,8 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
 function synopsis() {
 
   cat <<EOF
+Recreate the last commit with the actual modified and added files.
 \`\`\`bash
-Add files to the last commit
 $(basename "$0")  [Commit Message]
 \`\`\`
 If the commit message is not given, it will take the message of the last commit.

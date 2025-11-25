@@ -29,6 +29,6 @@ rm -rf "$PROJECT_ROOT/out/jreleaser"
 # Create the archive
 jreleaser assemble
 # Release
-jreleaser release
+jreleaser full-release
 
 echo "Version release of $next_version done"
