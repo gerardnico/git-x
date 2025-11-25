@@ -24,5 +24,12 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
+ROOT_DIRECTORY=$(git::get_root_directory)
+PRE_COMMIT_FILE="$ROOT_DIRECTORY/.pre-commit-config.yaml"
+if [ ! -f "$PRE_COMMIT_FILE" ]; then
+  echo::warn "git prepare was skipped because the pre-commit file was not found ($PRE_COMMIT_FILE)"
+  exit 0
+fi
+
 # Prepare is a Node.js convention command name to lint and correct file
 git add -A && pre-commit run
