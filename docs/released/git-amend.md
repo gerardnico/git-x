@@ -21,8 +21,8 @@ that always work (even if the commit was pushed to the remote)
 
 ## SYNOPSIS
 
+Recreate the last commit with the actual modified and added files.
 ```bash
-Add files to the last commit
 git-amend  [Commit Message]
 ```
 If the commit message is not given, it will take the message of the last commit.

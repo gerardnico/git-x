@@ -50,11 +50,11 @@ git-amend
 
 You can add it as alias:
 
-* in your `~/.gitconfig`. Example with `acp` that stands for `add, commit, push`
+* in your `~/.gitconfig`.
 
 ```ini
 [alias]
-  acp = "!git-commit"
+  gc = "!git-commit"
 ```
 
 * in your `~/.bashrc`

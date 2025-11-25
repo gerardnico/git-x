@@ -78,7 +78,12 @@ signing:
 
 distributions:
   git-x:
-    active: NEVER
+    # Artifacts are defined in the assembly
+    # Run it with
+    # JRELEASER_PROJECT_VERSION="0.1.0" jreleaser prepare --debug -p=brew
+    brew:
+      active: ALWAYS
+      formulaName: 'gitx'
     # Run it with
     # Create the assembly
     #    jreleaser assemble --debug --assembler=archive
