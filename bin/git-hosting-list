@@ -9,10 +9,11 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-echo.sh"
 
-function synopsis(){
+function synopsis() {
 
-  cat <<EOF
+  cat << EOF
 List hosted repositories
+
 \`\`\`bash
 $(basename "$0") git_hosting_service [xxx]
 \`\`\`
@@ -46,8 +47,6 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-
-
 GIT_HOSTING=""
 # Report are default value for JQ expression
 REPORT=""
@@ -62,49 +61,48 @@ FILTER_MAX_REPO_COUNT=""
 # This for loop should have no echo
 # Why? We use this function to get the list of repo to handle
 # We therefore need the raw output without any echo
-while [[ $# -gt 0 ]]
-do
-   case "$1" in
-       "--jq-expression")
-          shift
-          JQ_EXPRESSION="$1"
-          shift
-         ;;
-       "--filter-max-repo-count")
-          shift
-          FILTER_MAX_REPO_COUNT="$1"
-          shift
-         ;;
-       "--jq-raw-output"|"--jq-raw")
-          JQ_RAW_OUTPUT_OPTION="--raw-output"
-          shift
-         ;;
-       "--report"|"-r")
-          shift
-          REPORT="$1"
-          shift
-         ;;
-       "--help"|"-h")
-         help_list
-         exit
-         ;;
-        "--")
-          # The arg separator
-          shift
-          ;;
-        *)
-          if [ "$GIT_HOSTING" == "" ]; then
-              # ,, for lowercase
-              GIT_HOSTING="${1,,}"
-              shift
-              continue
-          fi
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    "--jq-expression")
+      shift
+      JQ_EXPRESSION="$1"
+      shift
+      ;;
+    "--filter-max-repo-count")
+      shift
+      FILTER_MAX_REPO_COUNT="$1"
+      shift
+      ;;
+    "--jq-raw-output" | "--jq-raw")
+      JQ_RAW_OUTPUT_OPTION="--raw-output"
+      shift
+      ;;
+    "--report" | "-r")
+      shift
+      REPORT="$1"
+      shift
+      ;;
+    "--help" | "-h")
+      help_list
+      exit
+      ;;
+    "--")
+      # The arg separator
+      shift
+      ;;
+    *)
+      if [ "$GIT_HOSTING" == "" ]; then
+        # ,, for lowercase
+        GIT_HOSTING="${1,,}"
+        shift
+        continue
+      fi
 
-          echo::err "Too much argument found: list except only one argument, the registry. ($1) is the second argument"
-          exit 1;
+      echo::err "Too much argument found: list except only one argument, the registry. ($1) is the second argument"
+      exit 1
 
-         ;;
-   esac
+      ;;
+  esac
 done
 
 if [ "$GIT_HOSTING" = "" ]; then
@@ -125,59 +123,59 @@ else
 fi
 
 case ${GIT_HOSTING} in
-gogs)
+  gogs)
 
-  # Auth Token
-  if [ -z "${GIT_TOKEN+x}" ]; then
-    echo::err "Git Token is mandatory to list repo for $GIT_HOSTING"
-    exit 1
-  fi
+    # Auth Token
+    if [ -z "${GIT_TOKEN+x}" ]; then
+      echo::err "Git Token is mandatory to list repo for $GIT_HOSTING"
+      exit 1
+    fi
 
-  case ${REPORT} in
-    "ls")
-      JQ_EXPRESSION_REPORT="map(.full_name) | join(\"$IFS\")"
-      JQ_RAW_OUTPUT_OPTION="--raw-output"
-      ;;
-    "asis")
-      JQ_EXPRESSION_REPORT='.'
-      JQ_RAW_OUTPUT_REPORT_OPTION=""
-      ;;
-    "default")
-      JQ_EXPRESSION_REPORT='[.[] | .full_name]'
-      JQ_RAW_OUTPUT_REPORT_OPTION=""
-      ;;
-    "csv")
-      JQ_EXPRESSION_REPORT='["full_name", "fork"], (.[] | [.full_name, .fork]) | @csv'
-      JQ_RAW_OUTPUT_OPTION="--raw-output"
-      ;;
-    *)
-      echo::err "The report ($REPORT) is unknown"
-      exit 1;
-    ;;
-  esac
+    case ${REPORT} in
+      "ls")
+        JQ_EXPRESSION_REPORT="map(.full_name) | join(\"$IFS\")"
+        JQ_RAW_OUTPUT_OPTION="--raw-output"
+        ;;
+      "asis")
+        JQ_EXPRESSION_REPORT='.'
+        JQ_RAW_OUTPUT_REPORT_OPTION=""
+        ;;
+      "default")
+        JQ_EXPRESSION_REPORT='[.[] | .full_name]'
+        JQ_RAW_OUTPUT_REPORT_OPTION=""
+        ;;
+      "csv")
+        JQ_EXPRESSION_REPORT='["full_name", "fork"], (.[] | [.full_name, .fork]) | @csv'
+        JQ_RAW_OUTPUT_OPTION="--raw-output"
+        ;;
+      *)
+        echo::err "The report ($REPORT) is unknown"
+        exit 1
+        ;;
+    esac
 
-  # Jq arguments
-  if [ "${JQ_EXPRESSION}" == "" ]; then
+    # Jq arguments
+    if [ "${JQ_EXPRESSION}" == "" ]; then
       JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
-  fi
-  echo::info  "Jq Expression: $JQ_EXPRESSION"
-  if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
+    fi
+    echo::info "Jq Expression: $JQ_EXPRESSION"
+    if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
       JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
-  fi
-  echo::info  "Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
+    fi
+    echo::info "Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
 
-  # URL AI
-  URL_API="https://$GIT_DOMAIN/api/v1/user/repos"
-  echo::info  "Requesting $URL_API"
+    # URL AI
+    URL_API="https://$GIT_DOMAIN/api/v1/user/repos"
+    echo::info "Requesting $URL_API"
 
-  # Execute
-  echo  ""
-  # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
-  # shellcheck disable=SC2086
-  curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
-  echo  ""
-  ;;
-github)
+    # Execute
+    echo ""
+    # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
+    # shellcheck disable=SC2086
+    curl -sS -H "Authorization: token $GIT_TOKEN" "$URL_API" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
+    echo ""
+    ;;
+  github)
 
     # Auth Token
     if [ -z "${GIT_TOKEN+x}" ]; then
@@ -204,19 +202,19 @@ github)
         ;;
       *)
         echo::err "The report ($REPORT) is unknown"
-        exit 1;
-      ;;
+        exit 1
+        ;;
     esac
 
     # Jq arguments
     if [ "${JQ_EXPRESSION}" == "" ]; then
-        JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
+      JQ_EXPRESSION=${JQ_EXPRESSION_REPORT}
     fi
-    echo::info  "Jq Expression: $JQ_EXPRESSION"
+    echo::info "Jq Expression: $JQ_EXPRESSION"
     if [ "${JQ_RAW_OUTPUT_OPTION}" == "" ]; then
-        JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
+      JQ_RAW_OUTPUT_OPTION=${JQ_RAW_OUTPUT_REPORT_OPTION}
     fi
-    echo::info  "Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
+    echo::info "Jq Raw Output Option: $JQ_RAW_OUTPUT_OPTION"
 
     # URL API: repo for the authenticated user
     # Doc: https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user
@@ -230,42 +228,41 @@ github)
     TOTAL_REPOS='[]'
     while true; do
 
-        REQUEST_URL="$URL_API?per_page=$REPO_BY_PAGE&page=$ACTUAL_PAGE"
-        echo::info  "$ACTUAL_PAGE - Requesting $REPO_BY_PAGE repo ($REQUEST_URL)";
+      REQUEST_URL="$URL_API?per_page=$REPO_BY_PAGE&page=$ACTUAL_PAGE"
+      echo::info "$ACTUAL_PAGE - Requesting $REPO_BY_PAGE repo ($REQUEST_URL)"
 
-        ACTUAL_REPOS=$(curl -sS -H "Authorization: token $GIT_TOKEN" "$REQUEST_URL")
-        TOTAL_REPOS=$(jq -s '.[0] + .[1]' <(echo "$TOTAL_REPOS") <(echo "$ACTUAL_REPOS"))
+      ACTUAL_REPOS=$(curl -sS -H "Authorization: token $GIT_TOKEN" "$REQUEST_URL")
+      TOTAL_REPOS=$(jq -s '.[0] + .[1]' <(echo "$TOTAL_REPOS") <(echo "$ACTUAL_REPOS"))
 
-        # Count the number of objects
-        COUNT=$(echo "$ACTUAL_REPOS" | jq ". | length")
-        # Add the COUNT to the total COUNT
-        TOTAL_COUNT=$((TOTAL_COUNT + COUNT))
+      # Count the number of objects
+      COUNT=$(echo "$ACTUAL_REPOS" | jq ". | length")
+      # Add the COUNT to the total COUNT
+      TOTAL_COUNT=$((TOTAL_COUNT + COUNT))
 
-        # Break on last page
-        if [ "$COUNT" -lt "$REPO_BY_PAGE" ]; then
-            echo::info  "Retrieved $TOTAL_COUNT repositories";
-            break
-        fi
+      # Break on last page
+      if [ "$COUNT" -lt "$REPO_BY_PAGE" ]; then
+        echo::info "Retrieved $TOTAL_COUNT repositories"
+        break
+      fi
 
-        # Break on max count
-        if [ "$FILTER_MAX_REPO_COUNT" != "" ] && [ "$TOTAL_COUNT" -ge "$FILTER_MAX_REPO_COUNT" ]; then
-            echo::info  "Max total count repositories ($TOTAL_COUNT) reached";
-            break
-        fi
+      # Break on max count
+      if [ "$FILTER_MAX_REPO_COUNT" != "" ] && [ "$TOTAL_COUNT" -ge "$FILTER_MAX_REPO_COUNT" ]; then
+        echo::info "Max total count repositories ($TOTAL_COUNT) reached"
+        break
+      fi
 
-        ACTUAL_PAGE=$((ACTUAL_PAGE + 1))
+      ACTUAL_PAGE=$((ACTUAL_PAGE + 1))
 
     done
 
-    echo::info  ""
+    echo::info ""
     # $JQ_RAW_OUTPUT_OPTION should not be quoted because jq does not accept empty string argument
     # shellcheck disable=SC2086
     echo "$TOTAL_REPOS" | jq $JQ_RAW_OUTPUT_OPTION "${JQ_EXPRESSION}"
 
     ;;
-*)
-  echo::err "The git platform $GIT_PLATFORM is not yet implemented"
-  exit 1
-  ;;
+  *)
+    echo::err "The git platform $GIT_PLATFORM is not yet implemented"
+    exit 1
+    ;;
 esac
-
