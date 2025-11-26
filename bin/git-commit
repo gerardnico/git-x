@@ -131,7 +131,7 @@ if [ "$CURRENT_BRANCH_UPSTREAM" != "" ]; then
   # rev-list provides the ability to build and traverse commit ancestry graphs.
   UPSTREAM_COMMIT_TO_MERGE=$(git rev-list HEAD...'@{u}' --count)
   if [ "$UPSTREAM_COMMIT_TO_MERGE" != 0 ]; then
-    echo::warn "$DIRECTORY_NAME - $UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
+    echo::warn "$UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
     git-pull
   fi
 fi
