@@ -16,9 +16,12 @@ function synopsis() {
 
   cat << EOF
 Delete a feature branch
+
 \`\`\`bash
-$(basename "$0") branch-name
+$(basename "$0") [ -f | --force ] branch-name
 \`\`\`
+
+* \`-f | --force\` : pass the commit difference error (if the feature branch was squashed merge for instance)
 EOF
 }
 
@@ -34,7 +37,23 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-BRANCH_NAME="${1:-}"
+# Args parsing
+BRANCH_NAME=""
+FORCE_DELETE=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -f | --force)
+      FORCE_DELETE=true
+      ;;
+    *)
+      BRANCH_NAME=${1}
+      shift
+      break
+      ;;
+  esac
+  shift
+done
+
 if [[ "${BRANCH_NAME}" == "" ]]; then
   BRANCH_NAME=$(git::get_current_branch)
 fi
@@ -66,12 +85,16 @@ DEFAULT_BRANCH=$(git::get_default_branch)
 echo::info "Checkout to the default branch $DEFAULT_BRANCH"
 command::echo_eval "git checkout $DEFAULT_BRANCH"
 
-# Before deletion, check that all feature commits are in the main branch
-COMMIT_DIFF=$(git log "$DEFAULT_BRANCH".."$BRANCH_NAME")
-if [ "$COMMIT_DIFF" != "" ]; then
-  echo::err "Not all commits from $BRANCH_NAME are in the default branch $DEFAULT_BRANCH"
-  echo::err "$COMMIT_DIFF"
-  exit 1
+# Commit check
+if [ $FORCE_DELETE == false ]; then
+  # Before deletion, check that all feature commits are in the main branch
+  COMMIT_DIFF=$(git log "$DEFAULT_BRANCH".."$BRANCH_NAME")
+  if [ "$COMMIT_DIFF" != "" ]; then
+    echo::err "Not all commits from $BRANCH_NAME are in the default branch $DEFAULT_BRANCH"
+    echo::err "$COMMIT_DIFF"
+    echo::err "Use the --force option (if you don't care. For instance, if the branch was squashed merged)"
+    exit 1
+  fi
 fi
 
 # Delete
