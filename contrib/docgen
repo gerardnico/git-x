@@ -36,7 +36,7 @@ function gendocs() {
 }
 
 # Args
-next_version=latest
+export next_version=latest
 WATCH=false
 MAN_PAGE=false
 NO_MAN_PAGE_INSTALL=false

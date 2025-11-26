@@ -7,6 +7,13 @@ tasks:
       - |
         docgen -w&
         npx docusaurus start
+  # Deploy (Normally done with release script)
+  # task deploy -- v0.1.0
+  deploy:
+    cmds:
+      - |
+        docgen "{{.CLI_ARGS}}"
+        npx docusaurus deploy
   kill:
     cmds:
       - |
