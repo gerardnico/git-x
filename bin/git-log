@@ -2,17 +2,28 @@
 # A improved version of `last = log -1 HEAD`
 
 set -Eeuo pipefail
+
+# Bash lib library path detection
+if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
+  if command -v "brew" > /dev/null 2>&1; then
+    GITURE_BASH_LIB_PATH="$(brew --prefix giture)/lib"
+  else
+    echo "error: GITURE_BASH_LIB_PATH is not set and a brew installation was not found"
+    exit 1
+  fi
+fi
+
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-error.sh"
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-doc.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-string.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-string.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-string.sh"
 
-function synopsis(){
+function synopsis() {
 
-  cat <<EOF
+  cat << EOF
 \`\`\`bash
 $(basename "$0")
 \`\`\`
@@ -37,10 +48,10 @@ fi
 # https://git-scm.com/docs/git-log#_diff_formatting
 
 HEAD_COLOR="green"
-colored_header(){
+colored_header() {
   echo "%C($HEAD_COLOR)$*%Creset"
 }
-padded_header(){
+padded_header() {
   #string::set_color "$HEAD_COLOR" "$*"
   # The %<(N) syntax format only the next placeholder as N columns wide
   # Therefore we need to use printf to right pad the header
@@ -55,9 +66,9 @@ COMMITTER="$(padded_header 'Committer'): %cn <%ce>"
 COMMITTER_DATE="$(padded_header 'Committer Date'): %ci"
 BRANCH="$(padded_header 'Branch'): %D%n"
 SUBJECT="$(padded_header 'Subject'): %s" # s means subject,
-BODY="$(colored_header 'Body'):%n%b" # b = body
+BODY="$(colored_header 'Body'):%n%b"     # b = body
 FILES="$(colored_header 'Files'):"
 
 git show --name-status \
-    --pretty=format:"${COMMIT_HASH}%n${AUTHOR}%n${AUTHOR_DATE}%n${COMMITTER}%n${COMMITTER_DATE}%n${BRANCH}%n${SUBJECT}%n${BODY}%n${FILES}" \
-    HEAD
+  --pretty=format:"${COMMIT_HASH}%n${AUTHOR}%n${AUTHOR_DATE}%n${COMMITTER}%n${COMMITTER_DATE}%n${BRANCH}%n${SUBJECT}%n${BODY}%n${FILES}" \
+  HEAD

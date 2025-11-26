@@ -2,9 +2,6 @@
   "projectBaseUrl":"${workspaceFolder}",
   "ignorePatterns": [
     {
-      "pattern": "^http*"
-    },
-    {
       "pattern": "^mailto*"
     }
   ]

@@ -1,21 +1,31 @@
 #!/bin/bash
 # for doc, see markdown file
 
-
 set -Eeuo pipefail
+
+# Bash lib library path detection
+if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
+  if command -v "brew" > /dev/null 2>&1; then
+    GITURE_BASH_LIB_PATH="$(brew --prefix giture)/lib"
+  else
+    echo "error: GITURE_BASH_LIB_PATH is not set and a brew installation was not found"
+    exit 1
+  fi
+fi
+
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-error.sh"
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-doc.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-string.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-command.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-command.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-git.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-git.sh"
 
-function synopsis(){
+function synopsis() {
 
-  cat <<EOF
+  cat << EOF
 Squash all commits of a branch into one
 \`\`\`bash
 $(basename "$0") [commit message]
@@ -36,7 +46,6 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-
 BRANCH_NAME=$(git::get_current_branch)
 DEFAULT_BRANCH=$(git::get_default_branch)
 if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
@@ -47,7 +56,7 @@ fi
 
 echo::info "Check if branch $BRANCH_NAME is dirty"
 command::echo_eval "git checkout $BRANCH_NAME"
-if git::is_dirty_index ; then
+if git::is_dirty_index; then
   echo::err "The branch is dirty, commit, stash or rollback your changes"
   exit 1
 fi
@@ -56,7 +65,8 @@ fi
 COMMIT_MESSAGE=${1:-"chore: squash feature branch $BRANCH_NAME"}
 echo::info "Commit"
 BODY=$(git log --pretty=format:%s%n%b "$DEFAULT_BRANCH".."$BRANCH_NAME")
-MESSAGE=$(cat <<-HereDoc
+MESSAGE=$(
+  cat <<- HereDoc
 $COMMIT_MESSAGE
 
 $BODY

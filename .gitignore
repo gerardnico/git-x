@@ -5,4 +5,7 @@ out
 
 # Backup file of editor (ie name.md~ file)
 *~
+# orig are file created by the merge tool
+*.orig
+# aider files to ignore
 .aider*

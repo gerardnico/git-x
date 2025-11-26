@@ -1,20 +1,30 @@
 #!/usr/bin/env bash
 # for docs, see md file
 
+# Bash lib library path detection
+if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
+  if command -v "brew" > /dev/null 2>&1; then
+    GITURE_BASH_LIB_PATH="$(brew --prefix giture)/lib"
+  else
+    echo "error: GITURE_BASH_LIB_PATH is not set and a brew installation was not found"
+    exit 1
+  fi
+fi
+
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-error.sh"
 error::set_strict_mode
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-echo.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-echo.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-git.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-git.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-command.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-command.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-command.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-path.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-path.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-path.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-doc.sh"
 
 
 function synopsis(){

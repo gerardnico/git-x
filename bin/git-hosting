@@ -3,22 +3,30 @@
 # @brief Execute a command against a Git Hosting Service
 
 set -Eeuo pipefail
+
+# Bash lib library path detection
+if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
+  if command -v "brew" > /dev/null 2>&1; then
+    GITURE_BASH_LIB_PATH="$(brew --prefix giture)/lib"
+  else
+    echo "error: GITURE_BASH_LIB_PATH is not set and a brew installation was not found"
+    exit 1
+  fi
+fi
+
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-error.sh"
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-doc.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-echo.sh"
-
+source "${GITURE_BASH_LIB_PATH}/bashlib-echo.sh"
 
 CLI_NAME=$(basename "$0") # Name of the cli
 
+function synopsis() {
 
-
-function synopsis(){
-
-  cat <<EOF
+  cat << EOF
 \`\`\`bash
 $(basename "$0") command [argument ...] [--option[=value] ...]
 \`\`\`
@@ -47,16 +55,11 @@ function help_mount() {
 
 }
 
-
-
-
-
-
 ######################################
 # Mount/unmount a rclone git registry
 # We don't use it anymore
 #####################################
-function mount(){
+function mount() {
 
   local RCLONE_MOUNTED_PATH=/tmp/rclone
   mkdir -p $RCLONE_MOUNTED_PATH
@@ -67,32 +70,32 @@ function mount(){
   local FUSE_ACTION="mount"
   local RCLONE_PROCESS_MODE="inline"
   for arg in "$@"; do
-          case "$arg" in
-          "--silent"|"-s")
-            SILENT_OPTION="silent"
-            ;;
-          "--unmount")
-            FUSE_ACTION="unmount"
-            ;;
-          "--daemon")
-            RCLONE_PROCESS_MODE="daemon"
-            ;;
-          "")
-            # empty arg
-          ;;
-          "--help"|"-h")
-            help_mount
-            exit
-          ;;
-          *)
-            if [ "$GIT_HOSTING" == "" ]; then
-                GIT_HOSTING="$arg"
-              else
-                echo::err "$FUNCTION_NAME: Only one argument is supported. ($arg) is the second argument"
-                exit 1
-            fi
-            ;;
-          esac
+    case "$arg" in
+      "--silent" | "-s")
+        SILENT_OPTION="silent"
+        ;;
+      "--unmount")
+        FUSE_ACTION="unmount"
+        ;;
+      "--daemon")
+        RCLONE_PROCESS_MODE="daemon"
+        ;;
+      "")
+        # empty arg
+        ;;
+      "--help" | "-h")
+        help_mount
+        exit
+        ;;
+      *)
+        if [ "$GIT_HOSTING" == "" ]; then
+          GIT_HOSTING="$arg"
+        else
+          echo::err "$FUNCTION_NAME: Only one argument is supported. ($arg) is the second argument"
+          exit 1
+        fi
+        ;;
+    esac
   done
 
   # Unmount
@@ -105,23 +108,23 @@ function mount(){
     # Fusermount does not exist on alpine
     # Otherwise it would have been:
     # fusermount -u $RCLONE_MOUNTED_PATH
-    return;
+    return
 
   fi
 
   if [ "$GIT_HOSTING" == "" ]; then
-      echo::err "$FUNCTION_NAME: A Git registry name is needed as first argument "
-      exit 1
+    echo::err "$FUNCTION_NAME: A Git registry name is needed as first argument "
+    exit 1
   fi
 
-  set_rclone_env  $GIT_HOSTING
+  set_rclone_env $GIT_HOSTING
 
   echo::info "$FUNCTION_NAME: Mount Rclone $GIT_HOSTING at $RCLONE_MOUNTED_PATH"
 
   RCLONE_COMMAND="rclone mount $RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH $RCLONE_MOUNTED_PATH"
   if [ $RCLONE_PROCESS_MODE == "daemon" ]; then
     RCLONE_COMMAND="$RCLONE_COMMAND --daemon"
-  fi;
+  fi
   echo::info "$FUNCTION_NAME: Executing the command: $RCLONE_COMMAND"
   eval "$RCLONE_COMMAND"
 
@@ -134,18 +137,18 @@ function mount(){
 COMMAND=""
 for arg in "$@"; do
   case $arg in
-    --*|-*)
-    ARGUMENTS+=("$arg")
-    ;;
+    --* | -*)
+      ARGUMENTS+=("$arg")
+      ;;
     *)
-    if [ "$COMMAND" == "" ]; then
+      if [ "$COMMAND" == "" ]; then
         COMMAND=$1
       else
         ARGUMENTS+=("$arg")
-    fi
+      fi
+      ;;
   esac
 done
-
 
 if [ "$COMMAND" == "" ]; then
   doc::help synopsis

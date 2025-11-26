@@ -1,3 +1,6 @@
+---
+sidebar_label: 'Giture Installation'
+---
 # Installation
 
 ## Docker

@@ -1,17 +1,28 @@
 #!/bin/bash
 
 set -Eeuo pipefail
+
+# Bash lib library path detection
+if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
+  if command -v "brew" > /dev/null 2>&1; then
+    GITURE_BASH_LIB_PATH="$(brew --prefix giture)/lib"
+  else
+    echo "error: GITURE_BASH_LIB_PATH is not set and a brew installation was not found"
+    exit 1
+  fi
+fi
+
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-error.sh"
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-doc.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-echo.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-echo.sh"
 
-function synopsis(){
+function synopsis() {
 
-  cat <<EOF
+  cat << EOF
 Create environment export statement
 \`\`\`bash
 $(basename "$0") HostingName
@@ -34,17 +45,16 @@ FIRST_ARG=${1:-}
 if [ "$FIRST_ARG" == "" ]; then
   doc::help synopsis
   echo::err "The Platform Name should be not empty"
-  exit 1;
+  exit 1
 fi
 
 if [ "$FIRST_ARG" == "synopsis" ]; then
   synopsis
-  exit;
+  exit
 fi
 
 PLATFORM_NAME="${FIRST_ARG,,}" # ^^ for lowercase
-echo::info  "Setting env for Platform: $PLATFORM_NAME"
-
+echo::info "Setting env for Platform: $PLATFORM_NAME"
 
 # Target
 GIT_PLATFORM_ENV_NAME="${ENV_PREFIX}_${PLATFORM_NAME^^}_PLATFORM"
@@ -63,7 +73,7 @@ if [ -z "${!GIT_PLATFORM_ENV_NAME+x}" ]; then
 else
   GIT_PLATFORM=${!GIT_PLATFORM_ENV_NAME}
 fi
-echo::info  "  * Platform: $GIT_PLATFORM"
+echo::info "  * Platform: $GIT_PLATFORM"
 echo "GIT_PLATFORM=$GIT_PLATFORM"
 
 # Domain
@@ -81,19 +91,19 @@ if [ -z "${!GIT_DOMAIN_ENV_NAME+x}" ]; then
     *)
       # Local registry does not have any domain
       ;;
-    esac
+  esac
 else
   GIT_DOMAIN=${!GIT_DOMAIN_ENV_NAME}
 fi
-echo::info  "  * Domain: $GIT_DOMAIN"
+echo::info "  * Domain: $GIT_DOMAIN"
 
 # API Access Token
 GIT_TOKEN_ENV_NAME="${ENV_PREFIX}_${PLATFORM_NAME^^}_TOKEN"
 if [ -z "${!GIT_TOKEN_ENV_NAME+x}" ]; then
-    unset GIT_TOKEN;
-    echo::warn  "  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
-  else
-    GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
-    echo::info  "  * Api Token: Found"
-    echo "GIT_TOKEN=$GIT_TOKEN"
-fi;
+  unset GIT_TOKEN
+  echo::warn "  * Api Token: Variable ($GIT_TOKEN_ENV_NAME) not found"
+else
+  GIT_TOKEN=${!GIT_TOKEN_ENV_NAME}
+  echo::info "  * Api Token: Found"
+  echo "GIT_TOKEN=$GIT_TOKEN"
+fi

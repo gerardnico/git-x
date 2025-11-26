@@ -1,13 +1,25 @@
 #!/bin/bash
 
+set -Eeuo pipefail
+
+# Bash lib library path detection
+if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
+  if command -v "brew" > /dev/null 2>&1; then
+    GITURE_BASH_LIB_PATH="$(brew --prefix giture)/lib"
+  else
+    echo "error: GITURE_BASH_LIB_PATH is not set and a brew installation was not found"
+    exit 1
+  fi
+fi
+
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-error.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-error.sh"
 error::set_strict_mode
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-doc.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
-source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-echo.sh"
+source "${GITURE_BASH_LIB_PATH}/bashlib-echo.sh"
 
 # Set the configuration via env
 # Conf via env variables
@@ -63,7 +75,7 @@ METRIC_FORK_SKIPPED_REASON="fork"
 
 function synopsis() {
 
-  cat <<EOF
+  cat << EOF
 \`\`\`bash
 $(basename "$0") source target [...]
 \`\`\`
@@ -114,7 +126,7 @@ fi
 # As we output stats data, we don't want to
 # have the output of a command to mess it up
 # should be after synopsis and help otherwise we see them in the doc generation
-exec >/dev/stderr
+exec > /dev/stderr
 
 if ! args=$(getopt -l "restart,filter-max-repo-count:,filter-exclude-pattern:,jq-raw-output,jq-raw,help,report:,output:" -o "ro:" -- "$@"); then
   echo::err "An error has occurred while parsing the command arguments"
@@ -133,46 +145,46 @@ OUTPUT_FORMAT_PROM="prometheus"
 OUTPUT_FORMAT=$OUTPUT_FORMAT_JSON
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  "--restart" | "-r")
-    RESTART="true"
-    shift
-    ;;
-  "--output" | "-o")
-    shift
-    OUTPUT_FORMAT="$1"
-    if [[ ! $OUTPUT_FORMAT =~ "$OUTPUT_FORMAT_JSON"|"$OUTPUT_FORMAT_PROM" ]]; then
-      doc::help synopsis
-      echo::err "The output format option should be $OUTPUT_FORMAT_JSON or $OUTPUT_FORMAT_PROM"
-      exit 1
-    fi
-    shift
-    ;;
-  "--filter-max-repo-count")
-    shift
-    FILTER_MAX_REPO_COUNT="$1"
-    shift
-    ;;
-  "--filter-exclude-pattern")
-    shift
-    FILTER_EXCLUDE_PATTERN="$1"
-    shift
-    ;;
-  "--")
-    # The args separator of getopt
-    shift
-    ;;
-  *)
-    if [ "$GIT_SOURCE" == "" ]; then
-      GIT_SOURCE="${1,,}" # ,, for lowercase
-    elif [ "$GIT_TARGET" == "" ]; then
-      GIT_TARGET="${1,,}" # ,, for lowercase
-    else
-      doc::help synopsis
-      echo::err "Too much argument found: We except only 2 arguments, the source and the target. ($1) is the third argument"
-      exit 1
-    fi
-    shift
-    ;;
+    "--restart" | "-r")
+      RESTART="true"
+      shift
+      ;;
+    "--output" | "-o")
+      shift
+      OUTPUT_FORMAT="$1"
+      if [[ ! $OUTPUT_FORMAT =~ "$OUTPUT_FORMAT_JSON"|"$OUTPUT_FORMAT_PROM" ]]; then
+        doc::help synopsis
+        echo::err "The output format option should be $OUTPUT_FORMAT_JSON or $OUTPUT_FORMAT_PROM"
+        exit 1
+      fi
+      shift
+      ;;
+    "--filter-max-repo-count")
+      shift
+      FILTER_MAX_REPO_COUNT="$1"
+      shift
+      ;;
+    "--filter-exclude-pattern")
+      shift
+      FILTER_EXCLUDE_PATTERN="$1"
+      shift
+      ;;
+    "--")
+      # The args separator of getopt
+      shift
+      ;;
+    *)
+      if [ "$GIT_SOURCE" == "" ]; then
+        GIT_SOURCE="${1,,}" # ,, for lowercase
+      elif [ "$GIT_TARGET" == "" ]; then
+        GIT_TARGET="${1,,}" # ,, for lowercase
+      else
+        doc::help synopsis
+        echo::err "Too much argument found: We except only 2 arguments, the source and the target. ($1) is the third argument"
+        exit 1
+      fi
+      shift
+      ;;
   esac
 done
 
@@ -225,7 +237,7 @@ fi
 # Backup Start
 # Get the last backup date
 LAST_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/last-backup-time.dat"
-if ! LAST_BACKUP_TIME=$(rclone cat "$LAST_BACKUP_TIME_FILE_PATH" 2>/dev/null); then
+if ! LAST_BACKUP_TIME=$(rclone cat "$LAST_BACKUP_TIME_FILE_PATH" 2> /dev/null); then
   # File does not exist
   # Rclone Sftp returns an error while s3 does not
   LAST_BACKUP_TIME=""
@@ -241,7 +253,7 @@ fi
 # Store the current date and time
 RCLONE_START_BACKUP_TIME_FILE_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/start-backup-time.dat"
 echo::info "Listing start backup time"
-if ! START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" 2>/dev/null | wc -l); then
+if ! START_BACKUP_TIME_FILE_COUNT=$(rclone lsf "$RCLONE_START_BACKUP_TIME_FILE_PATH" 2> /dev/null | wc -l); then
   # File does not exist
   # Rclone Sftp returns an error while s3 does not
   START_BACKUP_TIME_FILE_COUNT="0"
@@ -286,7 +298,7 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   TOTAL_COUNT=$((TOTAL_COUNT + 1))
 
   REPO_FULL_NAME=$(echo "$REPO_FULL_NAME" | tr -d '"')
-  IFS='/' read -r REPO_PARENT REPO_NAME <<<"$REPO_FULL_NAME"
+  IFS='/' read -r REPO_PARENT REPO_NAME <<< "$REPO_FULL_NAME"
   echo::info " "
   echo::info "Backup Repo: $REPO_FULL_NAME"
 
@@ -305,7 +317,7 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   BUNDLE_NAME="${REPO_NAME}.bundle"
   BUNDLE_RELATIVE_PATH=$REPO_PARENT/$BUNDLE_NAME
   BUNDLE_TARGET_PATH="$RCLONE_REMOTE_NAME:$RCLONE_BASE_PATH/$BUNDLE_RELATIVE_PATH"
-  if ! TARGET_BUNDLE_PATH_COUNT=$(rclone lsf "$BUNDLE_TARGET_PATH" 2>/dev/null | wc -l); then
+  if ! TARGET_BUNDLE_PATH_COUNT=$(rclone lsf "$BUNDLE_TARGET_PATH" 2> /dev/null | wc -l); then
     # File does not exist
     # Rclone Sftp returns an error while s3 does not
     TARGET_BUNDLE_PATH_COUNT="0"
@@ -353,30 +365,30 @@ while IFS=',' read -r REPO_FULL_NAME REPO_FORK REPO_SSH_URL PUSHED_AT; do
   echo::info "Uploading bundle: $BUNDLE_NAME"
   MOVE_COMMAND="rclone moveto $BUNDLE_SOURCE_PATH $BUNDLE_TARGET_PATH --progress"
   echo::info "Executing : $MOVE_COMMAND"
-  eval "$MOVE_COMMAND" >/dev/stderr
+  eval "$MOVE_COMMAND" > /dev/stderr
 
   echo::info "Cleaning up"
   echo::info "Deleting Git repo: $CLONE_TARGET_DIR"
-  rm -rf "$CLONE_TARGET_DIR" >/dev/stderr
+  rm -rf "$CLONE_TARGET_DIR" > /dev/stderr
   echo::info "Deleting Git repo: Done"
 
 done \
-  <<<"$API_REPOS" # needed to not run as pipeline and get TOTAL_COUNT
+  <<< "$API_REPOS" # needed to not run as pipeline and get TOTAL_COUNT
 
-echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH" >/dev/stderr
-rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH" >/dev/stderr
+echo "$START_BACKUP_TIME" | rclone rcat "$LAST_BACKUP_TIME_FILE_PATH" > /dev/stderr
+rclone delete "$RCLONE_START_BACKUP_TIME_FILE_PATH" > /dev/stderr
 echo::info " "
 echo::info "Processed $TOTAL_COUNT repositories"
 
 # Reset > to /dev/stdout
 # At the beginning we set it to /dev/stderr
 # so that no command will messed up with /dev/stdout
-exec >/dev/stdout
+exec > /dev/stdout
 
 # Output
 case $OUTPUT_FORMAT in
-"$OUTPUT_FORMAT_JSON")
-  cat <<EOF
+  "$OUTPUT_FORMAT_JSON")
+    cat << EOF
 {
     "${METRIC_TOTAL_LABEL}_${METRIC_NAME}": "$TOTAL_COUNT",
     "${METRIC_REPO_DUMPED_STATED}_${METRIC_NAME}": "$DUMPED_COUNT",
@@ -386,11 +398,11 @@ case $OUTPUT_FORMAT in
     "${METRIC_PATTERN_SKIPPED_REASON}_${METRIC_NAME}": "$SKIPPED_PATTERN"
 }
 EOF
-  ;;
-"$OUTPUT_FORMAT_PROM")
-  # We make it short. The prefix has no space or separator.
-  PREFIX="gitbackup"
-  cat <<EOF
+    ;;
+  "$OUTPUT_FORMAT_PROM")
+    # We make it short. The prefix has no space or separator.
+    PREFIX="gitbackup"
+    cat << EOF
 # TYPE ${PREFIX}_${METRIC_NAME} counter
 # HELP ${PREFIX}_${METRIC_NAME} the repos processed
 ${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_DUMPED_STATED", reason="changed"} $DUMPED_COUNT
@@ -399,12 +411,12 @@ ${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_SKIPPED_STATE", reason="$METRIC_EM
 ${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_SKIPPED_STATE", reason="$METRIC_FORK_SKIPPED_REASON"} $SKIPPED_FORK
 ${PREFIX}_${METRIC_NAME} {state="$METRIC_REPO_SKIPPED_STATE", reason="$METRIC_PATTERN_SKIPPED_REASON"} $SKIPPED_PATTERN
 EOF
-  ;;
-*)
-  # We check at argument parsing
-  # therefore we should never hit this point
-  # but we never know
-  echo::err "Output Format $OUTPUT_FORMAT not supported"
-  exit 1
-  ;;
+    ;;
+  *)
+    # We check at argument parsing
+    # therefore we should never hit this point
+    # but we never know
+    echo::err "Output Format $OUTPUT_FORMAT not supported"
+    exit 1
+    ;;
 esac

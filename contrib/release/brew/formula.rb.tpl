@@ -32,7 +32,10 @@ class {{brewFormulaName}} < Formula
     # Install man pages:
     man1.install Dir["man1/*.1"]
 
-  end
+    # Library installation
+    lib.install Dir["lib/*.sh"]
+
+end
 
   # https://rubydoc.brew.sh/Formula#caveats-instance_method
   def caveats

@@ -77,3 +77,6 @@ fi
 # Release
 jreleaser full-release
 echo "Version release of $next_version done"
+
+# Website
+(cd "$PROJECT_ROOT/website"; npx docusaurus deploy);
