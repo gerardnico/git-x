@@ -75,6 +75,10 @@ if [ "$COMMIT_MESSAGE" = "" ]; then
   echo::info "DIRECTORY_NAME - Commit message generated: $COMMIT_MESSAGE"
 fi
 
+# Add the files
+# (renormalize below does not add any file into the index)
+git add -A
+
 # `--renormalize` to correct the EOL in the working tree
 # You get an error on Delete file and we need to take the last element
 # Example of output:
@@ -84,13 +88,43 @@ fi
 #?? docs/lib/bashlib-bash.md
 # We read line by line to be able to hand
 # jinja file name such as {% if package_manager == 'maven' %}.mvn{% endif %}/wrapper/maven-wrapper.properties
+GIT_ROOT="$(git::get_root_directory)"
 git diff --cached --name-only --diff-filter=d | while read -r MODIFIED_FILE; do
-  git add --renormalize "$MODIFIED_FILE"
+  # file may be ignored
+  MODIFIED_FILE_PATH="$GIT_ROOT/$MODIFIED_FILE"
+  if ! git add --renormalize "$MODIFIED_FILE_PATH"; then
+    echo::warn "Error on renormalization of the file $MODIFIED_FILE_BASHLIB_LIBRARY_PATH"
+    exit 1
+  fi
 done
 
-# renormalize does not add any file into the index
-# we need to add it twice
-git add -A
+
+# Auto Pull
+# Most of the time, pull can be in auto-mode (ie stash, pull, pop)
+# Even if we check it at commit time, it's still handy to have it automatically
+#
+# Most of the time, the other script that needs to commit does not integrate git-commit
+# as they prefer do the preparation before and avoid the hooks at commit
+#
+# Is there an upstream to pull from
+CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2> /dev/null)
+if [ "$CURRENT_BRANCH_UPSTREAM" != "" ]; then
+  # Check if there is commit to integrate
+  # `Updates were rejected because the tip of your current branch is behind`
+  # ! [rejected]        master -> master (non-fast-forward)
+  #error: failed to push some refs to 'https://gerardnico:ghp_glKrr7@github.com/ComboStrap/website'
+  #hint: Updates were rejected because the tip of your current branch is behind
+  #hint: its remote counterpart. Merge the remote changes (e.g. 'git pull')
+  #hint: before pushing again.
+  #hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+  git fetch
+  # rev-list provides the ability to build and traverse commit ancestry graphs.
+  UPSTREAM_COMMIT_TO_MERGE=$(git rev-list HEAD...'@{u}' --count)
+  if [ "$UPSTREAM_COMMIT_TO_MERGE" != 0 ]; then
+    echo::warn "$DIRECTORY_NAME - $UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
+    git-pull
+  fi
+fi
 
 echo::info "Committing"
 # We can't use echo::eval because the message may be on multiple lines
@@ -103,7 +137,6 @@ if [ $MESSAGE_EDIT == true ]; then
 fi
 git "${COMMIT_ARGS[@]}"
 
-CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2> /dev/null)
 if [ "$CURRENT_BRANCH_UPSTREAM" != "" ]; then
   git push
   exit

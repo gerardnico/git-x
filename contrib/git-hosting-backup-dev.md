@@ -7,19 +7,19 @@
 * The ssh key is needed for Git
 
 ```bash
-cd ~/code/git-x
+cd ~/code/giture
 docker run \
-  --name git-x \
+  --name giture \
   --rm \
   -it \
   --user 1000:1000 \
   -v ./resources/git-backup:/opt/git-backup \
   -v ~/.ssh:/home/me/.ssh \
-  -e GIT_X_GITHUB_PLATFORM=github \
-  -e GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN \
-  -e GIT_X_S3_PLATFORM=rclone \
-  -e GIT_X_S3_RCLONE_REMOTE_NAME=git_backup \
-  -e GIT_X_S3_RCLONE_BASE_PATH=git-backup \
+  -e GITURE_GITHUB_PLATFORM=github \
+  -e GITURE_GITHUB_TOKEN=$GITHUB_TOKEN \
+  -e GITURE_S3_PLATFORM=rclone \
+  -e GITURE_S3_RCLONE_REMOTE_NAME=git_backup \
+  -e GITURE_S3_RCLONE_BASE_PATH=git-backup \
   -e RCLONE_CONFIG_GIT_BACKUP_TYPE=s3 \
   -e RCLONE_CONFIG_GIT_BACKUP_PROVIDER=IDrive \
   -e RCLONE_CONFIG_GIT_BACKUP_ENDPOINT=h0k0.ca.idrivee2-22.com \
@@ -27,7 +27,7 @@ docker run \
   -e RCLONE_CONFIG_GIT_BACKUP_ACCESS_KEY_ID=$GIT_BACKUP_ACCESS_KEY \
   -e RCLONE_CONFIG_GIT_BACKUP_NO_CHECK_BUCKET=true \
   -e RCLONE_CONFIG_GIT_BACKUP_SERVER_SIDE_ENCRYPTION=aws:kms \
-  ghcr.io/gerardnico/git-x:latest \
+  ghcr.io/gerardnico/giture:latest \
   /bin/bash
 
 # or with bunny
@@ -38,9 +38,9 @@ docker run \
   --user 1000:1000 \
   -v ./resources/git-backup:/opt/git-backup \
   -v ~/.ssh:/home/me/.ssh \
-  -e GIT_X_GITHUB_PLATFORM=github \
-  -e GIT_X_GITHUB_TOKEN=$GITHUB_TOKEN \
-  -e GIT_X_BUNNY_PLATFORM=rclone \
+  -e GITURE_GITHUB_PLATFORM=github \
+  -e GITURE_GITHUB_TOKEN=$GITHUB_TOKEN \
+  -e GITURE_BUNNY_PLATFORM=rclone \
   -e RCLONE_INPLACE=1 \
   -e RCLONE_SIZE_ONLY=1 \
   -e RCLONE_CONFIG_BUNNY_TYPE=sftp \
@@ -48,7 +48,7 @@ docker run \
   -e RCLONE_CONFIG_BUNNY_ENDPOINT=h0k0.ca.idrivee2-22.com \
   -e RCLONE_CONFIG_BUNNY_USER=git-backup \
   -e RCLONE_CONFIG_BUNNY_PASS=$GIT_BACKUP_BUNNY_PASS \
-  ghcr.io/gerardnico/git-x:latest \
+  ghcr.io/gerardnico/giture:latest \
   /bin/bash
 ```
 * Modify the script
@@ -79,7 +79,7 @@ mkdir -p ~/gerardnico/shell
 git clone --mirror git@github.com:gerardnico/shell.git ~/gerardnico/shell
 # https://git-scm.com/docs/gitformat-bundle
 # A bundle is an archive file that a user can use with the git clone command to create a local repository.
-# The bundle contains your source code, as well as the change history for the commits and branches that you reference during the bundle creation step 
+# The bundle contains your source code, as well as the change history for the commits and branches that you reference during the bundle creation step
 # then bundle results in only one file (no need to archive)
 # The bundle command package up everything that would normally be pushed over the wire with a git push
 # -c 'pack.threads=1' - forcing git to be single threaded makes the output deterministic.
@@ -89,7 +89,7 @@ md5sum ~/gerardnico/gerardnico.shell.bundle # ie 44e9133160acee494bc7bdccd30441d
 # rclone syncs in one direction only, from source to dest
 # It effectively downloads the file and uploads it again, check with --interactive
 # --no-update-time because the clone messed them up
-# --checksum Check for changes with size & checksum, normally rclone will look at modification time and size of files to see if they are equal. 
+# --checksum Check for changes with size & checksum, normally rclone will look at modification time and size of files to see if they are equal.
 # --backup-dir=DIR: any files which would have been overwritten or deleted are moved in their original hierarchy into this directory
 # Flags: https://rclone.org/flags/
 rclone sync --checksum --no-update-modtime ~/gerardnico/shell git-backup:git-backup/gerardnico/shell
@@ -99,7 +99,7 @@ rclone sync --checksum --no-update-modtime ~/gerardnico/shell git-backup:git-bac
 tar -zcvf - / --exclude-from=/tmp/exc | rclone rcat git-backup:git-backup/data_date "+%Y-%m-%d_%H:%M:%S".tar.gz -v
 rm -rf ~/gerardnico/shell
 ```
-* At completion, overwrite the last backup time with the start backup time 
+* At completion, overwrite the last backup time with the start backup time
 
 
 
@@ -113,10 +113,10 @@ docker run \
   --rm \
   -it \
   -v ./resources/git-backup:/opt/git-backup \
-  -e GIT_X_GOGS_PLATFORM=gogs \
-  -e GIT_X_GOGS_DOMAIN=gogs.bytle.net \
-  -e GIT_X_GOGS_TOKEN=$GOGS_TOKEN \
-  ghcr.io/gerardnico/git-x:latest \
+  -e GITURE_GOGS_PLATFORM=gogs \
+  -e GITURE_GOGS_DOMAIN=gogs.bytle.net \
+  -e GITURE_GOGS_TOKEN=$GOGS_TOKEN \
+  ghcr.io/gerardnico/giture:latest \
   git-hosting-list gogs
 ```
 

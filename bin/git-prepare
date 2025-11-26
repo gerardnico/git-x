@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 set -TCEeuo pipefail # Strict Bash
 
-function synopsis(){
+# shellcheck source=../../bash-lib/lib/bashlib-doc.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-doc.sh"
+# shellcheck source=../../bash-lib/lib/bashlib-git.sh
+source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
 
-  cat <<EOF
-Prepare the next commit
+function synopsis() {
+
+  cat << EOF
+Lint, check and prepare the next commit with pre-commit
 \`\`\`bash
 $(basename "$0")
 \`\`\`
@@ -29,6 +34,12 @@ PRE_COMMIT_FILE="$ROOT_DIRECTORY/.pre-commit-config.yaml"
 if [ ! -f "$PRE_COMMIT_FILE" ]; then
   echo::warn "git prepare was skipped because the pre-commit file was not found ($PRE_COMMIT_FILE)"
   exit 0
+fi
+
+# Installed
+if ! command -v "pre-commit" > /dev/null 2>&1; then
+  echo::warn "A pre-commit file was found but pre-commit is not installed."
+  exit 1
 fi
 
 # Prepare is a Node.js convention command name to lint and correct file

@@ -78,7 +78,8 @@ if ! git-prepare; then
 fi
 COMMIT_MESSAGE=${1:-"feat: merge feature branch $BRANCH_NAME"}
 echo::info "Commit"
-BODY=$(git log --pretty=format:%s "$DEFAULT_BRANCH".."$BRANCH_NAME")
+# All subject and body, we delete empty line because if the body (b) is empty we get an empty line
+BODY=$(git log --pretty=format:%s%n%b "$DEFAULT_BRANCH".."$BRANCH_NAME" | sed 's/[^:]*: /  - /' | sed '/^[[:space:]]*$/d')
 MESSAGE=$(
   cat <<- HereDoc
 $COMMIT_MESSAGE
@@ -86,7 +87,8 @@ $COMMIT_MESSAGE
 $BODY
 HereDoc
 )
-git-commit "$MESSAGE"
+# Commit with edit message
+git-commit --edit "$MESSAGE"
 echo::success "Done"
 echo::tip "Delete branch with:"
 echo::tip "   git-branch-delete $BRANCH_NAME"

@@ -11,6 +11,8 @@ repos:
       - id: end-of-file-fixer # makes sure files end in a newline and only a newline.
       - id: check-yaml
       - id: check-added-large-files # no commit on large files
+        exclude: package-lock.json # they may be 700kb, and it's recommended to commit them in
+        args: [ "--maxkb", "500" ]
       - id: detect-private-key # detect private key
         # Prevent committing inline conflict markers
       - id: check-merge-conflict

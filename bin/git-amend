@@ -14,7 +14,7 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-git.sh"
 
 function synopsis() {
 
-  cat <<EOF
+  cat << EOF
 Recreate the last commit with the actual modified and added files.
 \`\`\`bash
 $(basename "$0")  [Commit Message]
@@ -41,12 +41,33 @@ if [ ! -f .git ]; then
   git submodule foreach 'git-amend'
 fi
 
-if ! git::is_dirty_index; then
-  echo::warn "Nothing to amend"
-  exit
+# Args parsing
+COMMIT_MESSAGE=""
+MESSAGE_EDIT=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -e | --edit)
+      MESSAGE_EDIT=true
+      ;;
+    *)
+      COMMIT_MESSAGE=${1}
+      shift
+      break
+      ;;
+  esac
+  shift
+done
+
+if ! git::is_dirty_index && [ "$COMMIT_MESSAGE" == "" ] && [ $MESSAGE_EDIT == false ]; then
+  echo::warn "Nothing to do: no files to amend, no message to edit, no new message, exiting"
+  exit 1
 fi
 
-# Get the last commit hash
+# Default Message
+if [ "$COMMIT_MESSAGE" == "" ]; then
+  COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+fi
+
 # Get the last commit hash
 last_commit=$(git rev-parse HEAD)
 tags=$(git tag --points-at "$last_commit")
@@ -55,10 +76,6 @@ if [ "$tags" != "" ]; then
   git-tag-delete "$tags"
 fi
 
-MESSAGE=${1:-}
-if [ "$MESSAGE" == "" ]; then
-  MESSAGE=$(git log -1 --pretty=%B)
-fi
 # Check the actual files before the undo (delete of the last commit)
 # If there is an error in the actual files, the commit command will fail
 # and the user don't know where he is (ie is the commit deleted ???)
@@ -68,8 +85,14 @@ fi
 # knowing that it will not delete another commit
 command::echo_eval "git-prepare"
 # delete the last commit
-git-undo
+command::echo_eval "git-undo"
 # commit after / no verify to disable git-hooks has we have done it earlier with git-prepare
-command::echo_eval "git commit --no-verify -am \"$MESSAGE\""
+echo "Commit"
+COMMIT_ARGS=(commit --no-verify -am "$COMMIT_MESSAGE")
+if [ $MESSAGE_EDIT == true ]; then
+  COMMIT_ARGS+=(--edit)
+fi
+# we can't do a echo eval because the commit message may be on multiple lines
+git "${COMMIT_ARGS[@]}"
 # push
 command::echo_eval "git push"

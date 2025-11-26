@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+
+set -TCEeuo pipefail
+
+# Generate a doc or a repo
+function gendocs() {
+
+  FILE_PATH="$1"
+
+  if [ "$FILE_PATH" == "$ORIGIN_DOCS" ]; then
+
+    echo "Init $ORIGIN_DOCS"
+
+  else
+
+    echo "regenerate $FILE_PATH"
+
+  fi
+
+  # for now we regenerate all
+  echo ""
+  echo "Docgen"
+  bashlib-docgen \
+    --output-dir "$TARGET_DOCS/commands" \
+    --doc-version "$next_version" \
+    --md-dir "$ORIGIN_DOCS/commands" \
+    "$PROJECT_ROOT/bin"
+
+  # Copy the fixed docs (files only, not subdirectories)
+  # !commands with extglob otherwise we get this error that is not an error
+  # cp: -r not specified; omitting directory '/home/admin/code/giture/docs/commands'
+  echo ""
+  echo "Copy all static files except the commands directory"
+  find "$ORIGIN_DOCS" -maxdepth 1 -type f ! -name "commands" -exec sh -c 'echo "Copying: $(basename "$1")"; cp --update "$1" "$2"' _ {} "$TARGET_DOCS" \;
+
+}
+
+# Args
+next_version=latest
+WATCH=false
+MAN_PAGE=false
+NO_MAN_PAGE_INSTALL=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -w | --watch)
+      WATCH=true
+      ;;
+    -m | --with-man-page)
+      MAN_PAGE=true
+      ;;
+    -ni | --no-man-page-install)
+      # man page install needs root right (sudo)
+      NO_MAN_PAGE_INSTALL=true
+      ;;
+    *)
+      next_version=${1}
+      shift
+      break
+      ;;
+  esac
+  shift
+done
+
+TARGET_DOCS="$PROJECT_ROOT/website/docs"
+rm -rf "$TARGET_DOCS"
+
+# Generate the doc
+ORIGIN_DOCS="$PROJECT_ROOT/docs"
+gendocs "$ORIGIN_DOCS"
+
+if [ $MAN_PAGE == true ]; then
+  echo "Generate man page"
+  MAN_ARGS=(--output-dir "${BUILD_DIR:-target}/man1")
+  if [ $NO_MAN_PAGE_INSTALL == true ]; then
+    MAN_ARGS+=(--no-install)
+  fi
+  MAN_ARGS+=("$TARGET_DOCS")
+  bashlib-mangen "${MAN_ARGS[@]}"
+fi
+
+# Watch changes
+# sort --unique | sed '/^$/d' |
+if [ $WATCH == true ]; then
+  LOCKFILE="/tmp/docgen.lock"
+  echo ""
+  echo "Watching $ORIGIN_DOCS"
+  # the %T is important to get only one line by change as we use uniq (uniq keep)
+  # stdbuf -oL flag forces line-buffered output of uniq (otherwise it will buffer the output if not for the terminal)
+  inotifywait --event modify,create,delete,move --format '%T %w%f' --timefmt '%Y-%m-%d-%T%z' --exclude '.*~$' --monitor "$ORIGIN_DOCS" \
+    | stdbuf -oL uniq | while read -r time file; do
+    # Check if lock file exists and is less than 5 seconds old
+    # -mmin +0.083 means "files modified more than 0.083 minutes ago".
+    if [[ ! -f "$LOCKFILE" ]] || [[ $(find "$LOCKFILE" -mmin +0.083 2> /dev/null) ]]; then
+      touch $LOCKFILE
+      gendocs "$file"
+      echo "$time: watching"
+    else
+      echo "gendocs timeout not up - skipping"
+    fi
+  done
+else
+  echo "No watch mode"
+fi

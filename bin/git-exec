@@ -16,10 +16,9 @@ source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-string.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-path.sh
 source "${BASHLIB_LIBRARY_PATH:-}${BASHLIB_LIBRARY_PATH:+/}bashlib-path.sh"
 
+function synopsis() {
 
-function synopsis(){
-
-  cat <<EOF
+  cat << EOF
 \`\`\`bash
 git exec [-f|--force] [repo name] <git sub-command>
 \`\`\`
@@ -47,37 +46,34 @@ fi
 REPO_DIRS=()
 
 # Git Directory to checkout may be in a config file
-GIT_X_REPOS_FILE=${GIT_X_REPOS_FILE:-}
-if [ "$GIT_X_REPOS_FILE" != "" ] && [ -f "$GIT_X_REPOS_FILE" ]; then
-  IFS=$'\n' read -r -a REPO_DIRS -d $'\c0' <"$GIT_X_REPOS_FILE"
-  echo::info "${#REPO_DIRS[*]} directory found in $GIT_X_REPOS_FILE"
+GITURE_REPOS_FILE=${GITURE_REPOS_FILE:-}
+if [ "$GITURE_REPOS_FILE" != "" ] && [ -f "$GITURE_REPOS_FILE" ]; then
+  IFS=$'\n' read -r -a REPO_DIRS -d $'\c0' < "$GITURE_REPOS_FILE"
+  echo::info "${#REPO_DIRS[*]} directory found in $GITURE_REPOS_FILE"
 fi
 
 # Path
-GIT_X_REPOS_PATH=${GIT_X_REPOS_PATH:-}
-if [ "$GIT_X_REPOS_PATH" != "" ]; then
+GITURE_REPOS_PATH=${GITURE_REPOS_PATH:-}
+if [ "$GITURE_REPOS_PATH" != "" ]; then
 
   # Set the internal field separator to a colon, but only for the command
-  IFS=':' read -r -a REPO_PATHS <<< "$GIT_X_REPOS_PATH"
+  IFS=':' read -r -a REPO_PATHS <<< "$GITURE_REPOS_PATH"
   for REPO_PATH in "${REPO_PATHS[@]}"; do
     if [ -d "$REPO_PATH/.git" ]; then
-       REPO_DIRS+=("$REPO_PATH")
+      REPO_DIRS+=("$REPO_PATH")
     else
-       echo::warn "The path $REPO_PATH defined in GIT_X_REPOS_PATH is not a git repository"
+      echo::warn "The path $REPO_PATH defined in GITURE_REPOS_PATH is not a git repository"
     fi
   done
 
 fi
 
-
-
 # One or more root directory where all repository may be the children
 # one or more path separated by :
-GIT_X_REPOS_DIRS=${GIT_X_REPOS_DIRS:-}
-
+GITURE_REPOS_DIRS=${GITURE_REPOS_DIRS:-}
 
 # Execution mode
-MODE_FORCE="all" # Perform the command on all repo even if the repo is not dirty
+MODE_FORCE="all"   # Perform the command on all repo even if the repo is not dirty
 MODE_DIRTY="dirty" # Files has been touched or commit not pushed
 MODE="$MODE_DIRTY" # default
 
@@ -97,24 +93,24 @@ fi
 
 # Perform only on one repo
 FIRST_ARG=$1
-REPO_DIR="$GIT_X_REPOS_DIRS/$FIRST_ARG"
+REPO_DIR="$GITURE_REPOS_DIRS/$FIRST_ARG"
 if [ -d "$REPO_DIR/.git" ]; then
 
-    REPO_DIRS+=("$REPO_DIR")
-    MODE=$MODE_FORCE
-    shift
+  REPO_DIRS+=("$REPO_DIR")
+  MODE=$MODE_FORCE
+  shift
 else
 
   # The *, expanded by the shell, is what results in the loop iterating over a list of files
-  for GIT_X_REPO_DIR in $(echo "$GIT_X_REPOS_DIRS" | tr ":" " "); do
+  for GITURE_REPO_DIR in $(echo "$GITURE_REPOS_DIRS" | tr ":" " "); do
 
-    for GITX_REPO_DIR in "$GIT_X_REPO_DIR"/*; do
-      if [ -d "$GITX_REPO_DIR/.git" ]; then
-        REPO_DIRS+=("$GITX_REPO_DIR")
+    for GITURE_REPO_DIR in "$GITURE_REPO_DIR"/*; do
+      if [ -d "$GITURE_REPO_DIR/.git" ]; then
+        REPO_DIRS+=("$GITURE_REPO_DIR")
         continue
       fi
-      if [ "${GITX_REPO_DIR:0-1}" == '*' ]; then
-        echo::warn "No file or directory found at $GIT_X_REPOS_DIRS"
+      if [ "${GITURE_REPO_DIR:0-1}" == '*' ]; then
+        echo::warn "No file or directory found at $GITURE_REPOS_DIRS"
         # Env is not the same
         echo::warn "If you are running this script through git. Try: $(basename "$0") $*"
       fi
@@ -124,16 +120,15 @@ else
 fi
 
 if [ ${#REPO_DIRS[*]} == 0 ]; then
-  echo::err "No Git repositories found with the following env:";
+  echo::err "No Git repositories found with the following env:"
   echo::err ""
-  echo::err "     GIT_X_REPOS_DIRS=${GIT_X_REPOS_DIRS:-}"
-  echo::err "     GIT_X_REPOS_FILE=${GIT_X_REPOS_FILE:-}"
+  echo::err "     GITURE_REPOS_DIRS=${GITURE_REPOS_DIRS:-}"
+  echo::err "     GITURE_REPOS_FILE=${GITURE_REPOS_FILE:-}"
   echo::err ""
-  echo::err "GIT_X_REPOS_FILE is the path of a file that contains a list of directories containing git repositories"
-  echo::err "GIT_X_REPOS_DIRS is the path of a home directory where all your git repositories are located"
+  echo::err "GITURE_REPOS_FILE is the path of a file that contains a list of directories containing git repositories"
+  echo::err "GITURE_REPOS_DIRS is the path of a home directory where all your git repositories are located"
   exit 1
 fi
-
 
 COMMAND=$(git::get_eval_string "$@")
 
@@ -141,14 +136,14 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
 
   # We use strict mode but shellcheck does not see it
   # shellcheck disable=SC2164
-  pushd "$REPO_DIR" >/dev/null
+  pushd "$REPO_DIR" > /dev/null
 
   # Header for each repo
   DIRECTORY_NAME=$(path::get_current_directory_name) # the directory name is the DIRECTORY_NAME
   PARENT_DIRECTORY_NAME=$(cd "$REPO_DIR"/.. && pwd | xargs basename)
   HEAD=$(string::set_color "yellow" "${PARENT_DIRECTORY_NAME}/${DIRECTORY_NAME}")
   CURRENT_BRANCH=$(git::get_current_branch)
-  if ! CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2>/dev/null); then
+  if ! CURRENT_BRANCH_UPSTREAM=$(git::get_current_upstream_branch 2> /dev/null); then
 
     # No-op, we warn later with a warning message
     :
@@ -161,10 +156,10 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
 
   # If a batch exec, skip the non-dirty repo
   if ! git::is_dirty && [ "$MODE" == "$MODE_DIRTY" ]; then
-      # We use strict mode but shellcheck does not see it
-      # shellcheck disable=SC2164
-      popd > /dev/null
-      continue
+    # We use strict mode but shellcheck does not see it
+    # shellcheck disable=SC2164
+    popd > /dev/null
+    continue
   fi
 
   # We echo the head before the execution
@@ -172,7 +167,7 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
   # We need to be able to connect them to the good repo
   echo::echo ""
   echo::echo "$HEAD (${CURRENT_BRANCH} ... ${CURRENT_BRANCH_UPSTREAM:-"None"})"
-  if [ "${CURRENT_BRANCH_UPSTREAM:-}" == "" ];then
+  if [ "${CURRENT_BRANCH_UPSTREAM:-}" == "" ]; then
     echo::warn "The branch $CURRENT_BRANCH has no upstream."
   fi
   # 2>&1 because git output all to 2
@@ -190,7 +185,7 @@ for REPO_DIR in "${REPO_DIRS[@]}"; do
 
   # We use strict mode but shellcheck does not see it
   # shellcheck disable=SC2164
-  popd >/dev/null
+  popd > /dev/null
 
 done
 
@@ -205,7 +200,7 @@ fi
 
 if [[ ${COMMAND} == 'status' ]]; then
   # As stated: https://git-scm.com/docs/git-ls-files#Documentation/git-ls-files.txt--t
-  cat <<EOF
+  cat << EOF
 --------------------------------------------------------------
 Legend File Status:
 A - untracked new file (staged, in next commit)
@@ -219,4 +214,3 @@ K - untracked paths which are part of file/directory conflicts which prevent che
 U - file with resolve-undo information
 EOF
 fi
-

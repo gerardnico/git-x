@@ -1,9 +1,8 @@
-
 # https://jreleaser.org/guide/latest/reference/project.html
 project:
-  name: git-x
-  description: |
-    Git commands for everyday use (Git Flow, Multiple repos command execution, Hosting Backup, ...)
+  name: giture
+  # description should be 1 online otherwise we get a end of line at the end
+  description: Git commands for everyday use (Git Flow, Multiple repos command execution, Hosting Backup, ...)
   longDescription: |
     Cli to enhance your git flow, multi-repository and backup management
   authors:
@@ -16,15 +15,15 @@ project:
     - git
   stereotype: NONE
   links:
-    homepage: https://github.com/gerardnico/git-x
-    documentation: https://github.com/gerardnico/git-x
+    homepage: https://github.com/gerardnico/giture
+    documentation: https://github.com/gerardnico/giture
   languages:
-    # It's not java but
+    # It's not a java project but
     # as JReleaser does not support an archive with a bunch of script
     # we took JAVA_ARCHIVE that requires Java coordinates
     java:
       groupId: com.gerardnico
-      artifactId: git-x
+      artifactId: giture
       version: "11"
 
 
@@ -32,13 +31,15 @@ assemble:
   # Create an archives
   # https://jreleaser.org/guide/latest/reference/assemble/archive.html
   archive:
-    git-x:
+    giture:
       active: ALWAYS
       formats:
         - ZIP
         - TAR_GZ
       # JReleaser does not have the notion of an archive with a bunch of script
       # We use JAVA_BINARY because we don't need to specify the platform
+      # Otherwise the archiveName beccome giture-0.1.0-linux-x86_64.tar.gz
+      # and brew template is no more the same ....
       # https://jreleaser.org/guide/latest/concepts/distributions/java-binary.html
       distributionType: JAVA_BINARY
       artifacts:
@@ -48,7 +49,7 @@ assemble:
         - input: bin # relative path
           output: bin # path in the archive
           failOnMissingInput: true
-        - input: out/man1
+        - input: "{{baseOutputDirectory}}/man1"
           output: man1 # path in the archive
           includes:
             - '*.1' # glob (not regexp)
@@ -77,13 +78,19 @@ signing:
   mode: COMMAND
 
 distributions:
-  git-x:
+  giture:
     # Artifacts are defined in the assembly
     # Run it with
     # JRELEASER_PROJECT_VERSION="0.1.0" jreleaser prepare --debug -p=brew
+    # https://jreleaser.org/guide/latest/reference/packagers/homebrew.html
     brew:
       active: ALWAYS
-      formulaName: 'gitx'
+      formulaName: 'giture'
+      templateDirectory: contrib/release/brew
+      repository:
+        # multi product one repo, we add the project
+        tagName: '{{projectName}}-{{tagName}}'
+      # dependencies are in the template because the jdk is added automatically, and we don't want that
     # Run it with
     # Create the assembly
     #    jreleaser assemble --debug --assembler=archive
@@ -95,7 +102,7 @@ distributions:
     #    jreleaser publish --debug -p=docker
     docker:
       active: ALWAYS
-      templateDirectory: release/docker
+      templateDirectory: contrib/release/docker
       useLocalArtifact: true # remote vs locale
       repository: # Wild ! This repository will contain the Dockerfile and the distribution
         active: NEVER
@@ -103,11 +110,11 @@ distributions:
         - serverName: ghcr.io
       # https://docs.docker.com/reference/dockerfile/#label
       labels: # Labels are in the specs otherwise image title is not taken into account
-        org.opencontainers.image.source: "https://{{repoHost}}/{{repoOwner}}/{{repoName}}" # bug repo-name was git-x-docker
+        org.opencontainers.image.source: "https://{{repoHost}}/{{repoOwner}}/{{repoName}}" # bug repo-name was giture-docker
         org.opencontainers.image.title: "{{projectName}}"
       cmd: "git"
       specs:
-        git-x: # dockerSpecName
+        giture: # dockerSpecName
           matchers:
             platform: 'linux_musl-x86_64'
           imageNames:

@@ -1,0 +1,13 @@
+version: '3'
+
+tasks:
+  # Start the dev server
+  start:
+    cmds:
+      - |
+        docgen -w&
+        npx docusaurus start
+  kill:
+    cmds:
+      - |
+        kill -9 $(lsof -t -i:3000)
