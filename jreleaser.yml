@@ -2,7 +2,7 @@
 project:
   name: giture
   # description should be 1 online otherwise we get a end of line at the end
-  description: Git commands for everyday use (Git Flow, Multiple repos command execution, Hosting Backup, ...)
+  description: Git commands for your pleaser (Git Flow, Multiple repos command execution, Hosting Backup, ...)
   longDescription: |
     Cli to enhance your git flow, multi-repository and backup management
   authors:

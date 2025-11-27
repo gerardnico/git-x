@@ -2,7 +2,7 @@
 sidebar_label: 'Git Hosting Backup'
 ---
 
-# Git-Hosting - Backup your git repositories
+# Git-Hosting - Backup your GitHub repositories
 
 Don't get lockup of your Git Hosting repository if you lose your account.
 

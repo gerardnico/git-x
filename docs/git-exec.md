@@ -4,9 +4,9 @@ sidebar_label: 'Git Multi-Execution'
 
 # Git-exec - Multiple-repository execution
 
-With this extension, you can a git command against multiple repositories at once.
+With this extension, you can execute a git command against multiple repositories at once.
 
-## Usage
+## Example and usage
 
 You can:
 

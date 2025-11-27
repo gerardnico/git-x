@@ -136,5 +136,5 @@ alias ga='git-amend'
 |                 | [git-remote](commands/git-remote.md)                 | Shows remote status information (commit sync, GitHub actions runner)              |
 | `gr`            | [git-reset](commands/git-reset.md)                   | Restart with a clean state (as a `git clone`)                                     |
 | `gs`            | [git-status](commands/git-status.md)                 | Shows the working area status                                                     |
-| `gtd`           | [git-tag-delete](commands/git-tag-delete.md)         | Delete a tag                                                                      |
+| `gtd`           | [git-tag-delete](commands/git-tag-delete.md)         | Delete a tag and its GitHub release if any                                        |
 | `gu`            | [git-undo](commands/git-undo.md)                     | Delete the last commit (tagged or not) and put the files back in the working area |

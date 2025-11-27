@@ -1,16 +1,16 @@
-# Giture - Git with features - A collection of Git plugin/extension
+# Giture - Git commands for your Pleasure
 
 ## About
 
-`Giture` is a collection of Git command Extensions.
+`Giture` is a collection of Git command extensions.
 
 ## How this repository can help you?
 
 This repository contains commands that will help you:
 
-* [in your git flow](https://tools.gerardnico.com/giture/docs/git-flow)
+* [in your git flow with minimal command (double letters without any arguments)](https://tools.gerardnico.com/giture/docs/git-flow)
 * [execute a command against multiple repositories](https://tools.gerardnico.com/giture/docs/git-exec)
-* [backup you repositories](https://tools.gerardnico.com/giture/docs/git-backup)
+* [backup you GitHub repositories](https://tools.gerardnico.com/giture/docs/git-backup)
 
 ## Installation
 
