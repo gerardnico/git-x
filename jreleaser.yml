@@ -113,10 +113,6 @@ distributions:
         org.opencontainers.image.source: "https://{{repoHost}}/{{repoOwner}}/{{repoName}}" # bug repo-name was giture-docker
         org.opencontainers.image.title: "{{projectName}}"
       cmd: "git"
-      specs:
-        giture: # dockerSpecName
-          matchers:
-            platform: 'linux_musl-x86_64'
-          imageNames:
-            - "ghcr.io/combostrap/{{dockerSpecName}}:{{tagName}}"
-            - "ghcr.io/combostrap/{{dockerSpecName}}:latest"
+      imageNames:
+        - "ghcr.io/combostrap/{{dockerSpecName}}:{{tagName}}"
+        - "ghcr.io/combostrap/{{dockerSpecName}}:latest"

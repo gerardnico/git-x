@@ -9,7 +9,7 @@ sidebar_label: 'Giture Installation'
 
 ```bash
 docker run \
-  --rm
+  --rm \
   ghcr.io/gerardnico/giture:latest \
   git-log --help
 ```
