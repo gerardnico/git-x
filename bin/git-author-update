@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# for doc, see md file
+
+set -Eeuo pipefail
+
+# Change email
+# Code ref: https://git-scm.com/book/id/v2/Git-Tools-Rewriting-History#_changing_e_mail_addresses_globally
+
+OLD_EMAIL="${1:-}" # schacon@localhost
+NEW_EMAIL="${2:-}" # schacon@example.com
+NEW_NAME="${3:-}"  # Scott Chacon
+
+git filter-branch --commit-filter '
+        if [ "$GIT_AUTHOR_EMAIL" = "'+"$OLD_EMAIL"+ '" ];
+        then
+                GIT_AUTHOR_NAME="'+"$NEW_NAME"+ '";
+                GIT_AUTHOR_EMAIL="'+"$NEW_EMAIL"+'";
+                git commit-tree "$@";
+        else
+                git commit-tree "$@";
+        fi' HEAD
