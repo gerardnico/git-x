@@ -4,21 +4,19 @@ set -Eeuo pipefail
 
 # Bash lib library path detection
 if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
-  if command -v "brew" > /dev/null 2>&1; then
-    GITURE_BASH_LIB_PATH="$(brew --prefix giture)/lib"
-  else
-    echo "error: GITURE_BASH_LIB_PATH is not set and a brew installation was not found"
-    exit 1
-  fi
+  SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")")" && pwd)"
+  # This is also a valid path for brew
+  GITURE_BASH_LIB_PATH="$SCRIPT_DIR/../lib"
 fi
+export PATH="$GITURE_BASH_LIB_PATH:$PATH"
 
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
-source "${GITURE_BASH_LIB_PATH}/bashlib-error.sh"
+source "bashlib-error.sh"
 error::set_trap
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
-source "${GITURE_BASH_LIB_PATH}/bashlib-doc.sh"
+source "bashlib-doc.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-echo.sh
-source "${GITURE_BASH_LIB_PATH}/bashlib-echo.sh"
+source "bashlib-echo.sh"
 
 function synopsis() {
 

@@ -1,5 +1,4 @@
 #!/bin/bash
-# for doc, see md file
 
 set -Eeuo pipefail
 
@@ -20,8 +19,8 @@ source "bashlib-doc.sh"
 function synopsis() {
 
   cat << EOF
-Reset as if it was a clean: git clone
-  (git reset Hard and git clean)
+Shows the tags and the hash tag next to each other
+
 \`\`\`bash
 $(basename "$0")
 \`\`\`
@@ -41,8 +40,6 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-# Code
-echo::eval "git reset --hard HEAD"
-# delete untracked file
-# force and d means recurse
-echo::eval "git clean --force -d"
+# Shows the tags and the hash tag next to each other
+# shellcheck disable=SC2016
+git tag -l | xargs -I {} sh -c 'echo "{} $(git rev-parse --short {})"'
