@@ -47,6 +47,8 @@ function github_runner_status() {
   echo ""
   echo "GitHub Actions Run:"
   gh run list
+  echo "Watch a run with \`gh run watch <run-id>\`"
+
 }
 
 function git_remote() {
