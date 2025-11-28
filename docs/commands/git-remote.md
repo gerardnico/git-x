@@ -5,8 +5,8 @@
 
 Shows:
 * the remotes
-* the commit integration status (ie to push or to merge)
-* the github actions run status
+* the commit integration status with the upstream (ahead/behind) with the count and list
+* the GitHub actions run status
 
 ## SYNOPSIS
 

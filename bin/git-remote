@@ -43,22 +43,6 @@ if [[ "${1:-}" =~ -h|--help|help ]]; then
   exit 0
 fi
 
-function git_remote_sync_status() {
-
-  # Upstream
-  git fetch
-  # HEAD...'@{u}' means: commits reachable from upstream but not from HEAD
-  # '@{u}'...HEAD means: commits reachable from HEAD but not from upstream
-  # git rev-list --left-right --count HEAD...'@{u}'
-  upstreamCommitToMerge=$(git rev-list HEAD...'@{u}' --count)
-  localCommitToPush=$(git::get_commits_not_pushed)
-  echo ""
-  echo "Commit sync:"
-  echo "  * $upstreamCommitToMerge commits to merge"
-  echo "  * $localCommitToPush commits to push"
-
-}
-
 function github_runner_status() {
   echo ""
   echo "GitHub Actions Run:"
@@ -74,14 +58,28 @@ function git_remote() {
 function main() {
 
   git_remote
-  git_remote_sync_status
+
   github_runner_status
 
-  echo "Commits you're behind (remote has, you don't)"
-  git log HEAD..'@{u}' --oneline
+  git fetch
+  behindCommits=$(git::get_commits_behind_of_upstream)
+  aheadCommits=$(git::get_commits_ahead_of_upstream)
+  echo ""
+  echo "Commit sync:"
+  echo "  * $behindCommits behind commits (to pull)"
+  echo "  * $aheadCommits ahead commits (to push)"
+  if [ "$behindCommits" != "0" ]; then
+    echo ""
+    echo "Commits you're behind (remote has, you don't)"
+    git log HEAD..'@{u}' --oneline
+  fi
+  if [ "$aheadCommits" != "0" ]; then
+    echo ""
+    echo "Commits you're ahead (you have, remote doesn't)"
+    git log '@{u}'..HEAD --oneline
+  fi
 
-  echo "Commits you're ahead (you have, remote doesn't)"
-  git log '@{u}'..HEAD --oneline
+  echo ""
 
 }
 
