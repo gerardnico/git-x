@@ -133,7 +133,7 @@ alias ga='git-amend'
 | `gll`           | [git-log-all](commands/git-log-all.md)               | Shows all commits                                                                 |
 |                 | [git-pull](commands/git-pull.md)                     | Stash, Pull, un-stash in one command                                              |
 | `gp`            | [git-prepare](commands/git-prepare.md)               | Check the files against git-hooks with pre-commit                                 |
-|                 | [git-remote](commands/git-remote.md)                 | Shows remote status information (commit sync, GitHub actions runner)              |
+| `go`            | [git-origin](commands/git-origin.md)                 | Shows origin status information (commit sync, GitHub actions runner)              |
 | `gr`            | [git-reset](commands/git-reset.md)                   | Restart with a clean state (as a `git clone`)                                     |
 | `gs`            | [git-status](commands/git-status.md)                 | Shows the working area status                                                     |
 | `gtd`           | [git-tag-delete](commands/git-tag-delete.md)         | Delete a tag and its GitHub release if any                                        |
