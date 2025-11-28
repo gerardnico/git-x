@@ -126,7 +126,7 @@ if [ "$CURRENT_BRANCH_UPSTREAM" != "" ]; then
   #hint: See the 'Note about fast-forwards' in 'git push --help' for details.
   git fetch
   # rev-list provides the ability to build and traverse commit ancestry graphs.
-  UPSTREAM_COMMIT_TO_MERGE=$(git rev-list HEAD...'@{u}' --count)
+  UPSTREAM_COMMIT_TO_MERGE=$(git::get_commits_behind_of_upstream)
   if [ "$UPSTREAM_COMMIT_TO_MERGE" != 0 ]; then
     echo::warn "$UPSTREAM_COMMIT_TO_MERGE Upstream Commits has not been integrated"
     git-pull

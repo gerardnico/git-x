@@ -6,7 +6,7 @@ We follow the [GitHub contributing guideline](https://docs.github.com/en/contrib
 
 All contrib/devops artifacts are in the [contrib directory](contrib)
 
-### Calling the dev script from another directory
+### Calling the next version from another directory
 
 The scripts are installed via brew and are used in our day-to-day work.
 If you want to call the last version that you develop locally, you need to:
@@ -15,6 +15,13 @@ If you want to call the last version that you develop locally, you need to:
 * and to call the script directly.
 
 If you are not on the project directory, they are not available in the `PATH`, the brew scripts are
+
+You can create alias in your `.bashrc`. For instance
+```bash
+# Next version
+GITURE_BIN_PATH="$HOME/code/giture/bin"
+alias nga="$GITURE_BIN_PATH/git-amend"
+```
 
 ### Hosting Backup Dev Note
 
