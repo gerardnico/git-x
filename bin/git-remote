@@ -3,12 +3,15 @@
 set -Eeuo pipefail
 
 # Bash lib library path detection
-if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
+if [ "${BASHLIB_PATH:-}" == "" ]; then
   SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")")" && pwd)"
-  # This is also a valid path for brew
-  GITURE_BASH_LIB_PATH="$SCRIPT_DIR/../lib"
+  BASHLIB_PATH="$SCRIPT_DIR/../lib"
+  if [ ! -d "$BASHLIB_PATH" ]; then
+    echo "BASHLIB_PATH was not set and could not be found"
+    exit 1
+  fi
 fi
-export PATH="$GITURE_BASH_LIB_PATH:$PATH"
+export PATH="$BASHLIB_PATH:$PATH"
 
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
 source "bashlib-error.sh"
@@ -44,6 +47,9 @@ function git_remote_sync_status() {
 
   # Upstream
   git fetch
+  # HEAD...'@{u}' means: commits reachable from upstream but not from HEAD
+  # '@{u}'...HEAD means: commits reachable from HEAD but not from upstream
+  # git rev-list --left-right --count HEAD...'@{u}'
   upstreamCommitToMerge=$(git rev-list HEAD...'@{u}' --count)
   localCommitToPush=$(git::get_commits_not_pushed)
   echo ""
@@ -66,9 +72,17 @@ function git_remote() {
 }
 
 function main() {
+
   git_remote
   git_remote_sync_status
   github_runner_status
+
+  echo "Commits you're behind (remote has, you don't)"
+  git log HEAD..'@{u}' --oneline
+
+  echo "Commits you're ahead (you have, remote doesn't)"
+  git log '@{u}'..HEAD --oneline
+
 }
 
 main

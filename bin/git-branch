@@ -2,12 +2,10 @@
 # for docs, see md file
 
 # Bash lib library path detection
-if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
-  SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")")" && pwd)"
-  # This is also a valid path for brew
-  GITURE_BASH_LIB_PATH="$SCRIPT_DIR/../lib"
+if [ "${BASHLIB_PATH:-}" == "" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")")" && pwd)"  BASHLIB_PATH="$SCRIPT_DIR/../lib"
 fi
-export PATH="$GITURE_BASH_LIB_PATH:$PATH"
+export PATH="$BASHLIB_PATH:$PATH"
 
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
 source "bashlib-error.sh"
@@ -24,10 +22,9 @@ source "bashlib-path.sh"
 # shellcheck source=../..//bash-lib/lib/bashlib-doc.sh
 source "bashlib-doc.sh"
 
+function synopsis() {
 
-function synopsis(){
-
-  cat <<EOF
+  cat << EOF
 List, switch to or create a branch
 \`\`\`bash
 $(basename "$0")  [branch_name]
@@ -63,7 +60,7 @@ fi
 
 # Nothing to commit but push
 DIRTY_INDEX="no"
-if git::is_dirty_index ; then
+if git::is_dirty_index; then
   DIRTY_INDEX="yes"
 fi
 if [ $DIRTY_INDEX == "yes" ]; then
@@ -72,8 +69,8 @@ if [ $DIRTY_INDEX == "yes" ]; then
 fi
 
 if ! git::branch_exists "$BRANCH_NAME"; then
-    echo::info "Creating branch $BRANCH_NAME"
-    git branch "$BRANCH_NAME"
+  echo::info "Creating branch $BRANCH_NAME"
+  git branch "$BRANCH_NAME"
 fi
 
 echo::info "Switching to the branch $BRANCH_NAME"

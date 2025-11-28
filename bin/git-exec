@@ -2,12 +2,11 @@
 # see markdown file for documentation
 
 # Bash lib library path detection
-if [ "${GITURE_BASH_LIB_PATH:-}" == "" ]; then
+if [ "${BASHLIB_PATH:-}" == "" ]; then
   SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")")" && pwd)"
-  # This is also a valid path for brew
-  GITURE_BASH_LIB_PATH="$SCRIPT_DIR/../lib"
+  BASHLIB_PATH="$SCRIPT_DIR/../lib"
 fi
-export PATH="$GITURE_BASH_LIB_PATH:$PATH"
+export PATH="$BASHLIB_PATH:$PATH"
 
 # shellcheck source=../..//bash-lib/lib/bashlib-error.sh
 source "bashlib-error.sh"
