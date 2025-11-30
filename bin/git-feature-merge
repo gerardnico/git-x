@@ -46,8 +46,8 @@ fi
 BRANCH_NAME=$(git::get_current_branch)
 DEFAULT_BRANCH=$(git::get_default_branch)
 if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
-  echo::error "It's not a feature branch, it's the default branch ($DEFAULT_BRANCH)"
-  echo::error "You can't merge the default branch"
+  echo::err "It's not a feature branch, it's the default branch ($DEFAULT_BRANCH)"
+  echo::err "You can't merge the default branch"
   exit 1
 fi
 
